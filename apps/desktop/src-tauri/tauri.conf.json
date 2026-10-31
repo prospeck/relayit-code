@@ -30,7 +30,7 @@
         "title": "Quick Ask",
         "url": "index.html#/quick",
         "width": 720,
-        "height": 380,
+        "height": 76,
         "center": true,
         "visible": false,
         "decorations": false,

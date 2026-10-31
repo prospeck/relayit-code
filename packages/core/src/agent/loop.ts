@@ -392,7 +392,8 @@ export class Agent {
     const tool = reg.def;
     const label = tool.label?.(input as never);
     if (label) this.status(c.runId, c.conversationId, `${label}…`);
-    await this.d.audit.log({ kind: "tool.call", summary: `${tool.service}: ${tool.name}`, toolName: tool.name, toolClass: tool.toolClass, data: { input }, conversationId: c.conversationId });
+    const human = label ?? tool.name.replace(/_/g, " ").replace(/^./, (ch) => ch.toUpperCase());
+    await this.d.audit.log({ kind: "tool.call", summary: `${tool.service}: ${human}`, toolName: tool.name, toolClass: tool.toolClass, data: { input }, conversationId: c.conversationId });
     try {
       const ctx = await this.context(c.conversationId, c.runId, c.idempotencyKey, c.signal, state);
       let output = await withTimeout(tool.name, tool.timeoutMs ?? this.limits.toolTimeoutMs, (signal) =>
@@ -410,11 +411,11 @@ export class Agent {
         if (h?.output !== undefined) output = h.output;
       }
       if (tool.untrustedOutput) state.tainted = true;
-      await this.d.audit.log({ kind: "tool.result", summary: `${tool.service}: ${tool.name} finished`, toolName: tool.name, toolClass: tool.toolClass, data: { output }, conversationId: c.conversationId });
+      await this.d.audit.log({ kind: "tool.result", summary: `${tool.service}: ${human} — done`, toolName: tool.name, toolClass: tool.toolClass, data: { output }, conversationId: c.conversationId });
       return { content: wrapUntrusted(`tool:${tool.name}`, stringifyResult(output)), isError: false, parts, raw: output };
     } catch (e) {
       const msg = errMessage(e);
-      await this.d.audit.log({ kind: "error", summary: `${tool.service}: ${tool.name} failed — ${msg}`, toolName: tool.name, toolClass: tool.toolClass, conversationId: c.conversationId });
+      await this.d.audit.log({ kind: "error", summary: `${tool.service}: ${human} — failed: ${msg}`, toolName: tool.name, toolClass: tool.toolClass, conversationId: c.conversationId });
       return { content: `Tool error: ${msg}`, isError: true, parts: [], raw: { error: msg } };
     }
   }

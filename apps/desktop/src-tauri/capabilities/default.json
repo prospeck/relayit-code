@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Permissions for RelayIt windows",
   "windows": ["main", "quick"],
-  "permissions": ["core:default", "opener:default", "notification:default", "core:window:allow-start-dragging"]
+  "permissions": ["core:default", "opener:default", "notification:default", "core:window:allow-start-dragging", "core:window:allow-set-size"]
 }
