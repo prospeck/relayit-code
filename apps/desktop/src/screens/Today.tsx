@@ -72,6 +72,16 @@ export function Today() {
             .
           </h1>
           <p className="text-[15.5px] text-ink-2 mt-4">{summary}</p>
+          {today.data?.brief && (
+            <button
+              onClick={() => navigate(`chat/${today.data!.brief!.conversationId}`)}
+              className="group mt-4 inline-flex items-center gap-2 h-9 pl-3 pr-3.5 rounded-full bg-accent-soft text-accent-text text-[13px] font-medium hover:bg-accent/15 transition-colors"
+            >
+              <Sunrise className="size-4" />
+              Your morning brief is ready
+              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          )}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="mt-9">
