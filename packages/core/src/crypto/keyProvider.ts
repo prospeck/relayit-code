@@ -13,7 +13,10 @@ export interface KeyProvider {
 }
 
 export class StaticKeyProvider implements KeyProvider {
-  constructor(private key: Buffer) {}
+  private key: Buffer;
+  constructor(key: Buffer) {
+    this.key = key;
+  }
   async getMasterKey(): Promise<Buffer> {
     return this.key;
   }
@@ -46,7 +49,10 @@ export class StdinKeyProvider implements KeyProvider {
 
 /** Dev only: a key file next to the dev database, created with 0600 permissions. */
 export class DevFileKeyProvider implements KeyProvider {
-  constructor(private path: string) {}
+  private path: string;
+  constructor(path: string) {
+    this.path = path;
+  }
   async getMasterKey(): Promise<Buffer> {
     if (existsSync(this.path)) return Buffer.from(readFileSync(this.path, "utf8").trim(), "base64");
     mkdirSync(dirname(this.path), { recursive: true });

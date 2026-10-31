@@ -1,0 +1,523 @@
+import type { Message, MessagePart, PendingAction, Profile, Settings, ToolContext, ToolDef } from "@relayit/shared";
+import type { ChatMessage, ModelProvider, ToolCall } from "../models/types.ts";
+import { ModelError } from "../models/types.ts";
+import { estimateCostInr } from "../models/pricing.ts";
+import type { ToolRegistry, RegisteredTool } from "../tools/registry.ts";
+import type { ActionRepo, AuditRepo, ChatRepo, KvRepo, MemoryRepo, SecretRepo, SkillRepo } from "../store/repo.ts";
+import type { Database } from "../store/db.ts";
+import { json, parse } from "../store/db.ts";
+import type { EventBus } from "../events.ts";
+import { newId, nowIso } from "../util/ids.ts";
+import { errMessage, withTimeout } from "../util/time.ts";
+import { buildSystemPrompt } from "./prompt.ts";
+import { routeDomains } from "./router.ts";
+import { extractParts, stringifyResult, wrapUntrusted } from "./untrusted.ts";
+
+export type ActiveModel = { provider: ModelProvider; providerId: string; model: string; routerModel: string | null };
+
+type Step = { id: string; label: string; tool: string; status: "running" | "done" | "error" | "waiting" };
+
+export type RunState = {
+  messages: ChatMessage[];
+  domains: string[] | "all";
+  step: number;
+  tainted: boolean;
+  queue: ToolCall[];
+  waitingActionId: string | null;
+  steps: Step[];
+  text: string;
+  parts: MessagePart[];
+  usage: { inputTokens: number; outputTokens: number };
+  invalidCalls: number;
+  skill: string | null;
+  endTurn: boolean;
+};
+
+export type ToolHook = {
+  tools: string[];
+  /** Runs after a tool succeeds. May add UI parts or replace what the model sees. */
+  after(args: { output: unknown; input: unknown; ctx: ToolContext; tool: ToolDef }): Promise<{ parts?: MessagePart[]; output?: unknown } | void>;
+};
+
+export type AgentDeps = {
+  db: Database;
+  chat: ChatRepo;
+  actions: ActionRepo;
+  audit: AuditRepo;
+  memory: MemoryRepo;
+  kv: KvRepo;
+  secrets: SecretRepo;
+  skills: SkillRepo;
+  registry: ToolRegistry;
+  bus: EventBus;
+  getModel(): Promise<ActiveModel | null>;
+  getProfile(): Promise<Profile | null>;
+  getSettings(): Promise<Settings>;
+  hooks?: ToolHook[];
+  timeZone?: string;
+  limits?: Partial<{ maxSteps: number; toolTimeoutMs: number; actionTtlMs: number; historyMessages: number }>;
+  systemExtra?: () => Promise<string | undefined>;
+};
+
+const DEFAULT_LIMITS = { maxSteps: 14, toolTimeoutMs: 45_000, actionTtlMs: 30 * 60_000, historyMessages: 24 };
+
+export class Agent {
+  private active = new Map<string, AbortController>();
+  private limits: typeof DEFAULT_LIMITS;
+
+  private d: AgentDeps;
+  constructor(d: AgentDeps) {
+    this.d = d;
+    this.limits = { ...DEFAULT_LIMITS, ...d.limits };
+  }
+
+  isBusy(conversationId: string): boolean {
+    return this.active.has(conversationId);
+  }
+
+  stop(conversationId: string): boolean {
+    const c = this.active.get(conversationId);
+    if (!c) return false;
+    c.abort();
+    return true;
+  }
+
+  /** Starts a new turn. Resolves when the run finishes or pauses for approval. */
+  async send(conversationId: string, text: string, opts: { skill?: string | null; hidden?: boolean } = {}): Promise<{ runId: string; userMessage: Message | null }> {
+    if (this.active.has(conversationId)) throw new BusyError();
+    const history = await this.history(conversationId);
+    const userMessage = opts.hidden
+      ? null
+      : await this.d.chat.addMessage({ conversationId, role: "user", parts: [{ type: "text", text }] });
+    if (userMessage) this.d.bus.emit({ type: "message.created", message: userMessage });
+
+    const runId = newId("run");
+    const state: RunState = {
+      messages: [...history, { role: "user", content: text }],
+      domains: "all", step: 0, tainted: false, queue: [], waitingActionId: null, steps: [],
+      text: "", parts: [], usage: { inputTokens: 0, outputTokens: 0 }, invalidCalls: 0,
+      skill: opts.skill ?? null, endTurn: false,
+    };
+    await this.d.db.insertInto("agent_runs").values({
+      id: runId, conversation_id: conversationId, status: "running", state: json(state), error: null, created_at: nowIso(), updated_at: nowIso(),
+    }).execute();
+    await this.maybeTitle(conversationId, text);
+    await this.drive(runId, conversationId, state, true);
+    return { runId, userMessage };
+  }
+
+  /** Called after the user approves or refuses a pending action. */
+  async resume(actionId: string): Promise<void> {
+    const action = await this.d.actions.get(actionId);
+    if (!action) throw new Error("Action not found");
+    const run = await this.d.db.selectFrom("agent_runs").selectAll().where("id", "=", action.runId).executeTakeFirst();
+    if (!run || run.status !== "waiting_approval") return;
+    const state = parse<RunState>(run.state, null as never);
+    if (state.waitingActionId !== actionId) return;
+    if (this.active.has(run.conversation_id)) throw new BusyError();
+
+    const reg = this.d.registry.get(action.toolName);
+    let content: string;
+    let isError = false;
+    if (action.status === "approved" && reg) {
+      const r = await this.executeApproved(reg, action, run.conversation_id, action.runId);
+      content = r.content;
+      isError = r.isError;
+      state.parts.push(...r.parts);
+    } else if (action.status === "approved") {
+      content = "The tool is no longer available (its connection was removed).";
+      isError = true;
+    } else if (action.status === "expired") {
+      content = "The approval request expired before the user responded. Nothing was done.";
+    } else {
+      content = "The user refused this action. Nothing was done. Do not retry unless they ask.";
+    }
+    state.messages.push({ role: "tool", toolCallId: action.toolCallId, name: action.toolName, content, ...(isError ? { isError } : {}) });
+    const stepIdx = state.steps.findIndex((s) => s.status === "waiting");
+    if (stepIdx >= 0) {
+      state.steps[stepIdx]!.status = action.status === "approved" && !isError ? "done" : "error";
+      this.d.bus.emit({ type: "run.step", runId: action.runId, conversationId: run.conversation_id, step: state.steps[stepIdx]! });
+    }
+    state.waitingActionId = null;
+    await this.save(action.runId, "running", state);
+    await this.drive(action.runId, run.conversation_id, state, false);
+  }
+
+  /** Marks runs that were mid-flight when the app quit. */
+  async recoverInterrupted(): Promise<void> {
+    const rows = await this.d.db.selectFrom("agent_runs").select(["id", "conversation_id"]).where("status", "=", "running").execute();
+    for (const r of rows) {
+      await this.d.db.updateTable("agent_runs").set({ status: "error", error: "Interrupted by app restart", updated_at: nowIso() }).where("id", "=", r.id).execute();
+      await this.d.chat.addMessage({
+        conversationId: r.conversation_id, role: "assistant",
+        parts: [{ type: "text", text: "_I was interrupted when RelayIt closed. Ask me again and I'll pick it up._" }],
+      });
+    }
+  }
+
+  /* ───────────── internals ───────────── */
+
+  private async drive(runId: string, conversationId: string, state: RunState, fresh: boolean): Promise<void> {
+    const ctrl = new AbortController();
+    this.active.set(conversationId, ctrl);
+    this.d.bus.emit({ type: "run.started", runId, conversationId });
+    try {
+      const model = await this.d.getModel();
+      if (!model) throw new Error("No model is set up yet. Open Settings → Model to add one.");
+
+      if (fresh) {
+        this.status(runId, conversationId, "Understanding…");
+        const lastUser = [...state.messages].reverse().find((m) => m.role === "user");
+        const skill = state.skill ? await this.d.skills.getBySlug(state.skill) : null;
+        if (skill?.domains.length) state.domains = skill.domains;
+        else
+          state.domains = await routeDomains({
+            text: lastUser?.content ?? "",
+            available: this.d.registry.domains(),
+            totalTools: this.d.registry.forDomains("all").length,
+            provider: model.routerModel ? model.provider : null,
+            routerModel: model.routerModel,
+          });
+      }
+
+      // Finish tool calls left over from before the pause.
+      if (state.queue.length) {
+        const paused = await this.processCalls(runId, conversationId, state, ctrl.signal);
+        if (paused) return;
+      }
+
+      while (!state.endTurn && state.step < this.limits.maxSteps) {
+        state.step++;
+        const tools = this.d.registry.forDomains(state.domains);
+        const skill = state.skill ? await this.d.skills.getBySlug(state.skill) : null;
+        const system = buildSystemPrompt({
+          profile: await this.d.getProfile(),
+          memory: await this.d.memory.list(),
+          now: new Date(),
+          timeZone: this.d.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "Asia/Kolkata",
+          skill,
+          domains: state.domains === "all" ? [] : state.domains,
+          extra: (await this.d.systemExtra?.()) ?? undefined,
+        });
+        this.status(runId, conversationId, state.step === 1 ? "Thinking…" : "Working on it…");
+
+        let text = "";
+        const calls: ToolCall[] = [];
+        try {
+          for await (const ev of model.provider.stream({
+            model: model.model, system, messages: state.messages, tools: this.d.registry.specs(tools), maxTokens: 4096, signal: ctrl.signal,
+          })) {
+            if (ev.type === "text") {
+              text += ev.delta;
+              this.d.bus.emit({ type: "run.text", runId, conversationId, delta: ev.delta });
+            } else if (ev.type === "tool_call") calls.push(ev.call);
+            else if (ev.type === "usage") {
+              state.usage.inputTokens += ev.inputTokens;
+              state.usage.outputTokens += ev.outputTokens;
+            }
+          }
+        } catch (e) {
+          if (ctrl.signal.aborted) throw new StoppedError();
+          if (e instanceof ModelError && e.retryable && state.step < 3) {
+            this.status(runId, conversationId, "The model is busy, retrying…");
+            await new Promise((r) => setTimeout(r, 1500));
+            state.step--;
+            continue;
+          }
+          throw e;
+        }
+
+        if (text) state.text += (state.text && !state.text.endsWith("\n") ? "\n\n" : "") + text;
+        state.messages.push({ role: "assistant", content: text, ...(calls.length ? { toolCalls: calls } : {}) });
+
+        if (!calls.length) break;
+        state.queue = calls;
+        const paused = await this.processCalls(runId, conversationId, state, ctrl.signal);
+        if (paused) return;
+        await this.save(runId, "running", state);
+      }
+
+      if (!state.endTurn && state.step >= this.limits.maxSteps) {
+        state.text += "\n\n_I hit my step limit for one request. Tell me to continue if you'd like me to keep going._";
+      }
+      await this.finish(runId, conversationId, state);
+    } catch (e) {
+      if (e instanceof StoppedError || ctrl.signal.aborted) {
+        state.text += state.text ? "\n\n_Stopped._" : "_Stopped._";
+        await this.finish(runId, conversationId, state);
+        return;
+      }
+      const msg = errMessage(e);
+      await this.d.db.updateTable("agent_runs").set({ status: "error", error: msg, state: json(state), updated_at: nowIso() }).where("id", "=", runId).execute();
+      await this.d.audit.log({ kind: "error", summary: `Run failed: ${msg}`, conversationId });
+      const message = await this.d.chat.addMessage({
+        conversationId, role: "assistant",
+        parts: [...(state.text ? [{ type: "text" as const, text: state.text }] : []), { type: "text", text: `⚠️ ${msg}` }],
+      });
+      this.d.bus.emit({ type: "message.created", message });
+      this.d.bus.emit({ type: "run.error", runId, conversationId, error: msg });
+    } finally {
+      this.active.delete(conversationId);
+    }
+  }
+
+  /** Processes queued tool calls. Returns true if the run paused for approval. */
+  private async processCalls(runId: string, conversationId: string, state: RunState, signal: AbortSignal): Promise<boolean> {
+    while (state.queue.length) {
+      if (signal.aborted) throw new StoppedError();
+      const call = state.queue.shift()!;
+      const reg = this.d.registry.get(call.name);
+      if (!reg || reg.internal) {
+        this.toolError(state, call, `Unknown tool "${call.name}". Use only the tools provided.`);
+        continue;
+      }
+      const tool = reg.def;
+      const parsed = tool.input.safeParse(call.args);
+      if (!parsed.success) {
+        state.invalidCalls++;
+        if (state.invalidCalls > 2) throw new Error(`I had trouble using ${tool.service} (the model kept sending invalid requests). Try rephrasing, or pick a stronger model in Settings.`);
+        this.toolError(state, call, `Invalid arguments for ${call.name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ")}. Fix them and call the tool again.`);
+        continue;
+      }
+      const input = parsed.data;
+      const step: Step = { id: call.id, label: tool.label?.(input) ?? tool.name.replace(/_/g, " "), tool: tool.name, status: "running" };
+      state.steps.push(step);
+      this.d.bus.emit({ type: "run.step", runId, conversationId, step });
+
+      if (tool.toolClass === "act") {
+        const outcome = await this.requestApproval(runId, conversationId, state, reg, call, input);
+        if (outcome.paused) {
+          step.status = "waiting";
+          this.d.bus.emit({ type: "run.step", runId, conversationId, step });
+          await this.save(runId, "waiting_approval", state);
+          await this.persistSegment(conversationId, state, outcome.action!);
+          return true;
+        }
+        // Auto-approved by an "Always allow" rule.
+        const r = await this.executeApproved(reg, outcome.action!, conversationId, runId);
+        state.parts.push(...r.parts);
+        step.status = r.isError ? "error" : "done";
+        this.d.bus.emit({ type: "run.step", runId, conversationId, step });
+        state.messages.push({ role: "tool", toolCallId: call.id, name: call.name, content: r.content, ...(r.isError ? { isError: true } : {}) });
+        continue;
+      }
+
+      const r = await this.runTool(reg, input, { conversationId, runId, idempotencyKey: null, signal }, state);
+      step.status = r.isError ? "error" : "done";
+      this.d.bus.emit({ type: "run.step", runId, conversationId, step });
+      state.messages.push({ role: "tool", toolCallId: call.id, name: call.name, content: r.content, ...(r.isError ? { isError: true } : {}) });
+      state.parts.push(...r.parts);
+      if (tool.name === "offer_quick_replies" && !r.isError) {
+        // Choices end the turn: the user's tap is the next message.
+        state.endTurn = true;
+        for (const rest of state.queue.splice(0)) this.toolError(state, rest, "Skipped: the turn ended to wait for the user's choice.");
+      }
+    }
+    return false;
+  }
+
+  private toolError(state: RunState, call: ToolCall, message: string) {
+    state.messages.push({ role: "tool", toolCallId: call.id, name: call.name, content: message, isError: true });
+  }
+
+  private async requestApproval(
+    runId: string, conversationId: string, state: RunState, reg: RegisteredTool, call: ToolCall, input: unknown,
+  ): Promise<{ paused: boolean; action?: PendingAction & { toolCallId: string } }> {
+    const tool = reg.def;
+    const settings = await this.d.getSettings();
+    const ctx = await this.context(conversationId, runId, null, AbortSignal.timeout(this.limits.toolTimeoutMs), state);
+    let preview;
+    try {
+      preview = tool.preview ? await tool.preview(input, ctx) : null;
+    } catch (e) {
+      preview = null;
+      await this.d.audit.log({ kind: "error", summary: `Couldn't build the approval card for ${tool.name}: ${errMessage(e)}`, toolName: tool.name, conversationId });
+    }
+    preview ??= { title: `Allow ${tool.service} to ${tool.name.replace(/_/g, " ")}`, summary: "RelayIt wants to run this action.", service: tool.service, details: summariseArgs(input) };
+    const money = (typeof tool.involvesMoney === "function" ? tool.involvesMoney(input) : !!tool.involvesMoney) || (preview.amountInr ?? 0) > 0;
+    const action: PendingAction & { toolCallId: string } = {
+      id: newId("act"), runId, conversationId, toolName: tool.name, toolCallId: call.id,
+      title: preview.title, summary: preview.summary, service: preview.service || tool.service,
+      recipient: preview.recipient ?? null, amountInr: preview.amountInr ?? null, details: preview.details ?? [],
+      payload: input, status: "pending", tainted: state.tainted, involvesMoney: money,
+      spendCapInr: money ? settings.spendCapInr : null, idempotencyKey: newId("idem"),
+      expiresAt: new Date(Date.now() + this.limits.actionTtlMs).toISOString(), createdAt: nowIso(), resolvedAt: null, result: null,
+    };
+
+    const ruled = await this.d.actions.hasRule(tool.name);
+    const auto = ruled && !money && !state.tainted;
+    if (auto) {
+      action.status = "approved";
+      action.resolvedAt = nowIso();
+      await this.d.actions.insert(action);
+      await this.d.audit.log({ kind: "action.approved", summary: `Auto-approved by your "Always allow" rule: ${action.title}`, toolName: tool.name, toolClass: "act", data: { actionId: action.id }, conversationId });
+      return { paused: false, action };
+    }
+    await this.d.actions.insert(action);
+    state.waitingActionId = action.id;
+    await this.d.audit.log({
+      kind: "action.created",
+      summary: `Waiting for approval: ${action.title}${action.amountInr ? ` (₹${action.amountInr})` : ""}${ruled && (money || state.tainted) ? ` — "Always allow" skipped because ${money ? "money is involved" : "outside content was read in this task"}` : ""}`,
+      toolName: tool.name, toolClass: "act", data: { actionId: action.id, payload: input }, conversationId,
+    });
+    this.d.bus.emit({ type: "action.pending", action });
+    this.d.bus.emit({ type: "notify", kind: "needs_you", title: "RelayIt needs your OK", body: action.title });
+    return { paused: true, action };
+  }
+
+  private async executeApproved(reg: RegisteredTool, action: PendingAction & { toolCallId: string }, conversationId: string, runId: string) {
+    // Idempotency: an action that already executed returns its stored result.
+    if (action.status === "executed") {
+      return { content: wrapUntrusted(`tool:${reg.def.name}`, stringifyResult(action.result)), isError: false, parts: [] as MessagePart[] };
+    }
+    const state = { tainted: action.tainted } as RunState;
+    const r = await this.runTool(reg, action.payload, { conversationId, runId, idempotencyKey: action.idempotencyKey, signal: new AbortController().signal }, state);
+    await this.d.actions.update(action.id, { status: r.isError ? "failed" : "executed", result: r.raw });
+    const updated = await this.d.actions.get(action.id);
+    if (updated) this.d.bus.emit({ type: "action.updated", action: updated });
+    await this.d.audit.log({
+      kind: r.isError ? "action.failed" : "action.executed",
+      summary: `${r.isError ? "Failed" : "Done"}: ${action.title}`,
+      toolName: reg.def.name, toolClass: "act", data: { actionId: action.id, result: r.raw }, conversationId,
+    });
+    if (!r.isError) this.d.bus.emit({ type: "notify", kind: action.involvesMoney ? "order" : "info", title: action.title, body: "Done." });
+    return r;
+  }
+
+  private async runTool(
+    reg: RegisteredTool, input: unknown,
+    c: { conversationId: string; runId: string; idempotencyKey: string | null; signal: AbortSignal },
+    state: RunState,
+  ): Promise<{ content: string; isError: boolean; parts: MessagePart[]; raw: unknown }> {
+    const tool = reg.def;
+    const label = tool.label?.(input as never);
+    if (label) this.status(c.runId, c.conversationId, `${label}…`);
+    await this.d.audit.log({ kind: "tool.call", summary: `${tool.service}: ${tool.name}`, toolName: tool.name, toolClass: tool.toolClass, data: { input }, conversationId: c.conversationId });
+    try {
+      const ctx = await this.context(c.conversationId, c.runId, c.idempotencyKey, c.signal, state);
+      let output = await withTimeout(tool.name, tool.timeoutMs ?? this.limits.toolTimeoutMs, (signal) =>
+        tool.run(input, { ...ctx, signal: anySignal([signal, c.signal]) }),
+      );
+      const parts: MessagePart[] = [];
+      const extracted = extractParts(output);
+      output = extracted.value;
+      parts.push(...(extracted.parts as MessagePart[]));
+      if (tool.toParts) parts.push(...tool.toParts(output, input as never));
+      for (const hook of this.d.hooks ?? []) {
+        if (!hook.tools.includes(tool.name)) continue;
+        const h = await hook.after({ output, input, ctx, tool });
+        if (h?.parts) parts.push(...h.parts);
+        if (h?.output !== undefined) output = h.output;
+      }
+      if (tool.untrustedOutput) state.tainted = true;
+      await this.d.audit.log({ kind: "tool.result", summary: `${tool.service}: ${tool.name} finished`, toolName: tool.name, toolClass: tool.toolClass, data: { output }, conversationId: c.conversationId });
+      return { content: wrapUntrusted(`tool:${tool.name}`, stringifyResult(output)), isError: false, parts, raw: output };
+    } catch (e) {
+      const msg = errMessage(e);
+      await this.d.audit.log({ kind: "error", summary: `${tool.service}: ${tool.name} failed — ${msg}`, toolName: tool.name, toolClass: tool.toolClass, conversationId: c.conversationId });
+      return { content: `Tool error: ${msg}`, isError: true, parts: [], raw: { error: msg } };
+    }
+  }
+
+  private async context(conversationId: string, runId: string, idempotencyKey: string | null, signal: AbortSignal, _state: RunState): Promise<ToolContext> {
+    return {
+      conversationId, runId, signal, idempotencyKey,
+      profile: await this.d.getProfile(),
+      memory: await this.d.memory.list(),
+      secrets: { get: (n) => this.d.secrets.get(n), set: (n, v) => this.d.secrets.set(n, v), delete: (n) => this.d.secrets.delete(n) },
+      kv: { get: (k) => this.d.kv.get(k), set: (k, v) => this.d.kv.set(k, v) },
+      status: (label) => this.status(runId, conversationId, label),
+    };
+  }
+
+  private status(runId: string, conversationId: string, label: string) {
+    this.d.bus.emit({ type: "run.status", runId, conversationId, label });
+  }
+
+  /** Writes the text so far plus the approval card into the conversation. */
+  private async persistSegment(conversationId: string, state: RunState, action: PendingAction) {
+    const parts: MessagePart[] = [];
+    if (state.text.trim()) parts.push({ type: "text", text: state.text.trim() });
+    parts.push(...state.parts);
+    if (state.steps.length) parts.push({ type: "steps", steps: state.steps.map(({ label, tool, status }) => ({ label, tool, status })) });
+    parts.push({ type: "action", actionId: action.id });
+    const message = await this.d.chat.addMessage({ conversationId, role: "assistant", parts });
+    this.d.bus.emit({ type: "message.created", message });
+    state.text = "";
+    state.parts = [];
+    state.steps = state.steps.map((s) => ({ ...s }));
+    await this.save(action.runId, "waiting_approval", state);
+    this.d.bus.emit({ type: "run.finished", runId: action.runId, conversationId });
+  }
+
+  private async finish(runId: string, conversationId: string, state: RunState) {
+    const model = await this.d.getModel();
+    const parts: MessagePart[] = [];
+    if (state.text.trim()) parts.push({ type: "text", text: state.text.trim() });
+    parts.push(...state.parts);
+    const visibleSteps = state.steps.filter((s) => s.tool !== "offer_quick_replies" && s.status !== "waiting");
+    if (visibleSteps.length) parts.unshift({ type: "steps", steps: visibleSteps.map(({ label, tool, status }) => ({ label, tool, status })) });
+    if (!parts.length) parts.push({ type: "text", text: "Done." });
+    const usage = model
+      ? { ...state.usage, costInr: estimateCostInr(model.providerId, model.model, state.usage.inputTokens, state.usage.outputTokens) }
+      : null;
+    const message = await this.d.chat.addMessage({ conversationId, role: "assistant", parts, usage });
+    this.d.bus.emit({ type: "message.created", message });
+    await this.save(runId, "done", state);
+    this.d.bus.emit({ type: "run.finished", runId, conversationId });
+  }
+
+  private async save(runId: string, status: string, state: RunState) {
+    await this.d.db.updateTable("agent_runs").set({ status, state: json(state), updated_at: nowIso() }).where("id", "=", runId).execute();
+  }
+
+  private async history(conversationId: string): Promise<ChatMessage[]> {
+    const msgs = await this.d.chat.listMessages(conversationId);
+    const out: ChatMessage[] = [];
+    for (const m of msgs.slice(-this.limits.historyMessages)) {
+      const text = m.parts.map((p) => {
+        if (p.type === "text") return p.text;
+        if (p.type === "choices") return `[Offered choices: ${p.options.join(" | ")}]`;
+        if (p.type === "action") return "[Showed an approval card]";
+        if (p.type === "payment") return `[Showed a UPI payment request for ₹${p.amountInr}]`;
+        if (p.type === "link") return `[Link: ${p.title} ${p.url}]`;
+        return "";
+      }).filter(Boolean).join("\n");
+      if (!text) continue;
+      const last = out[out.length - 1];
+      if (last && last.role === m.role) (last as { content: string }).content += `\n\n${text}`;
+      else out.push(m.role === "user" ? { role: "user", content: text } : { role: "assistant", content: text });
+    }
+    while (out[0]?.role === "assistant") out.shift();
+    return out;
+  }
+
+  private async maybeTitle(conversationId: string, text: string) {
+    const conv = await this.d.chat.getConversation(conversationId);
+    if (!conv || conv.title !== "New chat") return;
+    const title = text.replace(/\s+/g, " ").trim().replace(/^\/[a-z0-9-]+\s*/, "");
+    const short = title.length > 48 ? `${title.slice(0, 46).trimEnd()}…` : title || "New chat";
+    await this.d.chat.renameConversation(conversationId, short.charAt(0).toUpperCase() + short.slice(1));
+    const updated = await this.d.chat.getConversation(conversationId);
+    if (updated) this.d.bus.emit({ type: "conversation.updated", conversation: updated });
+  }
+}
+
+export class BusyError extends Error {
+  constructor() {
+    super("RelayIt is still working on the last request in this chat.");
+  }
+}
+class StoppedError extends Error {}
+
+function anySignal(signals: AbortSignal[]): AbortSignal {
+  return AbortSignal.any(signals);
+}
+
+function summariseArgs(input: unknown) {
+  if (!input || typeof input !== "object") return [];
+  return Object.entries(input as Record<string, unknown>)
+    .filter(([k]) => k !== "idempotencyKey")
+    .slice(0, 8)
+    .map(([k, v]) => ({ label: k.replace(/([A-Z])/g, " $1").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()), value: typeof v === "string" ? v : JSON.stringify(v) }));
+}
