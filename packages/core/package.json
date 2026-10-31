@@ -13,7 +13,8 @@
     "dev": "node --watch src/main.ts --dev",
     "start": "node src/main.ts",
     "build": "node build.mjs",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/ws": "^8.5.12",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "vitest": "^5.0.5"
   }
 }
