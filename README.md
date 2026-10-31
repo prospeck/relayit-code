@@ -23,8 +23,11 @@ The demo model follows a few scripted flows — try **"Try a demo action"** or *
 
 ```bash
 RELAYIT_MOCK_MODEL=1 RELAYIT_FAKE_GOOGLE=1 pnpm tauri dev   # drop the env vars to use a real model
-pnpm tauri build                                            # release build (.app / .dmg / .msi)
+pnpm tauri build --bundles app && pnpm dmg                 # macOS .app + drag-to-Applications .dmg
+pnpm tauri build --bundles nsis                             # Windows installer
 ```
+
+Builds are unsigned for now: on macOS, right-click RelayIt → **Open** the first time; on Windows, choose **More info → Run anyway**.
 
 ### Use a real model
 
