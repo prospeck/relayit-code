@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions for RelayIt windows",
+  "windows": ["main", "quick"],
+  "permissions": ["core:default", "opener:default", "notification:default", "core:window:allow-start-dragging"]
+}
