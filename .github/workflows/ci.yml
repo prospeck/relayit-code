@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   checks:
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -29,6 +30,7 @@ jobs:
       - run: pnpm test
 
   ui-e2e:
+    timeout-minutes: 15
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +43,7 @@ jobs:
       - run: pnpm test:ui
 
   bundle:
+    timeout-minutes: 45
     needs: checks
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
