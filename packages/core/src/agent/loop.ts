@@ -335,6 +335,8 @@ export class Agent {
       await this.d.audit.log({ kind: "error", summary: `Couldn't build the approval card for ${tool.name}: ${errMessage(e)}`, toolName: tool.name, conversationId });
     }
     preview ??= { title: `Allow ${tool.service} to ${tool.name.replace(/_/g, " ")}`, summary: "RelayIt wants to run this action.", service: tool.service, details: summariseArgs(input) };
+    const known = await this.knownFactsUsed(input, preview);
+    if (known.length) preview = { ...preview, details: [...(preview.details ?? []), { label: "From what I know", value: known.join(" · ") }] };
     const money = (typeof tool.involvesMoney === "function" ? tool.involvesMoney(input) : !!tool.involvesMoney) || (preview.amountInr ?? 0) > 0;
     const action: PendingAction & { toolCallId: string } = {
       id: newId("act"), runId, conversationId, toolName: tool.name, toolCallId: call.id,
@@ -364,6 +366,23 @@ export class Agent {
     this.d.bus.emit({ type: "action.pending", action });
     this.d.bus.emit({ type: "notify", kind: "needs_you", title: "RelayIt needs your OK", body: action.title });
     return { paused: true, action };
+  }
+
+  /** Names the saved facts an action relied on, so the card shows where defaults came from. */
+  private async knownFactsUsed(input: unknown, preview: { details?: { value: string }[] }): Promise<string[]> {
+    const hay = `${JSON.stringify(input)} ${(preview.details ?? []).map((d) => d.value).join(" ")}`.toLowerCase();
+    const out: string[] = [];
+    const profile = await this.d.getProfile();
+    for (const a of profile?.addresses ?? []) {
+      const line = a.line.toLowerCase().trim();
+      if (line.length >= 6 && hay.includes(line)) out.push(`your ${a.label} address`);
+    }
+    for (const f of await this.d.memory.list()) {
+      const words = f.value.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 5);
+      const hits = words.filter((w) => hay.includes(w)).length;
+      if (words.length && hits >= Math.min(2, words.length)) out.push(f.key);
+    }
+    return [...new Set(out)].slice(0, 3);
   }
 
   private async executeApproved(reg: RegisteredTool, action: PendingAction & { toolCallId: string }, conversationId: string, runId: string, state: RunState) {
