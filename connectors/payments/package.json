@@ -1,0 +1,22 @@
+{
+  "name": "@relayit/connector-payments",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@relayit/shared": "workspace:*",
+    "zod": "^4.6.7",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.5",
+    "vitest": "^5.0.5",
+    "typescript": "~6.0.3",
+    "@types/node": "^24.0.0"
+  }
+}
