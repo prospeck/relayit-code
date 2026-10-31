@@ -1,0 +1,44 @@
+{
+  "name": "@relayit/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev:web": "vite",
+    "build:web": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@relayit/shared": "workspace:*",
+    "@tanstack/react-query": "^5.105.0",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-notification": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.66.0",
+    "motion": "^14.9.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.2",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.5"
+  }
+}

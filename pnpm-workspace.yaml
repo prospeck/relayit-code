@@ -4,5 +4,6 @@ packages:
   - connectors/*
 minimumReleaseAgeExclude:
   - ws@8.22.1
+  - lucide-react@1.66.0
 allowBuilds:
   esbuild: true
