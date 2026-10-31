@@ -62,6 +62,13 @@ export class MockFoodProvider implements FoodProvider {
     return restaurant;
   }
   async searchRestaurants(q: SearchInput) {
+    // Models often pass the city as the "area"; areas are neighbourhoods. Ignore city names, and if a
+    // real area filter removes everything, search the whole city instead of returning nothing.
+    const area = q.area && !/^(bangalore|bengaluru|blr|bengaluru urban|karnataka)$/i.test(q.area.trim()) ? q.area : undefined;
+    const results = this.search({ ...q, area });
+    return results.length || !area ? results : this.search({ ...q, area: undefined });
+  }
+  private search(q: SearchInput) {
     const query = normalise(q.query ?? "");
     return restaurants
       .flatMap((r) => {

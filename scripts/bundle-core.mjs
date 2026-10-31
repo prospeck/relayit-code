@@ -8,7 +8,8 @@
  */
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, rmSync, copyFileSync, chmodSync, existsSync, realpathSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync, copyFileSync, chmodSync, existsSync, realpathSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -51,8 +52,40 @@ try {
 const rustc = existsSync(join(homedir(), ".cargo/bin/rustc")) ? join(homedir(), ".cargo/bin/rustc") : "rustc";
 const triple = process.env.TAURI_ENV_TARGET_TRIPLE || execFileSync(rustc, ["-vV"], { encoding: "utf8" }).match(/host: (.+)/)[1].trim();
 mkdirSync(join(tauri, "binaries"), { recursive: true });
-const bin = join(tauri, "binaries", `relayit-node-${triple}${process.platform === "win32" ? ".exe" : ""}`);
+const bin = join(tauri, "binaries", `relayit-node-${triple}${triple.includes("windows") ? ".exe" : ""}`);
 if (existsSync(bin)) rmSync(bin);
-copyFileSync(process.execPath, bin);
+copyFileSync(await officialNode(triple), bin);
 chmodSync(bin, 0o755);
-console.log(`[bundle] core → ${out}\n[bundle] node ${process.version} → ${bin}`);
+
+/**
+ * The sidecar must be a self-contained Node (package-manager builds link to shared libraries).
+ * Downloads the official build of the running Node version for the target, verifies its SHA-256
+ * against nodejs.org's SHASUMS256.txt, and caches it.
+ */
+async function officialNode(targetTriple) {
+  const version = process.env.RELAYIT_NODE_VERSION || process.version;
+  const plat = targetTriple.includes("apple-darwin") ? "darwin" : targetTriple.includes("windows") ? "win" : "linux";
+  const arch = targetTriple.startsWith("aarch64") ? "arm64" : "x64";
+  const base = `node-${version}-${plat}-${arch}`;
+  const file = plat === "win" ? `${base}.zip` : `${base}.tar.gz`;
+  const cacheDir = join(homedir(), ".cache", "relayit-node", base);
+  const exe = join(cacheDir, plat === "win" ? "node.exe" : "bin/node");
+  if (existsSync(exe)) return exe;
+  mkdirSync(cacheDir, { recursive: true });
+  const url = `https://nodejs.org/dist/${version}/${file}`;
+  console.log(`[bundle] downloading ${url}`);
+  const [sums, archive] = await Promise.all([
+    fetch(`https://nodejs.org/dist/${version}/SHASUMS256.txt`).then((r) => { if (!r.ok) throw new Error(`SHASUMS ${r.status}`); return r.text(); }),
+    fetch(url).then(async (r) => { if (!r.ok) throw new Error(`${url}: ${r.status}`); return Buffer.from(await r.arrayBuffer()); }),
+  ]);
+  const expected = sums.split("\n").find((l) => l.endsWith(`  ${file}`))?.split(/\s+/)[0];
+  const actual = createHash("sha256").update(archive).digest("hex");
+  if (!expected || expected !== actual) throw new Error(`Checksum mismatch for ${file}`);
+  const archivePath = join(cacheDir, file);
+  writeFileSync(archivePath, archive);
+  if (plat === "win") execFileSync("tar", ["-xf", archivePath, "-C", cacheDir, "--strip-components=1", `${base}/node.exe`]);
+  else execFileSync("tar", ["-xzf", archivePath, "-C", cacheDir, "--strip-components=1", `${base}/bin/node`]);
+  rmSync(archivePath);
+  return exe;
+}
+console.log(`[bundle] core → ${out}\n[bundle] node → ${bin}`);

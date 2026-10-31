@@ -214,3 +214,18 @@ it("serves MCP tools with all approval metadata and JSON results", async () => {
     await server.close();
   }
 });
+
+describe("search tolerates city names as area", () => {
+  it("treats Bengaluru/Bangalore as no area filter and falls back when an area matches nothing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "relayit-food-area-"));
+    try {
+      const p = new MockFoodProvider(dir);
+      for (const area of ["Bengaluru", "Bangalore", "Mars"]) {
+        const r = await p.searchRestaurants({ query: "California Pizza", area });
+        expect(r[0]?.name).toBe("California Pizza Kitchen");
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

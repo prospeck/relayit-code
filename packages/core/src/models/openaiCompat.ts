@@ -102,7 +102,7 @@ function toOpenAI(system: string, messages: ChatMessage[]) {
     else if (m.role === "assistant")
       out.push({
         role: "assistant",
-        content: m.content || null,
+        content: m.content ?? "",
         ...(m.toolCalls?.length
           ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.rawArgs || JSON.stringify(c.args ?? {}) } })) }
           : {}),
