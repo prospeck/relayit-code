@@ -1,0 +1,22 @@
+{
+  "name": "relayit",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:core": "pnpm --filter @relayit/core dev",
+    "dev:ui": "pnpm --filter @relayit/desktop dev:web",
+    "tauri": "pnpm --filter @relayit/desktop tauri",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:e2e": "vitest run --project e2e",
+    "fake-google": "pnpm --filter @relayit/connector-google fake"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+  - connectors/*
+minimumReleaseAgeExclude:
+  - ws@8.22.1
+allowBuilds:
+  esbuild: true

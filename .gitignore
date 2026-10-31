@@ -1,0 +1,14 @@
+node_modules/
+dist/
+target/
+.env
+.env.local
+*.log
+.DS_Store
+.relayit-dev/
+apps/desktop/src-tauri/binaries/
+apps/desktop/src-tauri/resources/core/
+apps/desktop/src-tauri/gen/schemas/
+coverage/
+test-results/
+playwright-report/
