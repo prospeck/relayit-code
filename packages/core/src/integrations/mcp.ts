@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import { randomUUID } from "node:crypto";
+import { join } from "node:path";
 import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -82,10 +83,11 @@ export class McpManager {
     const client = new Client({ name: "relayit", version: "0.1.0" });
     let transport: Live["transport"];
     if (row.transport === "stdio") {
+      // The SDK uses cross-spawn: it resolves Windows .cmd shims (e.g. npx) and escapes arguments.
       transport = new StdioClientTransport({
         command: row.command!,
         args: parse<string[]>(row.args, []),
-        env: { ...safeEnv(), RELAYIT_DATA_DIR: this.app.opts.dataDir === ":memory:" ? "" : `${this.app.opts.dataDir}/connectors/${id}`, ...(await this.envFor(id, row.env)) },
+        env: { ...safeEnv(), RELAYIT_DATA_DIR: this.app.opts.dataDir === ":memory:" ? "" : join(this.app.opts.dataDir, "connectors", id), ...(await this.envFor(id, row.env)) },
         stderr: "pipe",
       });
     } else {
@@ -415,10 +417,17 @@ export function mcpRoutes(m: McpManager): RouteModule {
 
 /* ───────────── helpers ───────────── */
 
-function safeEnv(): Record<string, string> {
+export function safeEnv(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): Record<string, string> {
   // Pass only what servers need to run; never our own secrets.
   const keep = ["PATH", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "TMPDIR", "TEMP", "TMP", "SystemRoot", "LANG", "LC_ALL"];
-  return Object.fromEntries(keep.filter((k) => process.env[k]).map((k) => [k, process.env[k]!]));
+  if (platform === "win32") {
+    keep.push("PATHEXT", "COMSPEC", "SystemDrive", "HOMEDRIVE", "HOMEPATH", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "ProgramData");
+    // Windows env names are case-insensitive. Canonical keys also avoid duplicate Path/PATH entries.
+    const allowed = new Set(keep.map((key) => key.toUpperCase()));
+    return Object.fromEntries(Object.entries(env).filter(([key, value]) => allowed.has(key.toUpperCase()) && value)
+      .map(([key, value]) => [key.toUpperCase(), value!]));
+  }
+  return Object.fromEntries(keep.filter((k) => env[k]).map((k) => [k, env[k]!]));
 }
 
 function slug(s: string): string {

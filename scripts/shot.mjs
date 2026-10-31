@@ -1,6 +1,8 @@
 // Dev helper: screenshot the web UI with the system Chrome. Usage: node scripts/shot.mjs <hash> <out.png> [dark] [w] [h] [js]
 import { chromium } from "playwright-core";
-const [hash = "", out = "/tmp/shot.png", scheme = "light", w = "1280", h = "820", js = ""] = process.argv.slice(2);
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const [hash = "", out = join(tmpdir(), "shot.png"), scheme = "light", w = "1280", h = "820", js = ""] = process.argv.slice(2);
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage({ viewport: { width: +w, height: +h }, colorScheme: scheme === "dark" ? "dark" : "light", deviceScaleFactor: 2 });
 await page.goto(`http://127.0.0.1:1420/#/${hash}`);

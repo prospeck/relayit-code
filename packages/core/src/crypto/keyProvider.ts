@@ -47,7 +47,7 @@ export class StdinKeyProvider implements KeyProvider {
   }
 }
 
-/** Dev only: a key file next to the dev database, created with 0600 permissions. */
+/** Dev only: a key file next to the dev database; POSIX 0600, inherited user-folder ACLs on Windows. */
 export class DevFileKeyProvider implements KeyProvider {
   private path: string;
   constructor(path: string) {
@@ -58,7 +58,7 @@ export class DevFileKeyProvider implements KeyProvider {
     mkdirSync(dirname(this.path), { recursive: true });
     const key = randomBytes(32);
     writeFileSync(this.path, key.toString("base64"), { mode: 0o600 });
-    chmodSync(this.path, 0o600);
+    if (process.platform !== "win32") chmodSync(this.path, 0o600);
     return key;
   }
 }

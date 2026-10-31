@@ -10,10 +10,21 @@ const env = {
   ...(flags.has("--fake-google") ? { RELAYIT_FAKE_GOOGLE: "1" } : {}),
 };
 const procs = [
-  spawn("pnpm", ["--filter", "@relayit/core", "dev"], { stdio: "inherit", env }),
-  spawn("pnpm", ["--filter", "@relayit/desktop", "dev:web"], { stdio: "inherit", env }),
+  // Windows package-manager shims are .cmd files and require cmd.exe.
+  spawn("pnpm", ["--filter", "@relayit/core", "dev"], { stdio: "inherit", env, shell: process.platform === "win32" }),
+  spawn("pnpm", ["--filter", "@relayit/desktop", "dev:web"], { stdio: "inherit", env, shell: process.platform === "win32" }),
 ];
-const stop = () => procs.forEach((p) => p.kill("SIGTERM"));
+let stopping = false;
+const stop = () => {
+  if (stopping) return;
+  stopping = true;
+  for (const p of procs) {
+    // Killing cmd.exe alone leaves pnpm, Node's watcher and Vite running.
+    if (process.platform === "win32" && p.pid) spawn("taskkill", ["/pid", String(p.pid), "/T", "/F"], { stdio: "ignore", windowsHide: true });
+    else p.kill("SIGTERM");
+  }
+};
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
 for (const p of procs) p.on("exit", (code) => code && stop());
+for (const p of procs) p.on("error", (error) => { console.error(error.message); process.exitCode = 1; stop(); });

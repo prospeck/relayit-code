@@ -62,7 +62,7 @@ export class OpenAICompatibleTranscriber implements Transcriber {
 
 function runBinary(binary: string, args: string[], timeoutMs: number, label: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { shell: false, stdio: "ignore" });
+    const child = spawn(binary, args, { shell: false, stdio: "ignore", windowsHide: true });
     let timedOut = false;
     const timer = setTimeout(() => { timedOut = true; child.kill("SIGKILL"); }, timeoutMs);
     child.once("error", (error: NodeJS.ErrnoException) => {
@@ -133,16 +133,21 @@ async function accessible(path: string, mode: number): Promise<boolean> {
   try { await access(path, mode); return (await stat(path)).isFile(); } catch { return false; }
 }
 
-export async function detectLocalWhisper({ searchPaths, env = process.env }: {
+export async function detectLocalWhisper({ searchPaths, env = process.env, platform = process.platform }: {
   /** Overrides executable directories, including the usual Homebrew defaults. */
-  searchPaths?: string[]; env?: NodeJS.ProcessEnv;
+  searchPaths?: string[]; env?: NodeJS.ProcessEnv; platform?: NodeJS.Platform;
 } = {}): Promise<LocalWhisperDetection> {
-  const paths = searchPaths ?? [...(env.PATH ?? "").split(delimiter).filter(Boolean), "/opt/homebrew/bin", "/usr/local/bin"];
+  const windows = platform === "win32";
+  const path = windows ? Object.entries(env).find(([key]) => key.toUpperCase() === "PATH")?.[1] : env.PATH;
+  const defaults = windows
+    ? (env.LOCALAPPDATA ? [join(env.LOCALAPPDATA, "Microsoft", "WinGet", "Links")] : [])
+    : ["/opt/homebrew/bin", "/usr/local/bin"];
+  const paths = searchPaths ?? [...(path ?? "").split(windows ? ";" : delimiter).filter(Boolean), ...defaults];
   async function find(names: string[]): Promise<string | null> {
     for (const name of names) {
       for (const directory of paths) {
-        const candidate = resolve(directory, name);
-        if (await accessible(candidate, constants.X_OK)) return candidate;
+        const candidate = resolve(directory, windows ? `${name}.exe` : name);
+        if (await accessible(candidate, windows ? constants.F_OK : constants.X_OK)) return candidate;
       }
     }
     return null;

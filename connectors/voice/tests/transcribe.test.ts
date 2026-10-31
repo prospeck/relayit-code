@@ -1,10 +1,19 @@
 import { createServer } from "node:http";
+import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { OpenAICompatibleTranscriber, WhisperCppTranscriber, detectLocalWhisper, pickTranscriber } from "../src/index.ts";
+
+// Interpret fake native executables with Node on every OS, keeping real process/timeout/cleanup checks.
+vi.mock("node:child_process", async (importOriginal) => {
+  const { spawn } = await importOriginal<typeof import("node:child_process")>();
+  return { spawn: vi.fn((binary: string, args: string[], options: Parameters<typeof spawn>[2]) =>
+    existsSync(binary) ? spawn(process.execPath, [binary, ...args], options) : spawn(binary, args, options)) };
+});
 
 let baseUrl: string;
 let handle: (request: IncomingMessage, response: ServerResponse) => void;
@@ -61,8 +70,10 @@ describe("local whisper.cpp", () => {
   let binaryPath: string;
   let ffmpegPath: string;
   let modelPath: string;
-  const ffmpegScript = '#!/bin/sh\nprintf "%s\\n" "$@" > "$0.args"\nfor last do :; done\nprintf "fake wav" > "$last"\n';
-  const whisperScript = '#!/bin/sh\nprintf "%s\\n" "$@" > "$0.args"\nwhile [ "$#" -gt 0 ]; do\n  if [ "$1" = "-of" ]; then shift; output="$1"; fi\n  shift\ndone\nprintf "  Local transcript  \\n" > "$output.txt"\n';
+  const recordArgs = 'const { writeFileSync } = require("node:fs"); const args = process.argv.slice(2); writeFileSync(process.argv[1] + ".args", args.join("\\n") + "\\n");\n';
+  const ffmpegScript = recordArgs + 'writeFileSync(args.at(-1), "fake wav");\n';
+  const whisperScript = recordArgs + 'writeFileSync(args[args.indexOf("-of") + 1] + ".txt", "  Local transcript  \\n");\n';
+  const exe = (name: string) => process.platform === "win32" ? `${name}.exe` : name;
 
   async function executable(path: string, body: string): Promise<void> { await writeFile(path, body); await chmod(path, 0o755); }
   async function args(path: string): Promise<string[]> { return (await readFile(`${path}.args`, "utf8")).trim().split("\n"); }
@@ -73,8 +84,8 @@ describe("local whisper.cpp", () => {
   }
   beforeEach(async () => {
     directory = await mkdtemp(join(tmpdir(), "relayit-voice-test-"));
-    binaryPath = join(directory, "whisper-cli");
-    ffmpegPath = join(directory, "ffmpeg");
+    binaryPath = join(directory, exe("whisper-cli"));
+    ffmpegPath = join(directory, exe("ffmpeg"));
     modelPath = join(directory, "ggml-test.bin");
     await writeFile(modelPath, "offline model placeholder");
     await executable(ffmpegPath, ffmpegScript);
@@ -84,6 +95,7 @@ describe("local whisper.cpp", () => {
 
   it("converts to 16 kHz mono WAV, invokes whisper, reads output and removes its temporary directory", async () => {
     expect(await new WhisperCppTranscriber({ binaryPath, modelPath, ffmpegPath }).transcribe(Buffer.from("audio"), "audio/webm")).toEqual({ text: "Local transcript", engine: "whisper.cpp" });
+    expect(spawn).toHaveBeenCalledWith(ffmpegPath, expect.any(Array), { shell: false, stdio: "ignore", windowsHide: true });
     const ffmpegArgs = await args(ffmpegPath);
     expect(ffmpegArgs).toEqual(["-nostdin", "-y", "-i", expect.stringMatching(/input\.webm$/), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", expect.stringMatching(/audio\.wav$/)]);
     const whisperArgs = await args(binaryPath);
@@ -102,17 +114,18 @@ describe("local whisper.cpp", () => {
 
   it.each(["ffmpeg", "whisper"])("cleans up when %s exits with an error", async (which) => {
     const path = which === "ffmpeg" ? ffmpegPath : binaryPath;
-    await executable(path, '#!/bin/sh\nprintf "%s\\n" "$@" > "$0.args"\nexit 7\n');
+    await executable(path, recordArgs + "process.exit(7);\n");
     await expect(new WhisperCppTranscriber({ binaryPath, modelPath, ffmpegPath }).transcribe(Buffer.from("audio"), "audio/webm")).rejects.toThrow("exit 7");
     await expectCleaned();
   });
 
   it.each(["ffmpeg", "whisper"])("kills a timed-out %s process and cleans up", async (which) => {
     const path = which === "ffmpeg" ? ffmpegPath : binaryPath;
-    await executable(path, '#!/bin/sh\nprintf "%s\\n" "$@" > "$0.args"\nwhile :; do :; done\n');
-    await expect(new WhisperCppTranscriber({ binaryPath, modelPath, ffmpegPath, timeoutMs: 1000 }).transcribe(Buffer.from("audio"), "audio/webm")).rejects.toThrow("timed out");
+    await executable(path, recordArgs + "setInterval(() => {}, 1000);\n");
+    // Leave time for the Node fixture to start on a busy Windows runner before testing the kill.
+    await expect(new WhisperCppTranscriber({ binaryPath, modelPath, ffmpegPath, timeoutMs: 5000 }).transcribe(Buffer.from("audio"), "audio/webm")).rejects.toThrow("timed out");
     await expectCleaned();
-  });
+  }, 15_000);
 
   it.each(["ffmpeg", "whisper"])("reports a missing %s binary", async (which) => {
     await rm(which === "ffmpeg" ? ffmpegPath : binaryPath);
@@ -121,7 +134,7 @@ describe("local whisper.cpp", () => {
   });
 
   it("reports missing output and cleans up", async () => {
-    await executable(binaryPath, "#!/bin/sh\nexit 0\n");
+    await executable(binaryPath, "process.exit(0);\n");
     await expect(new WhisperCppTranscriber({ binaryPath, modelPath, ffmpegPath }).transcribe(Buffer.from("audio"), "audio/webm")).rejects.toThrow("did not produce");
     await expectCleaned();
   });
@@ -137,7 +150,7 @@ describe("local whisper.cpp", () => {
 
   it.each(["whisper-cpp", "main"])("detects the alternate executable %s and a model in the default directory", async (name) => {
     await rm(binaryPath);
-    const alternative = join(directory, name);
+    const alternative = join(directory, exe(name));
     await executable(alternative, whisperScript);
     const models = join(directory, ".relayit", "models");
     await mkdir(models, { recursive: true });
@@ -151,6 +164,17 @@ describe("local whisper.cpp", () => {
 
   it("accepts a model path relative to injected HOME", async () => {
     expect(await detectLocalWhisper({ searchPaths: [directory], env: { HOME: directory, WHISPER_MODEL: "~/ggml-test.bin" } })).toMatchObject({ available: true, modelPath });
+  });
+
+  it("detects Windows .exe files through a mixed-case Path and LOCALAPPDATA's WinGet links", async () => {
+    const links = join(directory, "Microsoft", "WinGet", "Links");
+    await mkdir(links, { recursive: true });
+    const whisper = join(directory, "whisper-cli.exe");
+    const ffmpeg = join(links, "ffmpeg.exe");
+    await writeFile(whisper, "fixture");
+    await writeFile(ffmpeg, "fixture");
+    expect(await detectLocalWhisper({ platform: "win32", env: { Path: directory, LOCALAPPDATA: directory, USERPROFILE: directory, WHISPER_MODEL: modelPath } }))
+      .toEqual({ available: true, binaryPath: whisper, modelPath, ffmpegPath: ffmpeg, missing: [] });
   });
 });
 
