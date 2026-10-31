@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:e2e": "vitest run --project e2e",
+    "test:ui": "pnpm --filter @relayit/e2e test",
     "fake-google": "pnpm --filter @relayit/connector-google fake"
   },
   "devDependencies": {
