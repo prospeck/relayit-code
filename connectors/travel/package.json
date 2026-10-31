@@ -1,0 +1,21 @@
+{
+  "name": "@relayit/connector-travel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": "src/server.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5",
+    "typescript": "~6.0.3",
+    "@types/node": "^24"
+  }
+}
