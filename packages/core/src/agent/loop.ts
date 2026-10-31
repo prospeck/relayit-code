@@ -120,7 +120,7 @@ export class Agent {
     let content: string;
     let isError = false;
     if (action.status === "approved" && reg) {
-      const r = await this.executeApproved(reg, action, run.conversation_id, action.runId);
+      const r = await this.executeApproved(reg, action, run.conversation_id, action.runId, state);
       content = r.content;
       isError = r.isError;
       state.parts.push(...r.parts);
@@ -216,6 +216,7 @@ export class Agent {
               state.usage.outputTokens += ev.outputTokens;
             }
           }
+          if (ctrl.signal.aborted) throw new StoppedError();
         } catch (e) {
           if (ctrl.signal.aborted) throw new StoppedError();
           if (e instanceof ModelError && e.retryable && state.step < 3) {
@@ -294,7 +295,7 @@ export class Agent {
           return true;
         }
         // Auto-approved by an "Always allow" rule.
-        const r = await this.executeApproved(reg, outcome.action!, conversationId, runId);
+        const r = await this.executeApproved(reg, outcome.action!, conversationId, runId, state);
         state.parts.push(...r.parts);
         step.status = r.isError ? "error" : "done";
         this.d.bus.emit({ type: "run.step", runId, conversationId, step });
@@ -365,12 +366,11 @@ export class Agent {
     return { paused: true, action };
   }
 
-  private async executeApproved(reg: RegisteredTool, action: PendingAction & { toolCallId: string }, conversationId: string, runId: string) {
+  private async executeApproved(reg: RegisteredTool, action: PendingAction & { toolCallId: string }, conversationId: string, runId: string, state: RunState) {
     // Idempotency: an action that already executed returns its stored result.
     if (action.status === "executed") {
       return { content: wrapUntrusted(`tool:${reg.def.name}`, stringifyResult(action.result)), isError: false, parts: [] as MessagePart[] };
     }
-    const state = { tainted: action.tainted } as RunState;
     const r = await this.runTool(reg, action.payload, { conversationId, runId, idempotencyKey: action.idempotencyKey, signal: new AbortController().signal }, state);
     await this.d.actions.update(action.id, { status: r.isError ? "failed" : "executed", result: r.raw });
     const updated = await this.d.actions.get(action.id);

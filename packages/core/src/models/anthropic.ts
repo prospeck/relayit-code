@@ -22,7 +22,10 @@ export class AnthropicProvider implements ModelProvider {
 
   async listModels(): Promise<string[]> {
     const res = await fetch(`${this.baseUrl}/v1/models?limit=100`, { headers: this.headers() });
-    if (!res.ok) throw new ModelError((await errorFromResponse(res, "Anthropic")).message, res.status);
+    if (!res.ok) {
+      const e = await errorFromResponse(res, "Anthropic");
+      throw new ModelError(e.message, res.status, e.retryable);
+    }
     const body = (await res.json()) as { data: { id: string }[] };
     return body.data.map((m) => m.id);
   }

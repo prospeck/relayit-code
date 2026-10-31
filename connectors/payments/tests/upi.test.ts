@@ -23,7 +23,7 @@ describe("UPI", () => {
   });
 
   it("omits an absent merchant code and always has two decimal places", () => {
-    const { merchantCode, ...withoutCode } = request;
+    const { merchantCode: _merchantCode, ...withoutCode } = request;
     const uri = buildUpiUri({ ...withoutCode, amountInr: 1 });
     expect(uri).toContain("am=1.00");
     expect(uri).not.toContain("mc=");

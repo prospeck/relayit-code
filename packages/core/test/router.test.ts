@@ -20,7 +20,7 @@ describe("domain routing", () => {
     expect(provider.requests[0]!.system).toContain(available.join(", "));
   });
   it.each(["error", "malformed"])("falls back to heuristics on %s", async (mode) => {
-    const provider = mode === "error" ? new ScriptedModel(async function* () { throw new Error("router failed"); }) : new ScriptedModel(text("invalid JSON"));
+    const provider = mode === "error" ? new ScriptedModel(async function* () { yield* []; throw new Error("router failed"); }) : new ScriptedModel(text("invalid JSON"));
     expect(await routeDomains({ text: "read email", available, totalTools: 30, provider, routerModel: "cheap" })).toEqual(["email", "calendar"]);
   });
 });

@@ -226,7 +226,7 @@ export class PaymentService {
       }
     } catch (error) {
       signal?.throwIfAborted();
-      if (timeout.aborted) throw new Error("Payment polling timed out");
+      if (timeout.aborted) throw new Error("Payment polling timed out", { cause: error });
       throw error;
     }
   }

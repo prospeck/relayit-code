@@ -75,6 +75,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 
 export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
   const links = new Map<string, MockLink>();
+  // eslint-disable-next-line prefer-const -- assigned once the server is listening
   let origin: string;
   const server = createServer((req, res) => {
     void handle(req, res).catch(() => {

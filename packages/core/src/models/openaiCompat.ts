@@ -29,7 +29,10 @@ export class OpenAICompatProvider implements ModelProvider {
 
   async listModels(): Promise<string[]> {
     const res = await fetch(`${this.baseUrl}/models`, { headers: this.headers() });
-    if (!res.ok) throw new ModelError((await errorFromResponse(res, this.id)).message, res.status);
+    if (!res.ok) {
+      const e = await errorFromResponse(res, this.id);
+      throw new ModelError(e.message, res.status, e.retryable);
+    }
     const body = (await res.json()) as { data?: { id: string }[] };
     return (body.data ?? []).map((m) => m.id.replace(/^models\//, ""));
   }

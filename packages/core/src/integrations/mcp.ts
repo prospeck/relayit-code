@@ -222,7 +222,6 @@ export class McpManager {
   private authProvider(id: string): OAuthClientProvider {
     const app = this.app;
     const key = (k: string) => `mcp.oauth.${id}.${k}`;
-    const self = this;
     return {
       get redirectUrl() {
         return `http://127.0.0.1:${OAUTH_PORT}/callback`;
@@ -238,7 +237,7 @@ export class McpManager {
       },
       state: () => {
         const s = randomUUID();
-        self.pendingAuth.set(id, { ...(self.pendingAuth.get(id) ?? {}), state: s });
+        this.pendingAuth.set(id, { ...(this.pendingAuth.get(id) ?? {}), state: s });
         return s;
       },
       clientInformation: async () => {
@@ -252,7 +251,7 @@ export class McpManager {
       },
       saveTokens: async (t) => app.secrets.set(key("tokens"), JSON.stringify(t)),
       redirectToAuthorization: async (url) => {
-        await self.ensureOAuthServer();
+        await this.ensureOAuthServer();
         openUrl(url.toString());
       },
       saveCodeVerifier: async (v) => app.secrets.set(key("verifier"), v),

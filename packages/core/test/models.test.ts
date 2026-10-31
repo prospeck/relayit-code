@@ -92,7 +92,7 @@ describe("model streaming adapters", () => {
 
   for (const provider of providers) {
     // BUG: listModels() discards errorFromResponse.retryable in both adapters.
-    it.fails.each([429, 503])(`${provider.name} preserves retryability when listing models returns %i`, async (status) => {
+    it.each([429, 503])(`${provider.name} preserves retryability when listing models returns %i`, async (status) => {
       const base = await localServer((_req, res) => {
         res.writeHead(status, { "content-type": "application/json" });
         res.end(JSON.stringify({ error: { message: "Temporary provider error" } }));

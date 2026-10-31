@@ -167,7 +167,7 @@ describe("agent loop", () => {
   });
 
   // BUG: executeApproved passes a temporary state into runTool, losing taint from act output.
-  it.fails("keeps untrusted act output tainted for later actions in the same run", async () => {
+  it("keeps untrusted act output tainted for later actions in the same run", async () => {
     const f = await setup([[call("test_probe", input), call("test_act", input)], text("Done")]);
     f.app.registry.register(testTool("test_probe", "act", { untrustedOutput: true }));
     await f.app.actions.addRule("test_act", "Test", "Allowed");
@@ -287,7 +287,7 @@ describe("agent loop", () => {
     expect(f.app.agent.stop(f.conversation.id)).toBe(false);
   });
   // BUG: drive only detects abort in its catch; a provider that returns on abort finishes normally.
-  it.fails("persists Stopped when an aborted provider ends its iterator normally", async () => {
+  it("persists Stopped when an aborted provider ends its iterator normally", async () => {
     let started = false;
     const f = await setup([async function* (req) {
       yield { type: "text", delta: "Partial" };

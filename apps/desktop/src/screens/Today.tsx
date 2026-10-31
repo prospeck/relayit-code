@@ -44,8 +44,8 @@ export function Today() {
   const dateLine = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
   const needsYouTasks = (tasks.data ?? []).filter((t) => t.status === "needs_you");
   const working = (tasks.data ?? []).filter((t) => t.status === "working" || t.status === "review");
-  const events = today.data?.events ?? [];
-  const orders = today.data?.orders ?? [];
+  const events = useMemo(() => today.data?.events ?? [], [today.data?.events]);
+  const orders = useMemo(() => today.data?.orders ?? [], [today.data?.orders]);
   const needCount = (pending.data?.length ?? 0) + needsYouTasks.length;
 
   const summary = useMemo(() => {

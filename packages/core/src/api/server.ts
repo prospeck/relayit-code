@@ -6,7 +6,7 @@ import type { AddressInfo } from "node:net";
 import { timingSafeEqual } from "node:crypto";
 import type { z } from "zod";
 import {
-  ApproveRequest, MemoryFactInput, ModelConfig, OnboardingRequest, Profile, SendMessageRequest, Settings, TaskStatus, ValidateKeyRequest,
+  ApproveRequest, MemoryFactInput, OnboardingRequest, Profile, SendMessageRequest, Settings, TaskStatus, ValidateKeyRequest,
 } from "@relayit/shared";
 import { type App, HttpError } from "../app.ts";
 import { validateKey, detectOllama, rankModels } from "../models/index.ts";
