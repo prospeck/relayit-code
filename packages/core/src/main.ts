@@ -21,8 +21,14 @@ const opt = (name: string) => {
 };
 
 const dev = flag("dev");
+const keyFromStdin = flag("key-from-stdin");
+// Capture EOF even during startup. Windows has no catchable SIGTERM; the shell closes this pipe.
+const stdinClosed = keyFromStdin ? new Promise<void>((resolve) => {
+  process.stdin.once("end", resolve);
+  process.stdin.once("close", resolve);
+}) : null;
 const dataDir = opt("data-dir") ?? process.env.RELAYIT_DATA_DIR ?? (dev ? join(process.cwd(), "../../.relayit-dev") : join(homedir(), ".relayit"));
-const keyProvider: KeyProvider = flag("key-from-stdin") ? new StdinKeyProvider() : new DevFileKeyProvider(join(dataDir, "dev-master.key"));
+const keyProvider: KeyProvider = keyFromStdin ? new StdinKeyProvider() : new DevFileKeyProvider(join(dataDir, "dev-master.key"));
 const token = dev ? (process.env.RELAYIT_DEV_TOKEN ?? "dev") : newToken();
 const port = Number(opt("port") ?? (dev ? 47821 : 0));
 
@@ -48,6 +54,9 @@ const shutdown = async () => {
   process.exit(0);
 };
 process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+if (process.platform !== "win32") process.on("SIGTERM", shutdown);
 // The desktop shell closes our stdin when it exits; follow it.
-if (flag("key-from-stdin")) process.stdin.on("end", shutdown);
+if (stdinClosed) {
+  void stdinClosed.then(shutdown);
+  process.stdin.resume();
+}

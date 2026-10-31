@@ -11,5 +11,5 @@ export function openUrl(url: string): void {
       : process.platform === "win32"
         ? ["rundll32", ["url.dll,FileProtocolHandler", href]]
         : ["xdg-open", [href]];
-  spawn(cmd, args, { stdio: "ignore", detached: true }).unref();
+  spawn(cmd, args, { stdio: "ignore", detached: true, windowsHide: true }).unref();
 }
