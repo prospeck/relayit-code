@@ -19,11 +19,20 @@ Living checklist for the autonomous build. ✅ done · 🔨 in progress · ⏳ n
 - ✅ UPI QR + Razorpay test/mock checkout, payment watch → order confirmed
 - ✅ Connections screen
 
-## Phase 4 — Browser agent 🔨 (Codex B building connector)
-## Phase 5 — Proactive ✅ brief, routines (+ create_routine tool), skills, notifications
-## Phase 6 — Memory ✅ · voice 🔨 · web research 🔨 (Codex C) · first-day intro ✅
+## Phase 4 — Browser agent ✅ (Playwright, separate profile, act-gated submits, payment hand-off; 61 tests on real Chrome)
+## Phase 5 — Proactive ✅ brief, routines (+ create_routine tool), skills, notifications, tray brief
+## Phase 6 — Memory ✅ (also shown on approval cards) · voice ✅ · web research ✅ · first-day intro ✅
 
-## Remaining
-- integrate browser + web + voice connectors
-- bundle script for release builds (esbuild core + connectors, Node sidecar)
-- README, .env.example, UI e2e
+## Release ✅
+- scripts/bundle-core.mjs (esbuild core + MCP servers, verified official Node sidecar); release .app verified running
+- README, .env.example, UI e2e (11 tests), core tests (78), connectors (~270)
+- Verified with a real local model (qwen3:4b via Ollama): pizza order reaches the approval card
+
+## In flight (Codex round 3)
+- codex_c: GitHub Actions CI + Windows compatibility fixes
+- codex_a: accessibility audit + axe tests (I apply fixes)
+- codex_b: intent eval harness against Ollama + FINDINGS.md (I apply prompt/tool fixes)
+- DMG bundle build
+
+## After round 3
+- apply a11y + eval findings, run Prettier over the repo, final full verification, delete autopilot schedule
