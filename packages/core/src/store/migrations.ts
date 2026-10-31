@@ -52,6 +52,11 @@ const MIGRATIONS: { id: number; name: string; up: string }[] = [
         source TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(category, key));
     `,
   },
+  {
+    id: 2,
+    name: "payments_unique_order",
+    up: `CREATE UNIQUE INDEX IF NOT EXISTS payments_order_unique ON payments(order_id)`,
+  },
 ];
 
 export async function migrate(db: Kysely<DB>): Promise<void> {

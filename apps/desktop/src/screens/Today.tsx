@@ -34,7 +34,7 @@ export function Today() {
     },
   });
   const brief = useMutation({
-    mutationFn: api.brief,
+    mutationFn: () => api.brief(false),
     onSuccess: (r) => navigate(`chat/${r.conversationId}`),
   });
 

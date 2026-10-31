@@ -165,6 +165,18 @@ export function buildApi(app: App, token: string, modules: RouteModule[] = []): 
     return c.json({ ok: true });
   });
 
+  /* extra provider keys (write-only) */
+  const EXTRA_KEYS = ["exa", "groq", "openai"] as const;
+  api.get("/api/keys", async (c) => c.json(Object.fromEntries(await Promise.all(EXTRA_KEYS.map(async (k) => [k, await app.secrets.has(`key.${k}`)] as const)))));
+  api.put("/api/keys/:name", async (c) => {
+    const name = c.req.param("name");
+    if (!(EXTRA_KEYS as readonly string[]).includes(name)) throw new HttpError(404, "Unknown key");
+    const { value } = await body(c, zod.object({ value: zod.string().min(8).max(500) }));
+    await app.secrets.set(`key.${name}`, value.trim());
+    await app.audit.log({ kind: "secret.saved", summary: `${name} key saved` });
+    return c.json({ ok: true });
+  });
+
   /* tools overview (for Connections) */
   api.get("/api/tools", (c) =>
     c.json(app.registry.list().filter((t) => !t.internal).map((t) => ({ name: t.def.name, description: t.def.description, domain: t.def.domain, toolClass: t.def.toolClass, service: t.def.service, source: t.source }))),

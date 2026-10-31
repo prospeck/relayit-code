@@ -134,7 +134,7 @@ function useFirstOpenBrief(enabled: boolean) {
     localStorage.setItem("relayit.lastBrief", today);
     const hour = new Date().getHours();
     if (hour < 4) return;
-    void api.brief().catch(() => {});
+    void api.brief(true).catch(() => {});
   }, [enabled]);
   void isTauri;
 }

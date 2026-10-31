@@ -98,6 +98,7 @@ export const api = {
   tasks: () => get<Task[]>("/api/tasks"),
   setTask: (id: string, status: TaskStatus) => patch(`/api/tasks/${id}`, { status }),
   deleteTask: (id: string) => del(`/api/tasks/${id}`),
+  canWait: () => get<{ at: string | null; items: { threadId: string; subject: string; from: string; reason: string }[] }>("/api/google/can-wait"),
   triage: () => post<{ needsYou: number; canWait: number }>("/api/google/triage"),
 
   memory: () => get<MemoryFact[]>("/api/memory"),
@@ -106,19 +107,24 @@ export const api = {
 
   tools: () => get<ToolInfo[]>("/api/tools"),
   servers: () => get<McpServer[]>("/api/mcp/servers"),
-  addServer: (s: McpServerInput) => post<McpServer>("/api/mcp/servers", s),
+  addServer: (s: Partial<McpServerInput> & { name: string; transport: "stdio" | "http"; envSecrets?: Record<string, string> }) => post<McpServer>("/api/mcp/servers", s),
   updateServer: (id: string, patchBody: { enabled?: boolean }) => patch<McpServer>(`/api/mcp/servers/${id}`, patchBody),
   deleteServer: (id: string) => del(`/api/mcp/servers/${id}`),
   reconnectServer: (id: string) => post<McpServer>(`/api/mcp/servers/${id}/reconnect`),
   setToolClass: (serverId: string, tool: string, body: { toolClass?: string; enabled?: boolean }) =>
     patch(`/api/mcp/servers/${serverId}/tools/${encodeURIComponent(tool)}`, body),
 
+  keys: () => get<Record<string, boolean>>("/api/keys"),
+  saveKey: (name: string, value: string) => put(`/api/keys/${name}`, { value }),
+
   google: () => get<GoogleStatus>("/api/google/status"),
-  connectGoogle: (clientId?: string, clientSecret?: string) => post<GoogleStatus>("/api/google/connect", { clientId, clientSecret }),
+  connectGoogle: (opts: { fake?: boolean; clientId?: string; clientSecret?: string }) => post<GoogleStatus>("/api/google/connect", opts),
   disconnectGoogle: () => post<GoogleStatus>("/api/google/disconnect"),
 
   today: () => get<TodayData>("/api/today"),
-  brief: () => post<{ conversationId: string }>("/api/brief"),
+  brief: (auto = false) => post<{ conversationId: string; created: boolean }>("/api/brief", { auto }),
+  presets: () => get<{ id: string; name: string; url: string; domain: string; blurb: string }[]>("/api/mcp/presets"),
+  saveRazorpay: (keyId: string, keySecret: string) => put("/api/payments/razorpay", { keyId, keySecret }),
 
   skills: () => get<Skill[]>("/api/skills"),
   saveSkill: (s: SkillInput) => post<Skill>("/api/skills", s),

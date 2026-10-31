@@ -355,6 +355,14 @@ export const SERVICE_COLORS: Record<string, string> = {
   IRCTC: "#1F4E9E",
   "Namma Metro": "#7A2C8E",
   RelayIt: "#E8572A",
+  "Wispr Flow": "#2B2A33",
+  Notion: "#191919",
+  Linear: "#5E6AD2",
+  Instamart: "#FC8019",
+  Dineout: "#FC8019",
+  Swish: "#0E9F6E",
+  Web: "#3D6FD9",
+  UPI: "#097939",
 };
 
 export function formatInr(amount: number): string {
