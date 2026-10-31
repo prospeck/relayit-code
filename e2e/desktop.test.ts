@@ -71,7 +71,7 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     });
   });
 
-  it.skip(`allows a demo note once, collapses the card and records all approval stages in Activity (${demoApprovalBlocker})`, async () => {
+  it(`allows a demo note once, collapses the card and records all approval stages in Activity (${demoApprovalBlocker})`, async () => {
     await demoAction();
     await ui.page.getByRole("button", { name: "Allow once", exact: true }).click();
     await sentNote();
@@ -81,7 +81,7 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     }
   });
 
-  it.skip(`refuses a demo note without sending it and records the refusal in Activity (${demoApprovalBlocker})`, async () => {
+  it(`refuses a demo note without sending it and records the refusal in Activity (${demoApprovalBlocker})`, async () => {
     await demoAction();
     await ui.page.getByRole("button", { name: "Refuse", exact: true }).click();
     await visible(ui.page.getByText("No problem — I didn't send it.", { exact: true }));
@@ -144,7 +144,7 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     expect(actions[0]!.amountInr).toBeGreaterThan(500);
   });
 
-  it.skip(`adds an Always allow rule for the demo note and revokes it through Approvals settings (${demoApprovalBlocker})`, async () => {
+  it(`adds an Always allow rule for the demo note and revokes it through Approvals settings (${demoApprovalBlocker})`, async () => {
     await demoAction();
     await ui.page.getByRole("button", { name: "Always allow", exact: true }).click();
     await sentNote();

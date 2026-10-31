@@ -427,6 +427,30 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
 
+  e2e:
+    devDependencies:
+      '@relayit/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@relayit/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      playwright-core:
+        specifier: ^1.64.1
+        version: 1.64.1
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vite:
+        specifier: ^8.3.5
+        version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
+
   packages/core:
     dependencies:
       '@hono/node-server':

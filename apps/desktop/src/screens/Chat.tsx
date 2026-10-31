@@ -39,8 +39,18 @@ export function Chat({ id }: { id: string | null }) {
 
 function Thread({ id }: { id: string }) {
   const qc = useQueryClient();
-  const detail = useQuery({ queryKey: ["conversation", id], queryFn: () => api.conversation(id) });
   const run = useLive((s) => s.runs[id]);
+  const detail = useQuery({
+    queryKey: ["conversation", id],
+    queryFn: () => api.conversation(id),
+    // Safety net for events that arrive before the first fetch settles: poll while a reply is owed.
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      if (!d) return false;
+      const last = d.messages[d.messages.length - 1];
+      return d.busy || (last?.role === "user" && !useLive.getState().runs[id]) ? 1200 : false;
+    },
+  });
   const frame = useLive((s) => s.frames[id]);
   const composer = useRef<ComposerHandle>(null);
   const scroller = useRef<HTMLDivElement>(null);

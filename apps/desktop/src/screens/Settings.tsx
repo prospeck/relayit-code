@@ -221,7 +221,7 @@ function ModelSection() {
         {provider === "ollama" && error && <p className="text-[13px] text-danger">{error}</p>}
         <div className="grid grid-cols-2 gap-4">
           <Field label="Main model" hint="Does the thinking and talking.">
-            <Select value={model || undefined} onValueChange={setModel} options={(models.length ? models : model ? [model] : []).slice(0, 60).map((m) => ({ value: m, label: m }))} placeholder="Check your key first" />
+            <Select value={model} onValueChange={setModel} options={(models.length ? models : model ? [model] : []).slice(0, 60).map((m) => ({ value: m, label: m }))} placeholder="Check your key first" />
           </Field>
           <Field label="Cheap model (optional)" hint="Routes requests and writes summaries.">
             <Select

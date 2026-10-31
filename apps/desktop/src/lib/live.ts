@@ -127,6 +127,8 @@ export function startLive(qc: QueryClient): void {
         case "run.finished":
         case "run.error":
           void qc.invalidateQueries({ queryKey: ["conversation", e.conversationId] });
+          // A fetch that started before these events may land after them; refetch once more.
+          setTimeout(() => void qc.invalidateQueries({ queryKey: ["conversation", e.conversationId] }), 600);
           break;
         case "notify":
           if (!document.hasFocus()) void notify(e.title, e.body);
