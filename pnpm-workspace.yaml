@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - connectors/*
+  - e2e
 minimumReleaseAgeExclude:
   - ws@8.22.1
   - lucide-react@1.66.0
