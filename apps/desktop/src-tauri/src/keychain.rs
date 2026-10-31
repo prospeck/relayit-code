@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 
-const SERVICE: &str = "app.relayit.desktop";
+// Debug builds keep their own key (and data folder) so they never collide with an installed release.
+const SERVICE: &str = if cfg!(debug_assertions) { "app.relayit.desktop.dev" } else { "app.relayit.desktop" };
 const ACCOUNT: &str = "master-key";
 
 /// Returns the base64 master key, creating and storing a new random one on first launch.

@@ -14,7 +14,10 @@ pub struct Endpoint {
 /// In debug builds we run core straight from the TypeScript sources with the developer's Node;
 /// release builds ship a bundled `core/main.mjs` and a Node runtime as the `relayit-node` sidecar.
 fn command(app: &AppHandle) -> Result<Command, String> {
-    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let mut data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    if cfg!(debug_assertions) {
+        data_dir = data_dir.join("dev");
+    }
     std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
 
     let mut cmd = if cfg!(debug_assertions) {
