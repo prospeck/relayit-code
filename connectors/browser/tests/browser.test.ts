@@ -7,10 +7,12 @@ import type { ToolContext, ToolDef } from "@relayit/shared";
 import { BrowserSession, createBrowserTools, snapshot } from "../src/index.ts";
 import { startShop } from "./fixtures/shop/server.ts";
 
-// Never download a browser or fall back to the user's system profile in tests.
-const browserAvailable = await chromium.launch({ headless: true }).then(async browser => {
-  await browser.close(); return true;
-}).catch(() => false);
+// Never download a browser or touch the user's profile in tests: bundled Chromium first, then system Chrome
+// with a throwaway profile.
+const launchChannel = await chromium.launch({ headless: true }).then(async browser => { await browser.close(); return "chromium" as const; })
+  .catch(() => chromium.launch({ headless: true, channel: "chrome" }).then(async browser => { await browser.close(); return "chrome" as const; }))
+  .catch(() => null);
+const browserAvailable = launchChannel !== null;
 
 describe("offline browser connector", () => {
   let shop: Awaited<ReturnType<typeof startShop>>;
@@ -23,7 +25,7 @@ describe("offline browser connector", () => {
   beforeEach(async () => {
     if (!browserAvailable) return;
     profile = await mkdtemp(join(tmpdir(), "relayit-browser-test-"));
-    session = new BrowserSession({ profileDir: profile, headless: true, channel: "chromium" });
+    session = new BrowserSession({ profileDir: profile, headless: true, channel: launchChannel ?? "chromium" });
     tools = createBrowserTools({ getSession: async () => session, isEnabled: async () => true });
     const data = new Map<string, unknown>();
     ctx = {

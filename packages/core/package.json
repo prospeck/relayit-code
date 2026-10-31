@@ -26,7 +26,10 @@
     "ws": "^8.22.1",
     "zod": "^4.6.7",
     "@relayit/connector-google": "workspace:*",
-    "@relayit/connector-payments": "workspace:*"
+    "@relayit/connector-payments": "workspace:*",
+    "@relayit/connector-browser": "workspace:*",
+    "@relayit/connector-web": "workspace:*",
+    "@relayit/connector-voice": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

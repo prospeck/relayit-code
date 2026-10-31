@@ -5,6 +5,7 @@ import { GoogleIntegration, googleRoutes } from "./integrations/google.ts";
 import { PaymentsIntegration } from "./integrations/payments.ts";
 import { Proactive } from "./integrations/proactive.ts";
 import { trackTasks } from "./integrations/tasks.ts";
+import { BrowserIntegration, startWeb, voiceRoutes } from "./integrations/extras.ts";
 
 /**
  * Wires connectors (Google, MCP, payments, browser, scheduler…) into the app.
@@ -16,7 +17,10 @@ export async function loadPlugins(app: App): Promise<RouteModule[]> {
   const payments = new PaymentsIntegration(app, mcp);
   const proactive = new Proactive(app, google, mcp);
 
+  const browser = new BrowserIntegration(app);
   trackTasks(app);
+  browser.start();
+  startWeb(app);
   await google.start();
   await payments.start();
   await proactive.start();
@@ -36,5 +40,5 @@ export async function loadPlugins(app: App): Promise<RouteModule[]> {
     return `# Connected services\n${lines || "- none yet"}\nPrefer an official connection (e.g. Swiggy, Zomato) for a service when one is connected. Use the browser agent only when no connection can do it, and tell the user you're using their browser session. If the user names a service that isn't connected and the browser agent is off, say how to connect it in Connections. The "RelayIt Food (demo)" restaurants are sample data — say so if the user seems to expect a real order.`;
   });
 
-  return [mcpRoutes(mcp), googleRoutes(google), payments.routes(), proactive.routes()];
+  return [mcpRoutes(mcp), googleRoutes(google), payments.routes(), proactive.routes(), browser.routes(), voiceRoutes(app)];
 }

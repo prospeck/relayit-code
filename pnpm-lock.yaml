@@ -435,12 +435,21 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(zod@4.6.7)
+      '@relayit/connector-browser':
+        specifier: workspace:*
+        version: link:../../connectors/browser
       '@relayit/connector-google':
         specifier: workspace:*
         version: link:../../connectors/google
       '@relayit/connector-payments':
         specifier: workspace:*
         version: link:../../connectors/payments
+      '@relayit/connector-voice':
+        specifier: workspace:*
+        version: link:../../connectors/voice
+      '@relayit/connector-web':
+        specifier: workspace:*
+        version: link:../../connectors/web
       '@relayit/shared':
         specifier: workspace:*
         version: link:../shared
