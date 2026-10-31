@@ -15,6 +15,7 @@ Each tool on a RelayIt MCP server sets `_meta` on its tool definition:
 | `relayit/service` | e.g. `"Swiggy"` | Shown on cards and in Activity. |
 | `relayit/money` | `true` | Involves money; never auto-approved. |
 | `relayit/previewTool` | tool name | For `act` tools: a **read** tool on the same server that accepts the *same arguments* and returns a JSON `ActPreview` (`{title, summary, service, recipient?, amountInr?, details?: {label,value}[]}`) as its text content. Core calls it to build the approval card, so card data comes from the server, not the model. |
+| `relayit/internal` | `true` | Called only by core (e.g. confirming a payment); hidden from the model. |
 | `relayit/label` | e.g. `"Searching restaurants"` | Step label in the UI timeline. |
 
 Third-party servers without `_meta` get every tool defaulted to `act` until the user reclassifies it in Connections.
