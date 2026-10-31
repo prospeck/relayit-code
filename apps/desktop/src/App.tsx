@@ -136,5 +136,14 @@ function useFirstOpenBrief(enabled: boolean) {
     if (hour < 4) return;
     void api.brief(true).catch(() => {});
   }, [enabled]);
-  void isTauri;
+
+  // Tray → "Morning brief": make a fresh one and open it.
+  useEffect(() => {
+    if (!isTauri()) return;
+    let off: (() => void) | undefined;
+    void import("@tauri-apps/api/event").then(({ listen }) =>
+      listen("relayit://brief", () => void api.brief(false).then((r) => navigate(`chat/${r.conversationId}`)).catch(() => {})).then((u) => (off = u)),
+    );
+    return () => off?.();
+  }, []);
 }
