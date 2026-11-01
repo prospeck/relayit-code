@@ -46,13 +46,81 @@ export type GmailProfile = {
   historyId?: string;
 };
 
+export type GoogleFailure = "api_disabled" | "missing_permission" | "rate_limited" | "other";
+export type GoogleService = "Gmail" | "Google Calendar";
+
+const SERVICE_IDS: Record<GoogleService, string> = {
+  Gmail: "gmail.googleapis.com",
+  "Google Calendar": "calendar-json.googleapis.com",
+};
+
+const DISABLED_REASONS = new Set(["accessNotConfigured", "SERVICE_DISABLED"]);
+const PERMISSION_REASONS = new Set(["insufficientPermissions", "ACCESS_TOKEN_SCOPE_INSUFFICIENT"]);
+const RATE_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded", "RATE_LIMIT_EXCEEDED"]);
+
+export function enableApiUrl(service: GoogleService, project?: string): string {
+  const url = new URL(`https://console.cloud.google.com/apis/library/${SERVICE_IDS[service]}`);
+  if (project) url.searchParams.set("project", project);
+  return url.toString();
+}
+
 export class GoogleApiError extends Error {
   status: number;
-  constructor(status: number) {
-    super(`Google API request failed (${status})`);
+  failure: GoogleFailure;
+  service?: GoogleService;
+  /** Where the user can turn the API on, when that is what's wrong. */
+  actionUrl?: string;
+  constructor(
+    status: number,
+    details: { reason?: string; project?: string; service?: GoogleService } = {},
+  ) {
+    const { reason, project, service } = details;
+    const name = service ?? "this Google service";
+    const failure: GoogleFailure =
+      reason && DISABLED_REASONS.has(reason)
+        ? "api_disabled"
+        : reason && PERMISSION_REASONS.has(reason)
+          ? "missing_permission"
+          : status === 429 || (reason && RATE_REASONS.has(reason))
+            ? "rate_limited"
+            : "other";
+    const actionUrl = failure === "api_disabled" && service && enableApiUrl(service, project);
+    super(
+      actionUrl
+        ? `The ${name} API is turned off in your Google Cloud project. Turn it on at ${actionUrl}, wait a minute, and try again.`
+        : failure === "missing_permission"
+          ? `Google hasn't given RelayIt permission to use ${name}. In Connections, reconnect Google and tick every box on Google's permission screen.`
+          : failure === "rate_limited"
+            ? `Google is limiting requests to ${name} right now. Try again in a few minutes.`
+            : `Google API request failed (${status}${reason ? `: ${reason}` : ""})`,
+    );
     this.name = "GoogleApiError";
     this.status = status;
+    this.failure = failure;
+    if (service) this.service = service;
+    if (actionUrl) this.actionUrl = actionUrl;
   }
+}
+
+/**
+ * Pulls only Google's machine-readable codes out of an error body. Its free-text fields stay out
+ * of errors because they reach the model and the audit log.
+ */
+async function readFailure(response: Response): Promise<{ reason?: string; project?: string }> {
+  type Body = {
+    error?: {
+      errors?: { reason?: unknown }[];
+      details?: { reason?: unknown; metadata?: { consumer?: unknown } }[];
+    };
+  };
+  const body = (await response.json().catch(() => null)) as Body | null;
+  const info = body?.error?.details?.find((d) => typeof d?.reason === "string");
+  const reason = info?.reason ?? body?.error?.errors?.[0]?.reason;
+  const project = /^projects\/(\d+)$/.exec(String(info?.metadata?.consumer ?? ""))?.[1];
+  return {
+    ...(typeof reason === "string" && /^\w{1,64}$/.test(reason) ? { reason } : {}),
+    ...(project ? { project } : {}),
+  };
 }
 
 export class GoogleAuthError extends GoogleApiError {
@@ -106,6 +174,7 @@ export class GoogleClient {
   }
 
   private async request<T>(url: string, method = "GET", body?: unknown): Promise<T> {
+    const service: GoogleService = url.startsWith(this.gmailBase) ? "Gmail" : "Google Calendar";
     const response = await this.fetcher(url, {
       method,
       headers: {
@@ -115,7 +184,9 @@ export class GoogleClient {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (response.status === 401) throw new GoogleAuthError();
-    if (!response.ok) throw new GoogleApiError(response.status);
+    if (!response.ok) {
+      throw new GoogleApiError(response.status, { ...(await readFailure(response)), service });
+    }
     if (response.status === 204) return undefined as T;
     return response.json() as Promise<T>;
   }
@@ -210,4 +281,68 @@ export class GoogleClient {
   getProfile(): Promise<GmailProfile> {
     return this.request(this.gmail("profile"));
   }
+}
+
+export type GoogleIssue = {
+  service: GoogleService;
+  kind: GoogleFailure | "reconnect" | "unreachable";
+  message: string;
+  actionUrl?: string;
+};
+
+const REQUIRED_SCOPES: Record<GoogleService, string[]> = {
+  Gmail: [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+  ],
+  "Google Calendar": ["https://www.googleapis.com/auth/calendar.events"],
+};
+
+function issueFrom(service: GoogleService, error: unknown): GoogleIssue {
+  if (error instanceof GoogleAuthError) {
+    return { service, kind: "reconnect", message: "Google needs you to sign in again." };
+  }
+  if (error instanceof GoogleApiError) {
+    return {
+      service,
+      kind: error.failure,
+      message: error.message,
+      ...(error.actionUrl ? { actionUrl: error.actionUrl } : {}),
+    };
+  }
+  const message = error instanceof Error ? error.message : "";
+  return /token exchange|reconnect/i.test(message)
+    ? { service, kind: "reconnect", message: "Google needs you to sign in again." }
+    : { service, kind: "unreachable", message: `Couldn't reach ${service}. Check your internet.` };
+}
+
+/** Finds out what RelayIt can really use: Google can hand out a token that reaches neither API. */
+export async function checkGoogleAccess(
+  client: GoogleClient,
+  grantedScope: string,
+): Promise<{ issues: GoogleIssue[]; email: string | null }> {
+  const granted = new Set(grantedScope.split(/\s+/).filter(Boolean));
+  const missing = (service: GoogleService): GoogleIssue | null =>
+    granted.size > 0 && REQUIRED_SCOPES[service].some((scope) => !granted.has(scope))
+      ? {
+          service,
+          kind: "missing_permission",
+          message: `Google hasn't given RelayIt permission to use ${service}. Reconnect and tick every box on Google's permission screen.`,
+        }
+      : null;
+  const now = new Date();
+  const [gmail, calendar] = await Promise.all([
+    missing("Gmail") ?? client.getProfile().catch((error: unknown) => issueFrom("Gmail", error)),
+    missing("Google Calendar") ??
+      client
+        .listEvents(now.toISOString(), new Date(now.getTime() + 60_000).toISOString())
+        .then(() => null)
+        .catch((error: unknown) => issueFrom("Google Calendar", error)),
+  ]);
+  const isIssue = (value: unknown): value is GoogleIssue =>
+    typeof value === "object" && value !== null && "kind" in value;
+  return {
+    issues: [gmail, calendar].filter(isIssue),
+    email: gmail && !isIssue(gmail) ? gmail.emailAddress : null,
+  };
 }

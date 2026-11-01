@@ -3,10 +3,12 @@ import {
   GOOGLE_SCOPES,
   GoogleClient,
   TokenStore,
+  checkGoogleAccess,
   createGoogleTools,
   startFakeGoogle,
   startGoogleAuth,
   type CalendarEvent,
+  type GoogleIssue,
   type TriageClassifier,
 } from "@relayit/connector-google";
 import type { ToolContext } from "@relayit/shared";
@@ -25,6 +27,7 @@ export type GoogleStatus = {
   mode: Mode | "none";
   clientConfigured: boolean;
 };
+export type GoogleHealth = { ok: boolean; issues: GoogleIssue[] };
 
 /**
  * Gmail + Calendar. Two modes:
@@ -34,6 +37,7 @@ export type GoogleStatus = {
 export class GoogleIntegration {
   private fake: Awaited<ReturnType<typeof startFakeGoogle>> | null = null;
   private store: TokenStore | null = null;
+  private lastCheck: string | null = null;
 
   private app: App;
   constructor(app: App) {
@@ -60,7 +64,10 @@ export class GoogleIntegration {
     setTimeout(
       () =>
         void this.status()
-          .then((st) => (st.connected ? this.triage() : null))
+          .then(async (st) => {
+            if (st.mode === "fake") await this.triage();
+            else if (st.connected) await this.health();
+          })
           .catch(() => {}),
       4000,
     ).unref();
@@ -157,17 +164,53 @@ export class GoogleIntegration {
       });
       await (await this.tokenStore()).set(tokens);
       await this.app.kv.set("google.mode", "real");
-      const profile = await (await this.client()).getProfile().catch(() => null);
-      await this.app.kv.set("google.email", profile?.emailAddress ?? tokens.email ?? null);
+      await this.app.kv.set("google.email", null);
+      this.lastCheck = null;
     }
     await this.app.audit.log({
       kind: "connection.changed",
       summary: `Connected Google${opts.fake ? " (demo account)" : ""}`,
     });
     this.app.bus.emit({ type: "connections.updated" });
+    if (opts.fake) this.afterAccessConfirmed();
+    else await this.health();
+    return this.status();
+  }
+
+  /** Asks Google what really works, so "Connected" is never just "a token came back". */
+  async health(): Promise<GoogleHealth> {
+    if ((await this.mode()) !== "real") return { ok: true, issues: [] };
+    const tokens = await (await this.tokenStore()).get();
+    if (!tokens) {
+      return {
+        ok: false,
+        issues: [
+          {
+            service: "Gmail",
+            kind: "reconnect",
+            message: "Google needs you to sign in again.",
+          },
+        ],
+      };
+    }
+    const { issues, email } = await checkGoogleAccess(await this.client(), tokens.scope);
+    if (email) await this.app.kv.set("google.email", email);
+    const check = issues.map((i) => i.message).join(" ");
+    if (check !== this.lastCheck) {
+      this.lastCheck = check;
+      if (issues.length > 0) {
+        await this.app.audit.log({ kind: "error", summary: `Google check: ${check}` });
+      } else {
+        this.afterAccessConfirmed();
+      }
+      this.app.bus.emit({ type: "connections.updated" });
+    }
+    return { ok: issues.length === 0, issues };
+  }
+
+  private afterAccessConfirmed(): void {
     void this.firstDayIntro().catch((e) => console.error("[intro]", errMessage(e)));
     void this.triage().catch(() => {});
-    return this.status();
   }
 
   async disconnect(): Promise<GoogleStatus> {
@@ -175,6 +218,7 @@ export class GoogleIntegration {
     await this.app.kv.delete("google.email");
     await this.app.secrets.delete("google.oauth.tokens");
     this.store = null;
+    this.lastCheck = null;
     await this.app.audit.log({ kind: "connection.changed", summary: "Disconnected Google" });
     this.app.bus.emit({ type: "connections.updated" });
     return this.status();
@@ -302,6 +346,7 @@ export function googleRoutes(g: GoogleIntegration): RouteModule {
         throw new HttpError(400, errMessage(e));
       }
     });
+    api.get("/api/google/health", async (c) => c.json(await g.health()));
     api.post("/api/google/disconnect", async (c) => c.json(await g.disconnect()));
     api.post("/api/google/triage", async (c) => c.json(await g.triage()));
     api.get("/api/google/can-wait", async (c) =>

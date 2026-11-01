@@ -45,7 +45,7 @@ Onboarding offers a one-click download of the recommended model, **Qwen 3 4B Ins
 
 ### Fake Google mode
 
-`RELAYIT_FAKE_GOOGLE=1` (or **Connections → Try a demo inbox**) runs a local fake Gmail + Calendar with an invented inbox, so triage, replies and the calendar work with no Google account. For a real account, create a Google OAuth client of type **Desktop app**, enable the Gmail and Calendar APIs, add yourself as a test user, and paste the client ID/secret in **Connections → Connect Google** (or set `RELAYIT_GOOGLE_CLIENT_ID` / `RELAYIT_GOOGLE_CLIENT_SECRET`).
+`RELAYIT_FAKE_GOOGLE=1` (or **Connections → Try a demo inbox**) runs a local fake Gmail + Calendar with an invented inbox, so triage, replies and the calendar work with no Google account. For a real account, create a Google OAuth client of type **Desktop app**, enable the Gmail and Calendar APIs, add yourself as a test user, and paste the client ID/secret in **Connections → Connect Google** (or set `RELAYIT_GOOGLE_CLIENT_ID` / `RELAYIT_GOOGLE_CLIENT_SECRET`). Tick every box on Google's permission screen. RelayIt checks what Google really allows after you sign in, and Connections tells you if an API is off or a permission is missing.
 
 ## Checks
 

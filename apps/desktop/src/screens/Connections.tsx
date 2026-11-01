@@ -91,6 +91,7 @@ function GoogleCard() {
     onSuccess: () => {
       setSetup(false);
       void qc.invalidateQueries({ queryKey: ["google"] });
+      void qc.invalidateQueries({ queryKey: ["google-health"] });
       void qc.invalidateQueries({ queryKey: ["today"] });
       void qc.invalidateQueries({ queryKey: ["tasks"] });
     },
@@ -104,6 +105,17 @@ function GoogleCard() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["tasks"] }),
   });
   const s = status.data;
+  const health = useQuery({
+    queryKey: ["google-health"],
+    queryFn: api.googleHealth,
+    enabled: s?.mode === "real",
+    // Keep looking while something is wrong, so fixing it in the browser shows up here by itself.
+    refetchInterval: (q) => (q.state.data && !q.state.data.ok ? 10_000 : false),
+  });
+  const issues = (s?.mode === "real" && health.data?.issues) || [];
+  const canReconnect = issues.some(
+    (i) => i.kind === "missing_permission" || i.kind === "reconnect",
+  );
 
   return (
     <Card className="p-6">
@@ -115,32 +127,83 @@ function GoogleCard() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="text-[15px] font-semibold">Gmail & Google Calendar</h2>
-            {s?.connected && <Badge tone="success">Connected</Badge>}
+            {s?.connected &&
+              (issues.length > 0 ? (
+                <Badge tone="warning">Needs attention</Badge>
+              ) : s.mode === "real" && !health.data ? null : (
+                <Badge tone="success">Connected</Badge>
+              ))}
             {s?.mode === "fake" && <Badge tone="info">Demo inbox</Badge>}
           </div>
           <p className="text-[13px] text-muted mt-1 leading-relaxed">
-            {s?.connected
-              ? `Signed in as ${s.email ?? "your account"}. RelayIt sorts new mail into “needs you” and “can wait”, and drafts replies you approve.`
-              : "Read and sort mail, draft replies, and see your day. RelayIt asks before sending anything or changing your calendar."}
+            {issues.length > 0
+              ? "You're signed in, but Google is blocking RelayIt from your mail and calendar. Here's how to fix it:"
+              : s?.connected
+                ? `Signed in as ${s.email ?? "your account"}. RelayIt sorts new mail into “needs you” and “can wait”, and drafts replies you approve.`
+                : "Read and sort mail, draft replies, and see your day. RelayIt asks before sending anything or changing your calendar."}
           </p>
           {connect.error && (
             <p className="text-[12.5px] text-danger mt-2">
               {connect.error instanceof ApiError ? connect.error.message : "Couldn't connect"}
             </p>
           )}
+          {issues.length > 0 && (
+            <ul className="mt-3 space-y-2.5">
+              {issues.map((i) => (
+                <li key={i.service} className="flex items-start gap-3 text-[13px] text-ink-2">
+                  <span className="flex-1 min-w-0 leading-relaxed">
+                    <b>{i.service}:</b>{" "}
+                    {i.kind === "api_disabled"
+                      ? "this API is turned off in your Google Cloud project. Turn it on, then come back. RelayIt will notice within a minute or so."
+                      : i.message}
+                  </span>
+                  {i.actionUrl && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="shrink-0"
+                      onClick={() => void openExternal(i.actionUrl!)}
+                    >
+                      Turn on {i.service} API
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {s?.connected ? (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon={<Inbox className="size-3.5" />}
-                loading={triage.isPending}
-                onClick={() => triage.mutate()}
-              >
-                Sort inbox now
-              </Button>
+              {canReconnect ? (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  loading={connect.isPending}
+                  onClick={() => connect.mutate({})}
+                >
+                  Reconnect Google
+                </Button>
+              ) : issues.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  loading={health.isFetching}
+                  onClick={() => void health.refetch()}
+                >
+                  Check again
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={<Inbox className="size-3.5" />}
+                  loading={triage.isPending}
+                  onClick={() => triage.mutate()}
+                >
+                  Sort inbox now
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
@@ -190,8 +253,36 @@ function GoogleCard() {
             </button>
             , create an <b>OAuth client ID</b> of type <b>Desktop app</b>.
           </li>
-          <li>Enable the Gmail API and Google Calendar API, and add yourself as a test user.</li>
+          <li>
+            Turn on the{" "}
+            <button
+              className="text-accent-text hover:underline"
+              onClick={() =>
+                void openExternal(
+                  "https://console.cloud.google.com/apis/library/gmail.googleapis.com",
+                )
+              }
+            >
+              Gmail API
+            </button>{" "}
+            and the{" "}
+            <button
+              className="text-accent-text hover:underline"
+              onClick={() =>
+                void openExternal(
+                  "https://console.cloud.google.com/apis/library/calendar-json.googleapis.com",
+                )
+              }
+            >
+              Google Calendar API
+            </button>
+            , and add yourself as a test user.
+          </li>
           <li>Paste the client ID and secret below. They're stored encrypted.</li>
+          <li>
+            On Google's permission screen, <b>tick every box</b>. RelayIt can't read mail or your
+            calendar without them.
+          </li>
         </ol>
         <div className="space-y-3">
           <Field label="Client ID">

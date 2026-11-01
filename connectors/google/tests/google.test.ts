@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ToolContext } from "@relayit/shared";
-import { GoogleApiError, GoogleAuthError, GoogleClient } from "../src/client.ts";
+import { GOOGLE_SCOPES } from "../src/oauth.ts";
+import { checkGoogleAccess, GoogleApiError, GoogleAuthError, GoogleClient } from "../src/client.ts";
 import { startFakeGoogle } from "../src/fake/index.ts";
 import { createGoogleTools } from "../src/tools.ts";
 import { heuristicTriage } from "../src/triage.ts";
@@ -186,6 +187,149 @@ describe("Google REST client and fake", () => {
     });
     await expect(unauthenticated.getProfile()).rejects.toBeInstanceOf(GoogleAuthError);
     await expect(unauthenticated.getProfile()).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe("Google refusals", () => {
+  const ALL_SCOPES = GOOGLE_SCOPES.join(" ");
+  const SECRET_TEXT = "text that should never reach the model";
+  const disabled = (service: string) => ({
+    error: {
+      code: 403,
+      message: `${SECRET_TEXT} https://evil.example`,
+      errors: [{ reason: "accessNotConfigured", message: SECRET_TEXT }],
+      details: [
+        {
+          reason: "SERVICE_DISABLED",
+          metadata: {
+            service,
+            consumer: "projects/4815",
+            activationUrl: "https://evil.example/enable",
+          },
+        },
+      ],
+    },
+  });
+  const noScope = {
+    error: {
+      code: 403,
+      message: SECRET_TEXT,
+      errors: [{ reason: "insufficientPermissions" }],
+      details: [{ reason: "ACCESS_TOKEN_SCOPE_INSUFFICIENT", metadata: {} }],
+    },
+  };
+  const clientReturning = (respond: (url: string) => Response) =>
+    new GoogleClient({
+      getAccessToken: async () => "token",
+      gmailBase: "https://gmail.test",
+      calendarBase: "https://calendar.test/calendar/v3",
+      fetch: (async (url: string) => respond(String(url))) as typeof fetch,
+    });
+  const respondWith = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status });
+  const ok = (url: string) =>
+    respondWith(
+      200,
+      url.includes("gmail.test")
+        ? { emailAddress: "me@example.com", messagesTotal: 1, threadsTotal: 1 }
+        : { items: [] },
+    );
+
+  it("says a disabled API is disabled and links to Google's own console", async () => {
+    const client = clientReturning(() => respondWith(403, disabled("gmail.googleapis.com")));
+    const error = await client.getProfile().catch((e: GoogleApiError) => e);
+    expect(error).toMatchObject({
+      status: 403,
+      failure: "api_disabled",
+      service: "Gmail",
+      actionUrl: "https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=4815",
+    });
+  });
+
+  it("keeps Google's free text and links out of the error", async () => {
+    const client = clientReturning(() => respondWith(403, disabled("gmail.googleapis.com")));
+    const error = (await client.getProfile().catch((e: GoogleApiError) => e)) as GoogleApiError;
+    expect(error.message).not.toContain(SECRET_TEXT);
+    expect(error.message).not.toContain("evil.example");
+    expect(error.actionUrl).not.toContain("evil.example");
+  });
+
+  it("drops a reason that isn't a plain code, and survives a body that isn't JSON", async () => {
+    const odd = clientReturning(() =>
+      respondWith(403, { error: { errors: [{ reason: `${SECRET_TEXT} !` }] } }),
+    );
+    await expect(odd.getProfile()).rejects.toThrow("Google API request failed (403)");
+    const html = clientReturning(() => new Response("<html>", { status: 403 }));
+    await expect(html.getProfile()).rejects.toThrow("Google API request failed (403)");
+  });
+
+  it("reports both APIs when neither is turned on", async () => {
+    const client = clientReturning((url) =>
+      respondWith(
+        403,
+        disabled(
+          url.includes("gmail.test") ? "gmail.googleapis.com" : "calendar-json.googleapis.com",
+        ),
+      ),
+    );
+    const { issues, email } = await checkGoogleAccess(client, ALL_SCOPES);
+    expect(email).toBeNull();
+    expect(issues.map((i) => [i.service, i.kind, i.actionUrl])).toEqual([
+      [
+        "Gmail",
+        "api_disabled",
+        "https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=4815",
+      ],
+      [
+        "Google Calendar",
+        "api_disabled",
+        "https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project=4815",
+      ],
+    ]);
+  });
+
+  it("spots unticked permission boxes without calling Google for them", async () => {
+    const calls: string[] = [];
+    const client = clientReturning((url) => {
+      calls.push(url);
+      return ok(url);
+    });
+    const { issues, email } = await checkGoogleAccess(
+      client,
+      "openid email https://www.googleapis.com/auth/calendar.events",
+    );
+    expect(issues.map((i) => [i.service, i.kind])).toEqual([["Gmail", "missing_permission"]]);
+    expect(email).toBeNull();
+    expect(calls.every((url) => url.includes("calendar.test"))).toBe(true);
+  });
+
+  it("names a permission refusal that Google reports at request time", async () => {
+    const client = clientReturning(() => respondWith(403, noScope));
+    const { issues } = await checkGoogleAccess(client, "");
+    expect(issues.map((i) => i.kind)).toEqual(["missing_permission", "missing_permission"]);
+  });
+
+  it("confirms working access and finds the account's address", async () => {
+    await expect(checkGoogleAccess(clientReturning(ok), ALL_SCOPES)).resolves.toEqual({
+      issues: [],
+      email: "me@example.com",
+    });
+  });
+
+  it("tells a dead sign-in apart from being offline", async () => {
+    const expired = new GoogleClient({
+      getAccessToken: async () => {
+        throw new Error("Google token exchange failed (400)");
+      },
+    });
+    const offline = new GoogleClient({
+      getAccessToken: async () => "token",
+      fetch: (async () => {
+        throw new TypeError("fetch failed");
+      }) as typeof fetch,
+    });
+    expect((await checkGoogleAccess(expired, ALL_SCOPES)).issues[0]?.kind).toBe("reconnect");
+    expect((await checkGoogleAccess(offline, ALL_SCOPES)).issues[0]?.kind).toBe("unreachable");
   });
 });
 

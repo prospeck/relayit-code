@@ -128,6 +128,21 @@ export type GoogleStatus = {
   mode: "real" | "fake" | "none";
   clientConfigured: boolean;
 };
+export type GoogleHealth = {
+  ok: boolean;
+  issues: {
+    service: string;
+    kind:
+      | "api_disabled"
+      | "missing_permission"
+      | "rate_limited"
+      | "other"
+      | "reconnect"
+      | "unreachable";
+    message: string;
+    actionUrl?: string;
+  }[];
+};
 
 export const api = {
   state: () => get<AppState>("/api/state"),
@@ -196,6 +211,7 @@ export const api = {
   saveKey: (name: string, value: string) => put(`/api/keys/${name}`, { value }),
 
   google: () => get<GoogleStatus>("/api/google/status"),
+  googleHealth: () => get<GoogleHealth>("/api/google/health"),
   connectGoogle: (opts: { fake?: boolean; clientId?: string; clientSecret?: string }) =>
     post<GoogleStatus>("/api/google/connect", opts),
   disconnectGoogle: () => post<GoogleStatus>("/api/google/disconnect"),
