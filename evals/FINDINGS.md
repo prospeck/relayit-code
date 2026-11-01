@@ -234,3 +234,10 @@ const tools = this.d.registry.forDomains(state.domains)
 ```
 
 Also retain the previous domain set for button replies as proposed above, instead of expanding to every tool. First fix the transcript and food ID workflow, then rerun the slow case with `--only food-usual-work --repeat 3`. If a 4B model still cannot reach the endpoint, compare a stronger model using the same scenarios and disclose that model requirement. Increasing the timeout alone would hide the product's "say it once" latency problem. The effect of the proposed filtering or a different model has not been measured here.
+
+## Rerun after applying the fixes (qwen3:4b, 2026-11-01)
+
+- **food-restaurant:** now goes `search_restaurants → get_menu` with exact ids (previously guessed ids into `prepare_order`). Still hit the 600 s limit before `prepare_order` — each step takes 1–2 minutes on this Mac with a 4B model.
+- **email-explicit:** now goes `gmail_search → gmail_read_thread` for "Sana + API" (previously offered generic "latest email" choices without searching). Also hit the time limit before drafting.
+
+Remaining failures are model speed, not intent. Recommendation: document that a hosted model (Claude Sonnet/Haiku, GPT, Gemini Flash) or a larger/faster local model is needed for a "say it once" feel; rerun this suite with one when a key is available (`pnpm evals --provider anthropic --model <id>`).

@@ -2,8 +2,8 @@
   "version": 1,
   "startedAt": "2026-11-01T04:55:40.531Z",
   "resumedAt": [],
-  "updatedAt": "2026-11-01T04:55:40.593Z",
-  "complete": false,
+  "updatedAt": "2026-11-01T05:05:44.973Z",
+  "complete": true,
   "configuration": {
     "provider": "ollama",
     "model": "qwen3:4b",
@@ -21,18 +21,626 @@
   },
   "summary": {
     "passed": 0,
-    "total": 0,
+    "total": 1,
     "planned": 1,
     "passRate": 0,
     "scenarios": [
       {
         "id": "food-restaurant",
         "passed": 0,
-        "total": 0,
-        "passRate": null,
+        "total": 1,
+        "passRate": 0,
         "flaky": false
       }
     ]
   },
-  "results": []
+  "results": [
+    {
+      "audit": [
+        {
+          "id": "aud_ff99abf46d134256858a",
+          "ts": "2026-11-01T05:00:35.655Z",
+          "kind": "tool.call",
+          "toolName": "search_restaurants",
+          "toolClass": "read",
+          "summary": "RelayIt Food (demo): Searching restaurants",
+          "data": {
+            "input": {
+              "query": "California Pizza",
+              "area": "Bengaluru"
+            }
+          },
+          "conversationId": "conv_d61f2c80a466487f87ec"
+        },
+        {
+          "id": "aud_13ba40ae15f945b2aa25",
+          "ts": "2026-11-01T05:00:35.730Z",
+          "kind": "tool.result",
+          "toolName": "search_restaurants",
+          "toolClass": "read",
+          "summary": "RelayIt Food (demo): Searching restaurants — done",
+          "data": {
+            "output": [
+              {
+                "id": "california-pizza-kitchen",
+                "name": "California Pizza Kitchen",
+                "area": "Indiranagar",
+                "rating": 4.5,
+                "etaMin": 35,
+                "costForTwoInr": 1800,
+                "cuisines": [
+                  "Pizza",
+                  "Italian",
+                  "American"
+                ],
+                "matchedDishes": []
+              }
+            ]
+          },
+          "conversationId": "conv_d61f2c80a466487f87ec"
+        },
+        {
+          "id": "aud_4eb23f3f876541aa8cc3",
+          "ts": "2026-11-01T05:05:16.408Z",
+          "kind": "tool.call",
+          "toolName": "get_menu",
+          "toolClass": "read",
+          "summary": "RelayIt Food (demo): Reading the menu",
+          "data": {
+            "input": {
+              "restaurantId": "california-pizza-kitchen"
+            }
+          },
+          "conversationId": "conv_d61f2c80a466487f87ec"
+        },
+        {
+          "id": "aud_c864488b466e42249cf6",
+          "ts": "2026-11-01T05:05:16.488Z",
+          "kind": "tool.result",
+          "toolName": "get_menu",
+          "toolClass": "read",
+          "summary": "RelayIt Food (demo): Reading the menu — done",
+          "data": {
+            "output": {
+              "restaurant": {
+                "id": "california-pizza-kitchen",
+                "name": "California Pizza Kitchen",
+                "area": "Indiranagar",
+                "cuisines": [
+                  "Pizza",
+                  "Italian",
+                  "American"
+                ],
+                "aliases": [
+                  "CPK",
+                  "California Pizza"
+                ],
+                "rating": 4.5,
+                "costForTwoInr": 1800,
+                "etaMin": 35,
+                "pureVeg": false,
+                "openingHours": "11:00–23:00",
+                "tags": [
+                  "bestseller"
+                ]
+              },
+              "categories": [
+                {
+                  "name": "Pizza",
+                  "items": [
+                    {
+                      "id": "california-pizza-kitchen-1",
+                      "name": "Margherita",
+                      "priceInr": 495,
+                      "veg": true,
+                      "category": "Pizza",
+                      "spiceLevel": 0,
+                      "bestseller": true,
+                      "description": "Margherita, freshly prepared in our pizza kitchen.",
+                      "customisations": [
+                        {
+                          "name": "Cut",
+                          "options": [
+                            "[…]",
+                            "[…]"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "california-pizza-kitchen-2",
+                      "name": "BBQ Chicken Pizza",
+                      "priceInr": 695,
+                      "veg": false,
+                      "category": "Pizza",
+                      "spiceLevel": 1,
+                      "bestseller": true,
+                      "description": "BBQ Chicken Pizza, freshly prepared in our pizza kitchen.",
+                      "customisations": [
+                        {
+                          "name": "Cut",
+                          "options": [
+                            "[…]",
+                            "[…]"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "california-pizza-kitchen-3",
+                      "name": "Wild Mushroom Pizza",
+                      "priceInr": 625,
+                      "veg": true,
+                      "category": "Pizza",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Wild Mushroom Pizza, freshly prepared in our pizza kitchen.",
+                      "customisations": [
+                        {
+                          "name": "Cut",
+                          "options": [
+                            "[…]",
+                            "[…]"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "california-pizza-kitchen-4",
+                      "name": "Spicy Chipotle Pizza",
+                      "priceInr": 645,
+                      "veg": true,
+                      "category": "Pizza",
+                      "spiceLevel": 2,
+                      "bestseller": false,
+                      "description": "Spicy Chipotle Pizza, freshly prepared in our pizza kitchen.",
+                      "customisations": [
+                        {
+                          "name": "Cut",
+                          "options": [
+                            "[…]",
+                            "[…]"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Pasta",
+                  "items": [
+                    {
+                      "id": "california-pizza-kitchen-5",
+                      "name": "Chicken Alfredo",
+                      "priceInr": 595,
+                      "veg": false,
+                      "category": "Pasta",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Chicken Alfredo, freshly prepared in our pasta kitchen."
+                    },
+                    {
+                      "id": "california-pizza-kitchen-6",
+                      "name": "Tomato Basil Penne",
+                      "priceInr": 525,
+                      "veg": true,
+                      "category": "Pasta",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Tomato Basil Penne, freshly prepared in our pasta kitchen."
+                    }
+                  ]
+                },
+                {
+                  "name": "Sides",
+                  "items": [
+                    {
+                      "id": "california-pizza-kitchen-7",
+                      "name": "Garlic Bread",
+                      "priceInr": 245,
+                      "veg": true,
+                      "category": "Sides",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Garlic Bread, freshly prepared in our sides kitchen."
+                    }
+                  ]
+                },
+                {
+                  "name": "Salads",
+                  "items": [
+                    {
+                      "id": "california-pizza-kitchen-8",
+                      "name": "Caesar Salad",
+                      "priceInr": 395,
+                      "veg": true,
+                      "category": "Salads",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Caesar Salad, freshly prepared in our salads kitchen."
+                    }
+                  ]
+                },
+                {
+                  "name": "Desserts",
+                  "items": [
+                    {
+                      "id": "california-pizza-kitchen-9",
+                      "name": "Tiramisu",
+                      "priceInr": 325,
+                      "veg": true,
+                      "category": "Desserts",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Tiramisu, freshly prepared in our desserts kitchen."
+                    }
+                  ]
+                },
+                {
+                  "name": "Drinks",
+                  "items": [
+                    {
+                      "id": "california-pizza-kitchen-10",
+                      "name": "Peach Iced Tea",
+                      "priceInr": 195,
+                      "veg": true,
+                      "category": "Drinks",
+                      "spiceLevel": 0,
+                      "bestseller": false,
+                      "description": "Peach Iced Tea, freshly prepared in our drinks kitchen."
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "conversationId": "conv_d61f2c80a466487f87ec"
+        }
+      ],
+      "cards": [],
+      "texts": [
+        {
+          "text": "_Stopped._",
+          "phase": "intent"
+        }
+      ],
+      "links": [],
+      "memory": [
+        {
+          "id": "mem_1ace5decf5d24ab581b5",
+          "category": "order",
+          "key": "usual pizza order",
+          "value": "One BBQ Chicken Pizza from California Pizza Kitchen, no extras",
+          "source": "user",
+          "updatedAt": "2026-11-01T04:55:44.728Z"
+        },
+        {
+          "id": "mem_ce8a2c5c33d440b98c8d",
+          "category": "person",
+          "key": "manager",
+          "value": "Kavya Rao, kavya.rao@greenpath.example.com",
+          "source": "user",
+          "updatedAt": "2026-11-01T04:55:44.729Z"
+        },
+        {
+          "id": "mem_f8d60f62737a410798cf",
+          "category": "preference",
+          "key": "veg preference",
+          "value": "false; I eat chicken and other non-vegetarian food",
+          "source": "user",
+          "updatedAt": "2026-11-01T04:55:44.728Z"
+        },
+        {
+          "id": "mem_bcd5098aa05d45ae978f",
+          "category": "travel",
+          "key": "train seat preference",
+          "value": "lower berth, 3A",
+          "source": "user",
+          "updatedAt": "2026-11-01T04:55:44.729Z"
+        }
+      ],
+      "routines": [],
+      "steps": 3,
+      "errors": [
+        "Scenario exceeded 10 minute deadline"
+      ],
+      "choiceMisses": [],
+      "refusalRetries": [],
+      "startedAt": "2026-11-01T04:55:44.729Z",
+      "id": "food-restaurant",
+      "prompt": "order something from California Pizza",
+      "iteration": 1,
+      "checks": [
+        {
+          "name": "tool:search_restaurants",
+          "pass": true,
+          "detail": "observed in audit"
+        },
+        {
+          "name": "tool:get_menu",
+          "pass": true,
+          "detail": "observed in audit"
+        },
+        {
+          "name": "tool:prepare_order",
+          "pass": false,
+          "detail": "missing from audit"
+        },
+        {
+          "name": "tool:place_order",
+          "pass": false,
+          "detail": "missing from audit"
+        },
+        {
+          "name": "order:search_restaurants→get_menu→prepare_order→place_order",
+          "pass": false,
+          "detail": "search_restaurants → get_menu"
+        },
+        {
+          "name": "forbidden_tools",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "name": "approval",
+          "pass": false,
+          "detail": "expected place_order (min 1); saw none"
+        },
+        {
+          "name": "questions",
+          "pass": true,
+          "detail": "0/1 before first card (all choices counted when no card)"
+        },
+        {
+          "name": "steps",
+          "pass": true,
+          "detail": "3/8 model steps, excluding refusal-only continuations"
+        },
+        {
+          "name": "quick_reply_simulation",
+          "pass": true,
+          "detail": "all offered choices matched; no invented button taps"
+        },
+        {
+          "name": "runtime",
+          "pass": false,
+          "detail": "Scenario exceeded 10 minute deadline"
+        },
+        {
+          "name": "refused_all_cards",
+          "pass": true,
+          "detail": "no cards"
+        },
+        {
+          "name": "must_not:execute_act",
+          "pass": true,
+          "detail": "no approval or act execution"
+        },
+        {
+          "name": "must_not:claim_success",
+          "pass": true,
+          "detail": "no lexical success claim (heuristic; inspect transcript)"
+        },
+        {
+          "name": "must_not:retry_after_refusal",
+          "pass": true,
+          "detail": "no refused tool retried without a new user request"
+        },
+        {
+          "name": "semantic:card uses stored quote",
+          "pass": false,
+          "detail": "no order card"
+        },
+        {
+          "name": "semantic:saved Home address",
+          "pass": false,
+          "detail": "[]"
+        },
+        {
+          "name": "semantic:Home delivery label",
+          "pass": false,
+          "detail": "[]"
+        },
+        {
+          "name": "semantic:usual BBQ Chicken Pizza",
+          "pass": false,
+          "detail": "[]"
+        },
+        {
+          "name": "semantic:usual has no extras",
+          "pass": false,
+          "detail": "[]"
+        },
+        {
+          "name": "semantic:usual quantity is one",
+          "pass": false,
+          "detail": "[]"
+        },
+        {
+          "name": "semantic:California Pizza card",
+          "pass": false,
+          "detail": "[]"
+        }
+      ],
+      "passed": false,
+      "wallTimeMs": 600239,
+      "intentWallTimeMs": null,
+      "tokens": {
+        "input": 4979,
+        "output": 2703
+      },
+      "tools": [
+        "search_restaurants",
+        "get_menu"
+      ],
+      "questions": 0,
+      "finalAssistantText": "_Stopped._",
+      "runs": [
+        {
+          "id": "run_71e66a03f3d14c5892a7",
+          "status": "done",
+          "error": null,
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": "order something from California Pizza"
+              },
+              {
+                "role": "assistant",
+                "content": "",
+                "toolCalls": [
+                  {
+                    "id": "call_bgfxjd62",
+                    "name": "search_restaurants",
+                    "rawArgs": "{\"query\":\"California Pizza\",\"area\":\"Bengaluru\"}",
+                    "args": {
+                      "query": "California Pizza",
+                      "area": "Bengaluru"
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "toolCallId": "call_bgfxjd62",
+                "name": "search_restaurants",
+                "content": "<untrusted_data source=\"tool:search_restaurants\">\n[\n {\n  \"id\": \"california-pizza-kitchen\",\n  \"name\": \"California Pizza Kitchen\",\n  \"area\": \"Indiranagar\",\n  \"rating\": 4.5,\n  \"etaMin\": 35,\n  \"costForTwoInr\": 1800,\n  \"cuisines\": [\n   \"Pizza\",\n   \"Italian\",\n   \"American\"\n  ],\n  \"matchedDishes\": []\n }\n]\n</untrusted_data>"
+              },
+              {
+                "role": "assistant",
+                "content": "",
+                "toolCalls": [
+                  {
+                    "id": "call_0mm1mm1a",
+                    "name": "get_menu",
+                    "rawArgs": "{\"restaurantId\":\"california-pizza-kitchen\"}",
+                    "args": {
+                      "restaurantId": "california-pizza-kitchen"
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "toolCallId": "call_0mm1mm1a",
+                "name": "get_menu",
+                "content": "<untrusted_data source=\"tool:get_menu\">\n{\n \"restaurant\": {\n  \"id\": \"california-pizza-kitchen\",\n  \"name\": \"California Pizza Kitchen\",\n  \"area\": \"Indiranagar\",\n  \"cuisines\": [\n   \"Pizza\",\n   \"Italian\",\n   \"American\"\n  ],\n  \"aliases\": [\n   \"CPK\",\n   \"California Pizza\"\n  ],\n  \"rating\": 4.5,\n  \"costForTwoInr\": 1800,\n  \"etaMin\": 35,\n  \"pureVeg\": false,\n  \"openingHours\": \"11:00–23:00\",\n  \"tags\": [\n   \"bestseller\"\n  ]\n },\n \"categories\": [\n  {\n   \"name\": \"Pizza\",\n   \"items\": [\n    {\n     \"id\": \"california-pizza-kitchen-1\",\n     \"name\": \"Margherita\",\n     \"priceInr\": 495,\n     \"veg\": true,\n     \"category\": \"Pizza\",\n     \"spiceLevel\": 0,\n     \"bestseller\": true,\n     \"description\": \"Margherita, freshly prepared in our pizza kitchen.\",\n     \"customisations\": [\n      {\n       \"name\": \"Cut\",\n       \"options\": [\n        \"Regular slices\",\n        \"Square cut\"\n       ]\n      }\n     ]\n    },\n    {\n     \"id\": \"california-pizza-kitchen-2\",\n     \"name\": \"BBQ Chicken Pizza\",\n     \"priceInr\": 695,\n     \"veg\": false,\n     \"category\": \"Pizza\",\n     \"spiceLevel\": 1,\n     \"bestseller\": true,\n     \"description\": \"BBQ Chicken Pizza, freshly prepared in our pizza kitchen.\",\n     \"customisations\": [\n      {\n       \"name\": \"Cut\",\n       \"options\": [\n        \"Regular slices\",\n        \"Square cut\"\n       ]\n      }\n     ]\n    },\n    {\n     \"id\": \"california-pizza-kitchen-3\",\n     \"name\": \"Wild Mushroom Pizza\",\n     \"priceInr\": 625,\n     \"veg\": true,\n     \"category\": \"Pizza\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Wild Mushroom Pizza, freshly prepared in our pizza kitchen.\",\n     \"customisations\": [\n      {\n       \"name\": \"Cut\",\n       \"options\": [\n        \"Regular slices\",\n        \"Square cut\"\n       ]\n      }\n     ]\n    },\n    {\n     \"id\": \"california-pizza-kitchen-4\",\n     \"name\": \"Spicy Chipotle Pizza\",\n     \"priceInr\": 645,\n     \"veg\": true,\n     \"category\": \"Pizza\",\n     \"spiceLevel\": 2,\n     \"bestseller\": false,\n     \"description\": \"Spicy Chipotle Pizza, freshly prepared in our pizza kitchen.\",\n     \"customisations\": [\n      {\n       \"name\": \"Cut\",\n       \"options\": [\n        \"Regular slices\",\n        \"Square cut\"\n       ]\n      }\n     ]\n    }\n   ]\n  },\n  {\n   \"name\": \"Pasta\",\n   \"items\": [\n    {\n     \"id\": \"california-pizza-kitchen-5\",\n     \"name\": \"Chicken Alfredo\",\n     \"priceInr\": 595,\n     \"veg\": false,\n     \"category\": \"Pasta\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Chicken Alfredo, freshly prepared in our pasta kitchen.\"\n    },\n    {\n     \"id\": \"california-pizza-kitchen-6\",\n     \"name\": \"Tomato Basil Penne\",\n     \"priceInr\": 525,\n     \"veg\": true,\n     \"category\": \"Pasta\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Tomato Basil Penne, freshly prepared in our pasta kitchen.\"\n    }\n   ]\n  },\n  {\n   \"name\": \"Sides\",\n   \"items\": [\n    {\n     \"id\": \"california-pizza-kitchen-7\",\n     \"name\": \"Garlic Bread\",\n     \"priceInr\": 245,\n     \"veg\": true,\n     \"category\": \"Sides\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Garlic Bread, freshly prepared in our sides kitchen.\"\n    }\n   ]\n  },\n  {\n   \"name\": \"Salads\",\n   \"items\": [\n    {\n     \"id\": \"california-pizza-kitchen-8\",\n     \"name\": \"Caesar Salad\",\n     \"priceInr\": 395,\n     \"veg\": true,\n     \"category\": \"Salads\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Caesar Salad, freshly prepared in our salads kitchen.\"\n    }\n   ]\n  },\n  {\n   \"name\": \"Desserts\",\n   \"items\": [\n    {\n     \"id\": \"california-pizza-kitchen-9\",\n     \"name\": \"Tiramisu\",\n     \"priceInr\": 325,\n     \"veg\": true,\n     \"category\": \"Desserts\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Tiramisu, freshly prepared in our desserts kitchen.\"\n    }\n   ]\n  },\n  {\n   \"name\": \"Drinks\",\n   \"items\": [\n    {\n     \"id\": \"california-pizza-kitchen-10\",\n     \"name\": \"Peach Iced Tea\",\n     \"priceInr\": 195,\n     \"veg\": true,\n     \"category\": \"Drinks\",\n     \"spiceLevel\": 0,\n     \"bestseller\": false,\n     \"description\": \"Peach Iced Tea, freshly prepared in our drinks kitchen.\"\n    }\n   ]\n  }\n ]\n}\n</untrusted_data>"
+              }
+            ],
+            "domains": [
+              "food",
+              "payments",
+              "browser"
+            ],
+            "step": 3,
+            "tainted": false,
+            "queue": [],
+            "waitingActionId": null,
+            "steps": [
+              {
+                "id": "call_bgfxjd62",
+                "label": "Searching restaurants",
+                "tool": "search_restaurants",
+                "status": "done"
+              },
+              {
+                "id": "call_0mm1mm1a",
+                "label": "Reading the menu",
+                "tool": "get_menu",
+                "status": "done"
+              }
+            ],
+            "text": "_Stopped._",
+            "parts": [],
+            "usage": {
+              "inputTokens": 4979,
+              "outputTokens": 2703
+            },
+            "invalidCalls": 0,
+            "skill": null,
+            "endTurn": false
+          }
+        }
+      ],
+      "replies": [],
+      "expected": {
+        "requiredTools": [
+          "search_restaurants",
+          "get_menu",
+          "prepare_order",
+          "place_order"
+        ],
+        "ordered": [
+          [
+            "search_restaurants",
+            "get_menu",
+            "prepare_order",
+            "place_order"
+          ]
+        ],
+        "forbiddenTools": [
+          "gmail_send",
+          "calendar_create_event",
+          "calendar_cancel_event"
+        ],
+        "approval": {
+          "tools": [
+            "place_order"
+          ]
+        },
+        "maxQuestions": 1,
+        "maxSteps": 8,
+        "mustNot": [
+          "execute_act",
+          "claim_success",
+          "retry_after_refusal"
+        ],
+        "semantics": [
+          {
+            "label": "saved Home address",
+            "source": "output",
+            "tool": "prepare_order",
+            "path": "deliveryAddress.line",
+            "matches": "12 Eval Lane"
+          },
+          {
+            "label": "Home delivery label",
+            "source": "output",
+            "tool": "prepare_order",
+            "path": "deliveryAddress.label",
+            "matches": "^Home$"
+          },
+          {
+            "label": "usual BBQ Chicken Pizza",
+            "source": "output",
+            "tool": "prepare_order",
+            "path": "lines",
+            "matches": "BBQ Chicken Pizza"
+          },
+          {
+            "label": "usual has no extras",
+            "source": "output",
+            "tool": "prepare_order",
+            "path": "lines.length",
+            "matches": "^1$"
+          },
+          {
+            "label": "usual quantity is one",
+            "source": "output",
+            "tool": "prepare_order",
+            "path": "lines.0.qty",
+            "matches": "^1$"
+          },
+          {
+            "label": "California Pizza card",
+            "source": "card",
+            "tool": "place_order",
+            "path": "title",
+            "matches": "California Pizza"
+          }
+        ]
+      }
+    }
+  ]
 }
