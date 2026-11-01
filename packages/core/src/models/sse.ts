@@ -1,5 +1,8 @@
 /** Minimal Server-Sent Events reader for fetch responses. Yields `data:` payloads (joined per event). */
-export async function* readSse(res: Response, signal?: AbortSignal): AsyncGenerator<{ event: string | null; data: string }> {
+export async function* readSse(
+  res: Response,
+  signal?: AbortSignal,
+): AsyncGenerator<{ event: string | null; data: string }> {
   if (!res.body) return;
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -28,11 +31,15 @@ export async function* readSse(res: Response, signal?: AbortSignal): AsyncGenera
   }
 }
 
-export async function errorFromResponse(res: Response, provider: string): Promise<{ message: string; retryable: boolean }> {
+export async function errorFromResponse(
+  res: Response,
+  provider: string,
+): Promise<{ message: string; retryable: boolean }> {
   let detail: string;
   try {
     const body = (await res.json()) as { error?: { message?: string } | string; message?: string };
-    detail = typeof body.error === "string" ? body.error : body.error?.message ?? body.message ?? "";
+    detail =
+      typeof body.error === "string" ? body.error : (body.error?.message ?? body.message ?? "");
   } catch {
     detail = await res.text().catch(() => "");
   }
@@ -43,5 +50,8 @@ export async function errorFromResponse(res: Response, provider: string): Promis
     429: "The provider is rate-limiting requests. Try again in a moment.",
   };
   const base = friendly[res.status] ?? `${provider} returned ${res.status}`;
-  return { message: detail ? `${base} (${detail.slice(0, 300)})` : base, retryable: res.status === 429 || res.status >= 500 };
+  return {
+    message: detail ? `${base} (${detail.slice(0, 300)})` : base,
+    retryable: res.status === 429 || res.status >= 500,
+  };
 }

@@ -12,7 +12,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const bundle = join(root, "apps/desktop/src-tauri/target/release/bundle");
 const app = join(bundle, "macos/RelayIt.app");
 if (!existsSync(app)) throw new Error("Build the app first: pnpm tauri build --bundles app");
-const version = JSON.parse(execFileSync("node", ["-p", "JSON.stringify(require('./apps/desktop/src-tauri/tauri.conf.json').version)"], { cwd: root, encoding: "utf8" }));
+const version = JSON.parse(
+  execFileSync(
+    "node",
+    ["-p", "JSON.stringify(require('./apps/desktop/src-tauri/tauri.conf.json').version)"],
+    { cwd: root, encoding: "utf8" },
+  ),
+);
 const arch = process.arch === "arm64" ? "aarch64" : "x64";
 const outDir = join(bundle, "dmg");
 mkdirSync(outDir, { recursive: true });
@@ -23,7 +29,23 @@ try {
   cpSync(app, join(stage, "RelayIt.app"), { recursive: true, verbatimSymlinks: true });
   symlinkSync("/Applications", join(stage, "Applications"));
   rmSync(out, { force: true });
-  execFileSync("hdiutil", ["create", "-volname", "RelayIt", "-srcfolder", stage, "-ov", "-format", "UDZO", "-fs", "HFS+", out], { stdio: "inherit" });
+  execFileSync(
+    "hdiutil",
+    [
+      "create",
+      "-volname",
+      "RelayIt",
+      "-srcfolder",
+      stage,
+      "-ov",
+      "-format",
+      "UDZO",
+      "-fs",
+      "HFS+",
+      out,
+    ],
+    { stdio: "inherit" },
+  );
   console.log(`[dmg] ${out}`);
 } finally {
   rmSync(stage, { recursive: true, force: true });

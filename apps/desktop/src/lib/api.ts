@@ -1,7 +1,27 @@
 import type {
-  AppState, ApprovalRule, AuditEvent, Conversation, McpServer, McpServerInput, MemoryFact, MemoryFactInput, Message,
-  ModelConfig, OnboardingRequest, PendingAction, Profile, ProviderId, Routine, RoutineInput, RoutineRun, Settings, Skill,
-  SkillInput, Task, TaskStatus, ValidateKeyResult,
+  AppState,
+  ApprovalRule,
+  AuditEvent,
+  Conversation,
+  McpServer,
+  McpServerInput,
+  MemoryFact,
+  MemoryFactInput,
+  Message,
+  ModelConfig,
+  OnboardingRequest,
+  PendingAction,
+  Profile,
+  ProviderId,
+  Routine,
+  RoutineInput,
+  RoutineRun,
+  Settings,
+  Skill,
+  SkillInput,
+  Task,
+  TaskStatus,
+  ValidateKeyResult,
 } from "@relayit/shared";
 import { invoke, isTauri } from "./tauri";
 
@@ -41,25 +61,46 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   try {
     res = await fetch(`${base}${path}`, {
       method,
-      headers: { authorization: `Bearer ${token}`, ...(body !== undefined ? { "content-type": "application/json" } : {}) },
+      headers: {
+        authorization: `Bearer ${token}`,
+        ...(body !== undefined ? { "content-type": "application/json" } : {}),
+      },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
     throw new ApiError(0, "Can't reach RelayIt's engine.");
   }
-  const data = res.headers.get("content-type")?.includes("json") ? await res.json() : await res.text();
-  if (!res.ok) throw new ApiError(res.status, (data as { error?: string })?.error ?? `Request failed (${res.status})`);
+  const data = res.headers.get("content-type")?.includes("json")
+    ? await res.json()
+    : await res.text();
+  if (!res.ok)
+    throw new ApiError(
+      res.status,
+      (data as { error?: string })?.error ?? `Request failed (${res.status})`,
+    );
   return data as T;
 }
 
-const get = <T,>(p: string) => req<T>("GET", p);
-const post = <T,>(p: string, b?: unknown) => req<T>("POST", p, b ?? {});
-const put = <T,>(p: string, b: unknown) => req<T>("PUT", p, b);
-const patch = <T,>(p: string, b: unknown) => req<T>("PATCH", p, b);
-const del = <T,>(p: string) => req<T>("DELETE", p);
+const get = <T>(p: string) => req<T>("GET", p);
+const post = <T>(p: string, b?: unknown) => req<T>("POST", p, b ?? {});
+const put = <T>(p: string, b: unknown) => req<T>("PUT", p, b);
+const patch = <T>(p: string, b: unknown) => req<T>("PATCH", p, b);
+const del = <T>(p: string) => req<T>("DELETE", p);
 
-export type ConversationDetail = { conversation: Conversation; messages: Message[]; actions: PendingAction[]; busy: boolean };
-export type ToolInfo = { name: string; description: string; domain: string; toolClass: string; service: string; source: string };
+export type ConversationDetail = {
+  conversation: Conversation;
+  messages: Message[];
+  actions: PendingAction[];
+  busy: boolean;
+};
+export type ToolInfo = {
+  name: string;
+  description: string;
+  domain: string;
+  toolClass: string;
+  service: string;
+  source: string;
+};
 export type Brief = { conversationId: string; createdAt: string } | null;
 export type TodayData = {
   events: { id: string; title: string; start: string; end: string; location?: string | null }[];
@@ -67,16 +108,23 @@ export type TodayData = {
   orders: { id: string; title: string; amountInr: number; status: string; updatedAt: string }[];
   brief: Brief;
 };
-export type GoogleStatus = { connected: boolean; email: string | null; mode: "real" | "fake" | "none"; clientConfigured: boolean };
+export type GoogleStatus = {
+  connected: boolean;
+  email: string | null;
+  mode: "real" | "fake" | "none";
+  clientConfigured: boolean;
+};
 
 export const api = {
   state: () => get<AppState>("/api/state"),
   onboard: (r: OnboardingRequest) => post<AppState>("/api/onboarding", r),
   saveProfile: (p: Profile) => put<Profile>("/api/profile", p),
   saveSettings: (s: Partial<Settings>) => patch<Settings>("/api/settings", s),
-  validateKey: (provider: ProviderId, apiKey?: string, baseUrl?: string) => post<ValidateKeyResult>("/api/models/validate", { provider, apiKey, baseUrl }),
+  validateKey: (provider: ProviderId, apiKey?: string, baseUrl?: string) =>
+    post<ValidateKeyResult>("/api/models/validate", { provider, apiKey, baseUrl }),
   ollama: () => get<{ running: boolean; models: string[] }>("/api/models/ollama"),
-  saveModel: (model: ModelConfig, apiKey?: string) => put<AppState>("/api/models/config", { model, apiKey }),
+  saveModel: (model: ModelConfig, apiKey?: string) =>
+    put<AppState>("/api/models/config", { model, apiKey }),
   deleteKey: (provider: ProviderId) => del<AppState>(`/api/models/key/${provider}`),
 
   conversations: () => get<Conversation[]>("/api/conversations"),
@@ -86,19 +134,27 @@ export const api = {
   send: (id: string, text: string) => post(`/api/conversations/${id}/messages`, { text }),
   stop: (id: string) => post(`/api/conversations/${id}/stop`),
 
-  actions: (status?: string) => get<PendingAction[]>(`/api/actions${status ? `?status=${status}` : ""}`),
-  approve: (id: string, mode: "once" | "always") => post<PendingAction>(`/api/actions/${id}/approve`, { mode }),
+  actions: (status?: string) =>
+    get<PendingAction[]>(`/api/actions${status ? `?status=${status}` : ""}`),
+  approve: (id: string, mode: "once" | "always") =>
+    post<PendingAction>(`/api/actions/${id}/approve`, { mode }),
   refuse: (id: string) => post<PendingAction>(`/api/actions/${id}/refuse`),
   rules: () => get<ApprovalRule[]>("/api/approval-rules"),
   deleteRule: (id: string) => del(`/api/approval-rules/${id}`),
 
   audit: (q: { before?: string; kind?: string; q?: string } = {}) =>
-    get<AuditEvent[]>(`/api/audit?${new URLSearchParams(Object.entries({ limit: "150", ...q }).filter(([, v]) => v) as [string, string][])}`),
+    get<AuditEvent[]>(
+      `/api/audit?${new URLSearchParams(Object.entries({ limit: "150", ...q }).filter(([, v]) => v) as [string, string][])}`,
+    ),
 
   tasks: () => get<Task[]>("/api/tasks"),
   setTask: (id: string, status: TaskStatus) => patch(`/api/tasks/${id}`, { status }),
   deleteTask: (id: string) => del(`/api/tasks/${id}`),
-  canWait: () => get<{ at: string | null; items: { threadId: string; subject: string; from: string; reason: string }[] }>("/api/google/can-wait"),
+  canWait: () =>
+    get<{
+      at: string | null;
+      items: { threadId: string; subject: string; from: string; reason: string }[];
+    }>("/api/google/can-wait"),
   triage: () => post<{ needsYou: number; canWait: number }>("/api/google/triage"),
 
   memory: () => get<MemoryFact[]>("/api/memory"),
@@ -107,8 +163,15 @@ export const api = {
 
   tools: () => get<ToolInfo[]>("/api/tools"),
   servers: () => get<McpServer[]>("/api/mcp/servers"),
-  addServer: (s: Partial<McpServerInput> & { name: string; transport: "stdio" | "http"; envSecrets?: Record<string, string> }) => post<McpServer>("/api/mcp/servers", s),
-  updateServer: (id: string, patchBody: { enabled?: boolean }) => patch<McpServer>(`/api/mcp/servers/${id}`, patchBody),
+  addServer: (
+    s: Partial<McpServerInput> & {
+      name: string;
+      transport: "stdio" | "http";
+      envSecrets?: Record<string, string>;
+    },
+  ) => post<McpServer>("/api/mcp/servers", s),
+  updateServer: (id: string, patchBody: { enabled?: boolean }) =>
+    patch<McpServer>(`/api/mcp/servers/${id}`, patchBody),
   deleteServer: (id: string) => del(`/api/mcp/servers/${id}`),
   reconnectServer: (id: string) => post<McpServer>(`/api/mcp/servers/${id}/reconnect`),
   setToolClass: (serverId: string, tool: string, body: { toolClass?: string; enabled?: boolean }) =>
@@ -118,13 +181,19 @@ export const api = {
   saveKey: (name: string, value: string) => put(`/api/keys/${name}`, { value }),
 
   google: () => get<GoogleStatus>("/api/google/status"),
-  connectGoogle: (opts: { fake?: boolean; clientId?: string; clientSecret?: string }) => post<GoogleStatus>("/api/google/connect", opts),
+  connectGoogle: (opts: { fake?: boolean; clientId?: string; clientSecret?: string }) =>
+    post<GoogleStatus>("/api/google/connect", opts),
   disconnectGoogle: () => post<GoogleStatus>("/api/google/disconnect"),
 
   today: () => get<TodayData>("/api/today"),
-  brief: (auto = false) => post<{ conversationId: string; created: boolean }>("/api/brief", { auto }),
-  presets: () => get<{ id: string; name: string; url: string; domain: string; blurb: string }[]>("/api/mcp/presets"),
-  saveRazorpay: (keyId: string, keySecret: string) => put("/api/payments/razorpay", { keyId, keySecret }),
+  brief: (auto = false) =>
+    post<{ conversationId: string; created: boolean }>("/api/brief", { auto }),
+  presets: () =>
+    get<{ id: string; name: string; url: string; domain: string; blurb: string }[]>(
+      "/api/mcp/presets",
+    ),
+  saveRazorpay: (keyId: string, keySecret: string) =>
+    put("/api/payments/razorpay", { keyId, keySecret }),
 
   skills: () => get<Skill[]>("/api/skills"),
   saveSkill: (s: SkillInput) => post<Skill>("/api/skills", s),
@@ -137,16 +206,24 @@ export const api = {
   runRoutine: (id: string) => post<{ conversationId: string }>(`/api/routines/${id}/run`),
   routineRuns: (id: string) => get<RoutineRun[]>(`/api/routines/${id}/runs`),
 
-  payment: (orderId: string) => get<{ status: string; paidAt: string | null }>(`/api/payments/by-order/${orderId}`),
-  confirmUpiPaid: (orderId: string, utr?: string) => post(`/api/payments/by-order/${orderId}/user-confirmed`, { utr }),
+  payment: (orderId: string) =>
+    get<{ status: string; paidAt: string | null }>(`/api/payments/by-order/${orderId}`),
+  confirmUpiPaid: (orderId: string, utr?: string) =>
+    post(`/api/payments/by-order/${orderId}/user-confirmed`, { utr }),
 
-  browserSessions: () => get<{ site: string; loggedIn: boolean; lastUsed: string | null }[]>("/api/browser/sessions"),
+  browserSessions: () =>
+    get<{ site: string; loggedIn: boolean; lastUsed: string | null }[]>("/api/browser/sessions"),
   openBrowserLogin: (site: string) => post(`/api/browser/login`, { site }),
-  saveSiteSecret: (site: string, username: string, password: string) => post(`/api/browser/credentials`, { site, username, password }),
+  saveSiteSecret: (site: string, username: string, password: string) =>
+    post(`/api/browser/credentials`, { site, username, password }),
 
   transcribe: async (audio: Blob): Promise<{ text: string }> => {
     const { base, token } = await endpoint();
-    const res = await fetch(`${base}/api/voice/transcribe`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": audio.type || "audio/webm" }, body: audio });
+    const res = await fetch(`${base}/api/voice/transcribe`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": audio.type || "audio/webm" },
+      body: audio,
+    });
     const data = await res.json();
     if (!res.ok) throw new ApiError(res.status, data.error ?? "Transcription failed");
     return data;

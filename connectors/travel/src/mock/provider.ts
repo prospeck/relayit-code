@@ -113,7 +113,9 @@ export class MockTravelProvider implements TravelProvider {
       (t) => from.codes.includes(t.from) && to.codes.includes(t.to) && t.runningDays.includes(day),
     );
     // A preferred class is a preference: say which classes exist instead of returning a bare empty list.
-    const availableClasses = [...new Set(routeTrains.flatMap((t) => Object.keys(t.classes) as TravelClass[]))];
+    const availableClasses = [
+      ...new Set(routeTrains.flatMap((t) => Object.keys(t.classes) as TravelClass[])),
+    ];
     const results = routeTrains
       .filter((t) => t.classes[travelClass] !== undefined)
       .map((t) => ({

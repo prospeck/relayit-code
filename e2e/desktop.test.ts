@@ -5,8 +5,11 @@ import { enabled, hidden, launchChrome, visible } from "./helpers/browser.ts";
 import { UiHarness, holdToApprove } from "./helpers/harness.ts";
 
 const { browser, skipReason } = await launchChrome();
-const demoApprovalBlocker = "blocked by live.ts:100: fast demo updates can be lost during Chat's initial fetch; see README.md";
-afterAll(async () => { await browser?.close(); });
+const demoApprovalBlocker =
+  "blocked by live.ts:100: fast demo updates can be lost during Chat's initial fetch; see README.md";
+afterAll(async () => {
+  await browser?.close();
+});
 
 describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}` : ""}`, () => {
   let ui: UiHarness;
@@ -23,7 +26,9 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     expect(ui.consoleErrors, "Browser console errors").toEqual([]);
   });
 
-  afterAll(async () => { await ui?.close(); });
+  afterAll(async () => {
+    await ui?.close();
+  });
 
   async function openToday(): Promise<void> {
     await ui.onboard();
@@ -58,7 +63,11 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.getByRole("button", { name: /^Ollama Runs on this computer/ }).click();
     await enabled(ui.page.getByRole("button", { name: "Continue", exact: true }));
     await ui.page.getByRole("button", { name: "Continue", exact: true }).click();
-    for (const promise of ["It asks before it acts", "It never touches your money", "Everything stays here"]) {
+    for (const promise of [
+      "It asks before it acts",
+      "It never touches your money",
+      "Everything stays here",
+    ]) {
       await visible(ui.page.getByText(promise, { exact: true }));
     }
     await ui.page.getByRole("button", { name: "Start using RelayIt", exact: true }).click();
@@ -66,7 +75,11 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await visible(ui.page.getByRole("heading", { name: /Good .*, Meera\./ }));
     expect(await ui.api<AppState>("/api/state")).toMatchObject({
       onboarded: true,
-      profile: { name: "Meera", city: "Pune", addresses: [{ label: "Home", line: "1 Test Street" }] },
+      profile: {
+        name: "Meera",
+        city: "Pune",
+        addresses: [{ label: "Home", line: "1 Test Street" }],
+      },
       model: { provider: "ollama" },
     });
   });
@@ -76,7 +89,11 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.getByRole("button", { name: "Allow once", exact: true }).click();
     await sentNote();
     await ui.nav("Activity");
-    for (const label of ["Waiting for approval: Send note to Priya", "You approved: Send note to Priya", "Done: Send note to Priya"]) {
+    for (const label of [
+      "Waiting for approval: Send note to Priya",
+      "You approved: Send note to Priya",
+      "Done: Send note to Priya",
+    ]) {
       await visible(ui.page.getByRole("button", { name: new RegExp(label) }));
     }
   });
@@ -103,14 +120,17 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.waitForIdle();
     const approvals: string[] = [];
     ui.page.on("request", (request) => {
-      if (request.method() === "POST" && /\/api\/actions\/[^/]+\/approve$/.test(request.url())) approvals.push(request.url());
+      if (request.method() === "POST" && /\/api\/actions\/[^/]+\/approve$/.test(request.url()))
+        approvals.push(request.url());
     });
     await hold.click();
     // Wait longer than the hold threshold to catch a timer accidentally surviving pointer-up.
     await delay(850);
     expect(approvals).toEqual([]);
     await enabled(hold);
-    expect(await ui.api<PendingAction[]>("/api/actions")).toMatchObject([{ status: "pending", involvesMoney: true }]);
+    expect(await ui.api<PendingAction[]>("/api/actions")).toMatchObject([
+      { status: "pending", involvesMoney: true },
+    ]);
     await hidden(ui.page.getByText("Scan to pay with any UPI app", { exact: true }));
     await holdToApprove(ui.page);
     await visible(ui.page.getByText("Scan to pay with any UPI app", { exact: true }));
@@ -133,7 +153,9 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.getByRole("button", { name: "Approvals", exact: true }).click();
     await ui.page.getByRole("button", { name: "₹500", exact: true }).click();
     await ui.page.getByRole("button", { name: "Save limit", exact: true }).click();
-    await expect.poll(async () => (await ui.api<AppState>("/api/state")).settings.spendCapInr).toBe(500);
+    await expect
+      .poll(async () => (await ui.api<AppState>("/api/state")).settings.spendCapInr)
+      .toBe(500);
     await ui.nav("Today");
     await ui.sendFromToday("Order something from California Pizza");
     await visible(ui.page.getByText(/This is above your ₹500 per-action limit\./));
@@ -154,7 +176,9 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.getByRole("button", { name: "Approvals", exact: true }).click();
     await visible(ui.page.getByText(rules[0]!.label, { exact: true }));
     await ui.page.getByRole("button", { name: "Revoke", exact: true }).click();
-    await visible(ui.page.getByRole("heading", { name: "Nothing runs without asking", exact: true }));
+    await visible(
+      ui.page.getByRole("heading", { name: "Nothing runs without asking", exact: true }),
+    );
     await hidden(ui.page.getByText(rules[0]!.label, { exact: true }));
     expect(await ui.api("/api/approval-rules")).toEqual([]);
   });
@@ -175,11 +199,19 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await visible(ui.page.getByRole("heading", { name: "Model", exact: true }));
     await ui.page.getByRole("button", { name: "Anthropic API key", exact: true }).click();
     await visible(ui.page.getByPlaceholder("sk-ant-…"));
-    expect(await ui.page.locator("main input").evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value))).toEqual([""]);
+    expect(
+      await ui.page
+        .locator("main input")
+        .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value)),
+    ).toEqual([""]);
     expect(await ui.page.content()).not.toContain(secret);
     expect(await ui.page.content()).not.toContain("unsaved-test-key");
     await ui.nav("Connections");
-    const exaRow = ui.page.locator("div").filter({ has: ui.page.getByText("Exa (web research)", { exact: true }) }).filter({ has: ui.page.getByRole("button", { name: "Replace", exact: true }) }).last();
+    const exaRow = ui.page
+      .locator("div")
+      .filter({ has: ui.page.getByText("Exa (web research)", { exact: true }) })
+      .filter({ has: ui.page.getByRole("button", { name: "Replace", exact: true }) })
+      .last();
     await exaRow.getByRole("button", { name: "Replace", exact: true }).click();
     const dialog = ui.page.getByRole("dialog", { name: "Exa (web research)", exact: true });
     await visible(dialog);
@@ -217,7 +249,9 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.getByRole("button", { name: "Try a demo inbox", exact: true }).click();
     await visible(ui.page.getByText("Connected", { exact: true }).first());
     await ui.nav("Tasks");
-    const needsYou = ui.page.locator("section").filter({ has: ui.page.getByRole("heading", { name: "Needs you", exact: true }) });
+    const needsYou = ui.page
+      .locator("section")
+      .filter({ has: ui.page.getByRole("heading", { name: "Needs you", exact: true }) });
     await visible(needsYou.getByRole("button", { name: "Handle it", exact: true }).first());
     const canWait = needsYou.getByRole("button", { name: /^Can wait · [1-9]/ });
     await visible(canWait);
@@ -237,7 +271,9 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.getByRole("button", { name: "New routine", exact: true }).click();
     const dialog = ui.page.getByRole("dialog", { name: "New routine", exact: true });
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Monday test brief");
-    await dialog.getByRole("textbox", { name: /What should RelayIt do/ }).fill("Summarise the week ahead.");
+    await dialog
+      .getByRole("textbox", { name: /What should RelayIt do/ })
+      .fill("Summarise the week ahead.");
     await dialog.getByRole("button", { name: "Every Monday at 9:00", exact: true }).click();
     await dialog.getByRole("button", { name: "Save routine", exact: true }).click();
     await hidden(dialog);
@@ -260,12 +296,16 @@ describe.skipIf(!browser)(`RelayIt desktop UI${skipReason ? ` — ${skipReason}`
     await ui.page.emulateMedia({ colorScheme: "dark" });
     await openToday();
     async function assertDark(): Promise<void> {
-      const background = await ui.page.locator("html").evaluate((html) => getComputedStyle(html).backgroundColor);
+      const background = await ui.page
+        .locator("html")
+        .evaluate((html) => getComputedStyle(html).backgroundColor);
       const components = background.match(/[\d.]+/g)?.map(Number);
       expect(components, `Expected an opaque RGB background, got ${background}`).toBeDefined();
       const [r, g, b, alpha = 1] = components!;
       expect(alpha).toBe(1);
-      const linear = [r!, g!, b!].map((c) => c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+      const linear = [r!, g!, b!].map((c) =>
+        c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4,
+      );
       const luminance = 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
       expect(luminance, background).toBeLessThan(0.2);
     }

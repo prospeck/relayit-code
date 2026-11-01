@@ -6,13 +6,27 @@ import { api, ApiError } from "../lib/api";
 import { navigate } from "../lib/router";
 import { Badge, Button, Card, Dialog, Field, Input, Page, Textarea } from "../components/ui";
 
-const DOMAINS = ["email", "calendar", "food", "grocery", "payments", "travel", "browser", "web", "meetings", "notes"];
+const DOMAINS = [
+  "email",
+  "calendar",
+  "food",
+  "grocery",
+  "payments",
+  "travel",
+  "browser",
+  "web",
+  "meetings",
+  "notes",
+];
 
 export function Skills() {
   const qc = useQueryClient();
   const skills = useQuery({ queryKey: ["skills"], queryFn: api.skills });
   const [editing, setEditing] = useState<Partial<Skill> | null>(null);
-  const del = useMutation({ mutationFn: api.deleteSkill, onSuccess: () => void qc.invalidateQueries({ queryKey: ["skills"] }) });
+  const del = useMutation({
+    mutationFn: api.deleteSkill,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["skills"] }),
+  });
   const run = useMutation({
     mutationFn: async (slug: string) => {
       const c = await api.createConversation();
@@ -27,11 +41,19 @@ export function Skills() {
       title="Skills"
       subtitle={
         <>
-          Reusable instructions you can run with <span className="font-medium text-accent-text">/name</span> in any chat. Each skill only loads the tools it needs.
+          Reusable instructions you can run with{" "}
+          <span className="font-medium text-accent-text">/name</span> in any chat. Each skill only
+          loads the tools it needs.
         </>
       }
       actions={
-        <Button variant="primary" icon={<Plus className="size-4" />} onClick={() => setEditing({ slug: "", title: "", description: "", instructions: "", domains: [] })}>
+        <Button
+          variant="primary"
+          icon={<Plus className="size-4" />}
+          onClick={() =>
+            setEditing({ slug: "", title: "", description: "", instructions: "", domains: [] })
+          }
+        >
           New skill
         </Button>
       }
@@ -46,23 +68,37 @@ export function Skills() {
               </div>
               {s.builtin && <Badge>Built-in</Badge>}
             </div>
-            <p className="text-[12.5px] text-muted mt-3 line-clamp-3 leading-relaxed whitespace-pre-line flex-1">{s.instructions}</p>
+            <p className="text-[12.5px] text-muted mt-3 line-clamp-3 leading-relaxed whitespace-pre-line flex-1">
+              {s.instructions}
+            </p>
             <div className="flex flex-wrap gap-1 mt-3">
               {s.domains.map((d) => (
-                <span key={d} className="text-[11px] px-2 h-5 inline-flex items-center rounded-full bg-surface-2 border border-line text-muted">
+                <span
+                  key={d}
+                  className="text-[11px] px-2 h-5 inline-flex items-center rounded-full bg-surface-2 border border-line text-muted"
+                >
                   {d}
                 </span>
               ))}
             </div>
             <div className="flex items-center gap-1.5 mt-4">
-              <Button size="sm" variant="secondary" onClick={() => run.mutate(s.slug)} loading={run.isPending && run.variables === s.slug}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => run.mutate(s.slug)}
+                loading={run.isPending && run.variables === s.slug}
+              >
                 Run
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
                 Edit
               </Button>
               {!s.builtin && (
-                <button onClick={() => del.mutate(s.id)} className="ml-auto text-faint hover:text-danger opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100" aria-label="Delete">
+                <button
+                  onClick={() => del.mutate(s.id)}
+                  className="ml-auto text-faint hover:text-danger opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                  aria-label="Delete"
+                >
                   <Trash2 className="size-4" />
                 </button>
               )}
@@ -84,7 +120,13 @@ export function Skills() {
 
 function SkillEditor({ skill, onClose }: { skill: Partial<Skill>; onClose: () => void }) {
   const qc = useQueryClient();
-  const [s, setS] = useState({ slug: skill.slug ?? "", title: skill.title ?? "", description: skill.description ?? "", instructions: skill.instructions ?? "", domains: skill.domains ?? [] });
+  const [s, setS] = useState({
+    slug: skill.slug ?? "",
+    title: skill.title ?? "",
+    description: skill.description ?? "",
+    instructions: skill.instructions ?? "",
+    domains: skill.domains ?? [],
+  });
   const save = useMutation({
     mutationFn: () => api.saveSkill({ ...s, title: s.title || s.slug }),
     onSuccess: () => {
@@ -93,20 +135,47 @@ function SkillEditor({ skill, onClose }: { skill: Partial<Skill>; onClose: () =>
     },
   });
   return (
-    <Dialog open onOpenChange={(v) => !v && onClose()} title={skill.id ? `Edit /${skill.slug}` : "New skill"} width={600}>
+    <Dialog
+      open
+      onOpenChange={(v) => !v && onClose()}
+      title={skill.id ? `Edit /${skill.slug}` : "New skill"}
+      width={600}
+    >
       <div className="grid grid-cols-2 gap-3">
         <Field label="Command" hint="Type it as /command">
-          <Input value={s.slug} disabled={!!skill.id} onChange={(e) => setS({ ...s, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} placeholder="book-haircut" />
+          <Input
+            value={s.slug}
+            disabled={!!skill.id}
+            onChange={(e) =>
+              setS({ ...s, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })
+            }
+            placeholder="book-haircut"
+          />
         </Field>
         <Field label="Title">
-          <Input value={s.title} onChange={(e) => setS({ ...s, title: e.target.value })} placeholder="Book a haircut" />
+          <Input
+            value={s.title}
+            onChange={(e) => setS({ ...s, title: e.target.value })}
+            placeholder="Book a haircut"
+          />
         </Field>
       </div>
       <Field label="Short description" className="mt-3">
-        <Input value={s.description} onChange={(e) => setS({ ...s, description: e.target.value })} />
+        <Input
+          value={s.description}
+          onChange={(e) => setS({ ...s, description: e.target.value })}
+        />
       </Field>
-      <Field label="Instructions" hint="Write it like you'd brief a smart assistant: the goal, the steps, your preferences." className="mt-3">
-        <Textarea value={s.instructions} onChange={(e) => setS({ ...s, instructions: e.target.value })} rows={8} />
+      <Field
+        label="Instructions"
+        hint="Write it like you'd brief a smart assistant: the goal, the steps, your preferences."
+        className="mt-3"
+      >
+        <Textarea
+          value={s.instructions}
+          onChange={(e) => setS({ ...s, instructions: e.target.value })}
+          rows={8}
+        />
       </Field>
       <div className="mt-3">
         <div className="text-[12.5px] font-medium text-ink-2 mb-1.5">Tools it needs</div>
@@ -116,7 +185,9 @@ function SkillEditor({ skill, onClose }: { skill: Partial<Skill>; onClose: () =>
             return (
               <button
                 key={d}
-                onClick={() => setS({ ...s, domains: on ? s.domains.filter((x) => x !== d) : [...s.domains, d] })}
+                onClick={() =>
+                  setS({ ...s, domains: on ? s.domains.filter((x) => x !== d) : [...s.domains, d] })
+                }
                 className={`h-7 px-3 rounded-full border text-[12.5px] ${on ? "bg-ink text-bg border-ink" : "border-line-strong text-ink-2 hover:border-ink/30"}`}
               >
                 {d}
@@ -125,12 +196,21 @@ function SkillEditor({ skill, onClose }: { skill: Partial<Skill>; onClose: () =>
           })}
         </div>
       </div>
-      {save.error && <p className="text-[12.5px] text-danger mt-3">{save.error instanceof ApiError ? save.error.message : "Couldn't save"}</p>}
+      {save.error && (
+        <p className="text-[12.5px] text-danger mt-3">
+          {save.error instanceof ApiError ? save.error.message : "Couldn't save"}
+        </p>
+      )}
       <div className="flex justify-end gap-2 mt-6">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={() => save.mutate()} loading={save.isPending} disabled={!s.slug || !s.instructions.trim()}>
+        <Button
+          variant="primary"
+          onClick={() => save.mutate()}
+          loading={save.isPending}
+          disabled={!s.slug || !s.instructions.trim()}
+        >
           Save skill
         </Button>
       </div>

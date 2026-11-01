@@ -5,29 +5,62 @@ import { RazorpayClient } from "../src/razorpay.ts";
 import { startMockCheckout } from "../src/mockCheckout.ts";
 
 let mock: Awaited<ReturnType<typeof startMockCheckout>>;
-beforeAll(async () => { mock = await startMockCheckout(); });
-afterAll(async () => { await mock?.close(); });
-afterEach(() => { vi.restoreAllMocks(); });
+beforeAll(async () => {
+  mock = await startMockCheckout();
+});
+afterAll(async () => {
+  await mock?.close();
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-const input = { orderId: "order-1", amountInr: 249.5, payeeName: "Asha’s store", payeeVpa: "asha@bank", note: "Lunch" };
+const input = {
+  orderId: "order-1",
+  amountInr: 249.5,
+  payeeName: "Asha’s store",
+  payeeVpa: "asha@bank",
+  note: "Lunch",
+};
 
 function setup(withCheckout = false) {
   const store = new InMemoryPaymentStore();
-  const razorpay = withCheckout ? new RazorpayClient({ keyId: "rzp_test_local", keySecret: "unused-local-placeholder", baseUrl: mock.baseUrl }) : undefined;
-  const service = new PaymentService({ store, razorpay, now: () => new Date("2026-11-01T12:00:00Z") });
+  const razorpay = withCheckout
+    ? new RazorpayClient({
+        keyId: "rzp_test_local",
+        keySecret: "unused-local-placeholder",
+        baseUrl: mock.baseUrl,
+      })
+    : undefined;
+  const service = new PaymentService({
+    store,
+    razorpay,
+    now: () => new Date("2026-11-01T12:00:00Z"),
+  });
   return { store, razorpay, service };
 }
 
 describe("PaymentService", () => {
   it("is idempotent per order even for concurrent requests and creates a valid shared part", async () => {
     const { service } = setup(true);
-    const payments = await Promise.all(Array.from({ length: 5 }, () => service.createRequest(input)));
+    const payments = await Promise.all(
+      Array.from({ length: 5 }, () => service.createRequest(input)),
+    );
     expect(new Set(payments.map((payment) => payment.id)).size).toBe(1);
     const payment = payments[0]!;
     expect(await service.createRequest({ ...input, amountInr: 999 })).toEqual(payment);
-    expect(payment).toMatchObject({ status: "pending", createdAt: "2026-11-01T12:00:00.000Z", paidAt: null, externalRef: null });
+    expect(payment).toMatchObject({
+      status: "pending",
+      createdAt: "2026-11-01T12:00:00.000Z",
+      paidAt: null,
+      externalRef: null,
+    });
     expect(payment.checkoutUrl).toContain("/pay/plink_");
-    expect(MessagePart.parse(toMessagePart(payment))).toMatchObject({ type: "payment", orderId: "order-1", payee: "Asha’s store" });
+    expect(MessagePart.parse(toMessagePart(payment))).toMatchObject({
+      type: "payment",
+      orderId: "order-1",
+      payee: "Asha’s store",
+    });
     expect(service.toMessagePart(payment)).toEqual(toMessagePart(payment));
   });
 
@@ -67,7 +100,9 @@ describe("PaymentService", () => {
     const link = await razorpay!.getPaymentLink(payment.razorpayLinkId!);
     vi.spyOn(razorpay!, "getPaymentLink").mockResolvedValue({ ...link, status });
     expect((await service.refreshStatus(payment.id)).status).toBe(status);
-    await expect(service.userConfirmedUpi(payment.id)).rejects.toThrow(`Cannot confirm a ${status} payment`);
+    await expect(service.userConfirmedUpi(payment.id)).rejects.toThrow(
+      `Cannot confirm a ${status} payment`,
+    );
   });
 
   it("keeps partially-paid checkout requests pending", async () => {
@@ -82,7 +117,11 @@ describe("PaymentService", () => {
     const { service } = setup();
     const payment = await service.createRequest(input);
     const confirmed = await service.userConfirmedUpi(payment.id, "123456789012");
-    expect(confirmed).toMatchObject({ status: "user_confirmed", externalRef: "123456789012", paidAt: "2026-11-01T12:00:00.000Z" });
+    expect(confirmed).toMatchObject({
+      status: "user_confirmed",
+      externalRef: "123456789012",
+      paidAt: "2026-11-01T12:00:00.000Z",
+    });
     expect(await service.userConfirmedUpi(payment.id, "123456789012")).toEqual(confirmed);
     expect(await service.userConfirmedUpi(payment.id, "999999999999")).toEqual(confirmed);
   });
@@ -90,10 +129,20 @@ describe("PaymentService", () => {
   it("supports user confirmation without a UTR", async () => {
     const { service } = setup();
     const payment = await service.createRequest(input);
-    expect(await service.userConfirmedUpi(payment.id)).toMatchObject({ status: "user_confirmed", externalRef: null });
+    expect(await service.userConfirmedUpi(payment.id)).toMatchObject({
+      status: "user_confirmed",
+      externalRef: null,
+    });
   });
 
-  it.each(["", "123", "1234567890123", "12345678901a", " 123456789012", "１２３４５６７８９０１２"])("rejects invalid UTR %j", async (utr) => {
+  it.each([
+    "",
+    "123",
+    "1234567890123",
+    "12345678901a",
+    " 123456789012",
+    "１２３４５６７８９０１２",
+  ])("rejects invalid UTR %j", async (utr) => {
     const { service } = setup();
     const payment = await service.createRequest(input);
     await expect(service.userConfirmedUpi(payment.id, utr)).rejects.toThrow("12 digits");
@@ -143,10 +192,12 @@ describe("pollUntilSettled", () => {
     const payment = await service.createRequest(input);
     const statuses: string[] = [];
     const settled = await service.pollUntilSettled(payment.id, {
-      intervalMs: 5, timeoutMs: 2000,
+      intervalMs: 5,
+      timeoutMs: 2000,
       async onUpdate(update) {
         statuses.push(update.status);
-        if (update.status === "pending") await fetch(`${payment.checkoutUrl}/complete`, { method: "POST" });
+        if (update.status === "pending")
+          await fetch(`${payment.checkoutUrl}/complete`, { method: "POST" });
       },
     });
     expect(settled.status).toBe("paid");
@@ -156,41 +207,62 @@ describe("pollUntilSettled", () => {
   it("times out even when the injected wall clock stays fixed", async () => {
     const { service } = setup();
     const payment = await service.createRequest(input);
-    await expect(service.pollUntilSettled(payment.id, { intervalMs: 5, timeoutMs: 25 })).rejects.toThrow("timed out");
+    await expect(
+      service.pollUntilSettled(payment.id, { intervalMs: 5, timeoutMs: 25 }),
+    ).rejects.toThrow("timed out");
   });
 
   it("aborts an in-flight status request at its timeout", async () => {
     const { service, razorpay } = setup(true);
     const payment = await service.createRequest(input);
-    vi.spyOn(razorpay!, "getPaymentLink").mockImplementation((_id, options) => new Promise((_resolve, reject) => {
-      options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), { once: true });
-    }));
-    await expect(service.pollUntilSettled(payment.id, { intervalMs: 5, timeoutMs: 25 })).rejects.toThrow("timed out");
+    vi.spyOn(razorpay!, "getPaymentLink").mockImplementation(
+      (_id, options) =>
+        new Promise((_resolve, reject) => {
+          options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
+            once: true,
+          });
+        }),
+    );
+    await expect(
+      service.pollUntilSettled(payment.id, { intervalMs: 5, timeoutMs: 25 }),
+    ).rejects.toThrow("timed out");
   });
 
   it("respects caller cancellation during a wait", async () => {
     const { service } = setup();
     const payment = await service.createRequest(input);
     const controller = new AbortController();
-    await expect(service.pollUntilSettled(payment.id, {
-      intervalMs: 1000, timeoutMs: 2000, signal: controller.signal,
-      onUpdate() { controller.abort(new Error("User stopped polling")); },
-    })).rejects.toThrow("User stopped polling");
+    await expect(
+      service.pollUntilSettled(payment.id, {
+        intervalMs: 1000,
+        timeoutMs: 2000,
+        signal: controller.signal,
+        onUpdate() {
+          controller.abort(new Error("User stopped polling"));
+        },
+      }),
+    ).rejects.toThrow("User stopped polling");
   });
 
   it("respects the timeout while an update callback is still pending", async () => {
     const { service } = setup();
     const payment = await service.createRequest(input);
-    await expect(service.pollUntilSettled(payment.id, {
-      intervalMs: 5, timeoutMs: 25, onUpdate: () => new Promise<void>(() => {}),
-    })).rejects.toThrow("timed out");
+    await expect(
+      service.pollUntilSettled(payment.id, {
+        intervalMs: 5,
+        timeoutMs: 25,
+        onUpdate: () => new Promise<void>(() => {}),
+      }),
+    ).rejects.toThrow("timed out");
   });
 
   it("does not poll when already aborted", async () => {
     const { service } = setup();
     const controller = new AbortController();
     controller.abort(new Error("Stopped"));
-    await expect(service.pollUntilSettled("missing", { signal: controller.signal })).rejects.toThrow("Stopped");
+    await expect(
+      service.pollUntilSettled("missing", { signal: controller.signal }),
+    ).rejects.toThrow("Stopped");
   });
 
   it("settles after a user confirmation", async () => {
@@ -202,8 +274,14 @@ describe("pollUntilSettled", () => {
 
   it("rejects invalid intervals and immediate timeouts", async () => {
     const { service } = setup();
-    await expect(service.pollUntilSettled("missing", { intervalMs: 0 })).rejects.toThrow("Invalid polling");
-    await expect(service.pollUntilSettled("missing", { timeoutMs: -1 })).rejects.toThrow("Invalid polling");
-    await expect(service.pollUntilSettled("missing", { timeoutMs: 0 })).rejects.toThrow("timed out");
+    await expect(service.pollUntilSettled("missing", { intervalMs: 0 })).rejects.toThrow(
+      "Invalid polling",
+    );
+    await expect(service.pollUntilSettled("missing", { timeoutMs: -1 })).rejects.toThrow(
+      "Invalid polling",
+    );
+    await expect(service.pollUntilSettled("missing", { timeoutMs: 0 })).rejects.toThrow(
+      "timed out",
+    );
   });
 });

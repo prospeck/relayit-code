@@ -1,7 +1,24 @@
 import { join } from "node:path";
-import { Settings as SettingsSchema, type AppState, type ModelConfig, type PendingAction, type Profile, type Settings } from "@relayit/shared";
+import {
+  Settings as SettingsSchema,
+  type AppState,
+  type ModelConfig,
+  type PendingAction,
+  type Profile,
+  type Settings,
+} from "@relayit/shared";
 import { openDatabase, type Database } from "./store/db.ts";
-import { ActionRepo, AuditRepo, ChatRepo, KvRepo, MemoryRepo, RoutineRepo, SecretRepo, SkillRepo, TaskRepo } from "./store/repo.ts";
+import {
+  ActionRepo,
+  AuditRepo,
+  ChatRepo,
+  KvRepo,
+  MemoryRepo,
+  RoutineRepo,
+  SecretRepo,
+  SkillRepo,
+  TaskRepo,
+} from "./store/repo.ts";
 import { Redactor } from "./audit/redact.ts";
 import { EventBus } from "./events.ts";
 import { ToolRegistry } from "./tools/registry.ts";
@@ -53,7 +70,9 @@ export class App {
 
   async start(): Promise<void> {
     const masterKey = await this.opts.keyProvider.getMasterKey();
-    this.db = await openDatabase(this.opts.dataDir === ":memory:" ? ":memory:" : join(this.opts.dataDir, "relayit.db"));
+    this.db = await openDatabase(
+      this.opts.dataDir === ":memory:" ? ":memory:" : join(this.opts.dataDir, "relayit.db"),
+    );
     this.kv = new KvRepo(this.db);
     this.secrets = new SecretRepo(this.db, masterKey, this.redactor);
     this.chat = new ChatRepo(this.db);
@@ -69,21 +88,39 @@ export class App {
     this.registry.registerAll(demoTools());
 
     this.agent = new Agent({
-      db: this.db, chat: this.chat, actions: this.actions, audit: this.audit, memory: this.memory, kv: this.kv,
-      secrets: this.secrets, skills: this.skills, registry: this.registry, bus: this.bus,
+      db: this.db,
+      chat: this.chat,
+      actions: this.actions,
+      audit: this.audit,
+      memory: this.memory,
+      kv: this.kv,
+      secrets: this.secrets,
+      skills: this.skills,
+      registry: this.registry,
+      bus: this.bus,
       getModel: () => this.activeModel(),
       getProfile: () => this.profile(),
       getSettings: () => this.settings(),
       hooks: this.hooks,
-      timeZone: this.opts.timeZone ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata"),
-      systemExtra: async () => (await Promise.all(this.systemExtras.map((f) => f().catch(() => undefined)))).filter(Boolean).join("\n\n") || undefined,
+      timeZone:
+        this.opts.timeZone ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata"),
+      systemExtra: async () =>
+        (await Promise.all(this.systemExtras.map((f) => f().catch(() => undefined))))
+          .filter(Boolean)
+          .join("\n\n") || undefined,
     });
     await this.agent.recoverInterrupted();
 
     // Expire stale approvals and let their runs wrap up.
     this.every(60_000, async () => {
       for (const a of await this.actions.expireDue()) {
-        await this.audit.log({ kind: "action.expired", summary: `Expired without a response: ${a.title}`, toolName: a.toolName, toolClass: "act", conversationId: a.conversationId });
+        await this.audit.log({
+          kind: "action.expired",
+          summary: `Expired without a response: ${a.title}`,
+          toolName: a.toolName,
+          toolClass: "act",
+          conversationId: a.conversationId,
+        });
         this.bus.emit({ type: "action.updated", action: a });
         await this.agent.resume(a.id).catch(() => {});
       }
@@ -123,7 +160,11 @@ export class App {
   async updateSettings(patch: Partial<Settings>): Promise<Settings> {
     const next = SettingsSchema.parse({ ...(await this.settings()), ...patch });
     await this.kv.set("settings", next);
-    await this.audit.log({ kind: "settings.changed", summary: `Settings updated: ${Object.keys(patch).join(", ")}`, data: patch });
+    await this.audit.log({
+      kind: "settings.changed",
+      summary: `Settings updated: ${Object.keys(patch).join(", ")}`,
+      data: patch,
+    });
     return next;
   }
 
@@ -141,7 +182,9 @@ export class App {
       onboarded: (await this.kv.get<boolean>("onboarded")) ?? false,
       profile: await this.profile(),
       model,
-      keySaved: model ? model.provider === "ollama" || (await this.secrets.has(this.keyName(model.provider))) : false,
+      keySaved: model
+        ? model.provider === "ollama" || (await this.secrets.has(this.keyName(model.provider)))
+        : false,
       settings: await this.settings(),
       version: VERSION,
       mockMode: { model: !!this.opts.mockModel, google: !!this.opts.fakeGoogleUrl },
@@ -151,16 +194,34 @@ export class App {
   private modelCache: { key: string; active: ActiveModel } | null = null;
 
   async activeModel(): Promise<ActiveModel | null> {
-    if (this.opts.providerOverride) return { provider: this.opts.providerOverride, providerId: "mock", model: "test", routerModel: null };
-    if (this.opts.mockModel) return { provider: createProvider("mock", null), providerId: "mock", model: "mock-smart", routerModel: null };
+    if (this.opts.providerOverride)
+      return {
+        provider: this.opts.providerOverride,
+        providerId: "mock",
+        model: "test",
+        routerModel: null,
+      };
+    if (this.opts.mockModel)
+      return {
+        provider: createProvider("mock", null),
+        providerId: "mock",
+        model: "mock-smart",
+        routerModel: null,
+      };
     const cfg = await this.modelConfig();
     if (!cfg) return null;
-    const apiKey = cfg.provider === "ollama" ? null : await this.secrets.get(this.keyName(cfg.provider));
+    const apiKey =
+      cfg.provider === "ollama" ? null : await this.secrets.get(this.keyName(cfg.provider));
     if (cfg.provider !== "ollama" && !apiKey) return null;
     const cacheKey = `${cfg.provider}|${cfg.model}|${cfg.baseUrl ?? ""}|${cfg.routerModel ?? ""}|${apiKey?.slice(-6) ?? ""}`;
     if (this.modelCache?.key === cacheKey) return this.modelCache.active;
     const provider = createProvider(cfg.provider, apiKey, cfg.baseUrl);
-    const active: ActiveModel = { provider, providerId: cfg.provider, model: cfg.model, routerModel: cfg.routerModel ?? null };
+    const active: ActiveModel = {
+      provider,
+      providerId: cfg.provider,
+      model: cfg.model,
+      routerModel: cfg.routerModel ?? null,
+    };
     this.modelCache = { key: cacheKey, active };
     return active;
   }
@@ -188,15 +249,27 @@ export class App {
     }
     if (a.involvesMoney && a.amountInr != null) {
       const cap = (await this.settings()).spendCapInr;
-      if (a.amountInr > cap) throw new HttpError(422, `₹${a.amountInr} is above your ₹${cap} per-action limit. Raise it in Settings → Approvals to continue.`);
+      if (a.amountInr > cap)
+        throw new HttpError(
+          422,
+          `₹${a.amountInr} is above your ₹${cap} per-action limit. Raise it in Settings → Approvals to continue.`,
+        );
     }
-    if (!(await this.actions.transition(id, "pending", "approved"))) throw new HttpError(409, "This request was already handled.");
+    if (!(await this.actions.transition(id, "pending", "approved")))
+      throw new HttpError(409, "This request was already handled.");
     let rule = "";
     if (mode === "always" && !a.involvesMoney) {
       await this.actions.addRule(a.toolName, a.service, ruleLabel(a));
       rule = " and added an “Always allow” rule";
     }
-    await this.audit.log({ kind: "action.approved", summary: `You approved${rule}: ${a.title}`, toolName: a.toolName, toolClass: "act", data: { actionId: id, mode }, conversationId: a.conversationId });
+    await this.audit.log({
+      kind: "action.approved",
+      summary: `You approved${rule}: ${a.title}`,
+      toolName: a.toolName,
+      toolClass: "act",
+      data: { actionId: id, mode },
+      conversationId: a.conversationId,
+    });
     const updated = (await this.actions.get(id))!;
     this.bus.emit({ type: "action.updated", action: updated });
     void this.agent.resume(id).catch((e) => console.error("[resume]", e));
@@ -206,8 +279,16 @@ export class App {
   async refuse(id: string): Promise<PendingAction> {
     const a = await this.actions.get(id);
     if (!a) throw new HttpError(404, "That request no longer exists.");
-    if (!(await this.actions.transition(id, "pending", "refused"))) throw new HttpError(409, `This request was already ${a.status}.`);
-    await this.audit.log({ kind: "action.refused", summary: `You refused: ${a.title}`, toolName: a.toolName, toolClass: "act", data: { actionId: id }, conversationId: a.conversationId });
+    if (!(await this.actions.transition(id, "pending", "refused")))
+      throw new HttpError(409, `This request was already ${a.status}.`);
+    await this.audit.log({
+      kind: "action.refused",
+      summary: `You refused: ${a.title}`,
+      toolName: a.toolName,
+      toolClass: "act",
+      data: { actionId: id },
+      conversationId: a.conversationId,
+    });
     const updated = (await this.actions.get(id))!;
     this.bus.emit({ type: "action.updated", action: updated });
     void this.agent.resume(id).catch((e) => console.error("[resume]", e));

@@ -31,7 +31,10 @@ export function App() {
   if (route.screen === "quick") return <QuickAsk />;
 
   if (state.isLoading || (state.isError && state.failureCount < 30)) return <Splash />;
-  if (state.isError) return <Splash error={String((state.error as Error).message)} onRetry={() => state.refetch()} />;
+  if (state.isError)
+    return (
+      <Splash error={String((state.error as Error).message)} onRetry={() => state.refetch()} />
+    );
   if (!state.data?.onboarded) return <Onboarding />;
 
   return (
@@ -92,7 +95,11 @@ function Screen({ screen, param }: { screen: string; param: string | null }) {
 function Splash({ error, onRetry }: { error?: string; onRetry?: () => void }) {
   return (
     <div className="drag h-full flex flex-col items-center justify-center gap-5 bg-bg">
-      <motion.div className="motion-reduce:transform-none!" animate={error ? {} : { scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 1.6 }}>
+      <motion.div
+        className="motion-reduce:transform-none!"
+        animate={error ? {} : { scale: [1, 1.05, 1] }}
+        transition={{ repeat: Infinity, duration: 1.6 }}
+      >
         <LogoMark size={52} />
       </motion.div>
       {error ? (
@@ -127,7 +134,11 @@ function useKeyboardShortcuts() {
         navigate("settings");
       } else if (mod && /^[1-7]$/.test(e.key)) {
         e.preventDefault();
-        navigate(["today", "chat", "tasks", "activity", "connections", "skills", "routines"][Number(e.key) - 1]!);
+        navigate(
+          ["today", "chat", "tasks", "activity", "connections", "skills", "routines"][
+            Number(e.key) - 1
+          ]!,
+        );
       }
     };
     window.addEventListener("keydown", onKey);
@@ -152,7 +163,14 @@ function useFirstOpenBrief(enabled: boolean) {
     if (!isTauri()) return;
     let off: (() => void) | undefined;
     void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen("relayit://brief", () => void api.brief(false).then((r) => navigate(`chat/${r.conversationId}`)).catch(() => {})).then((u) => (off = u)),
+      listen(
+        "relayit://brief",
+        () =>
+          void api
+            .brief(false)
+            .then((r) => navigate(`chat/${r.conversationId}`))
+            .catch(() => {}),
+      ).then((u) => (off = u)),
     );
     return () => off?.();
   }, []);

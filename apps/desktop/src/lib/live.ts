@@ -4,8 +4,19 @@ import type { ServerEvent } from "@relayit/shared";
 import { endpoint } from "./api";
 import { notify } from "./tauri";
 
-type LiveStep = { id: string; label: string; tool: string; status: "running" | "done" | "error" | "waiting" };
-export type LiveRun = { runId: string; text: string; status: string; steps: LiveStep[]; active: boolean };
+type LiveStep = {
+  id: string;
+  label: string;
+  tool: string;
+  status: "running" | "done" | "error" | "waiting";
+};
+export type LiveRun = {
+  runId: string;
+  text: string;
+  status: string;
+  steps: LiveStep[];
+  active: boolean;
+};
 export type BrowserFrame = { url: string; jpegBase64: string; at: number };
 
 type LiveState = {
@@ -22,28 +33,48 @@ export const useLive = create<LiveState>((set) => ({
   runs: {},
   frames: {},
   setConnected: (connected) => set({ connected }),
-  clear: (cid) => set((s) => {
-    const runs = { ...s.runs };
-    delete runs[cid];
-    return { runs };
-  }),
+  clear: (cid) =>
+    set((s) => {
+      const runs = { ...s.runs };
+      delete runs[cid];
+      return { runs };
+    }),
   apply: (e) =>
     set((s) => {
       switch (e.type) {
         case "run.started":
-          return { runs: { ...s.runs, [e.conversationId]: { runId: e.runId, text: "", status: "Thinking…", steps: [], active: true } } };
+          return {
+            runs: {
+              ...s.runs,
+              [e.conversationId]: {
+                runId: e.runId,
+                text: "",
+                status: "Thinking…",
+                steps: [],
+                active: true,
+              },
+            },
+          };
         case "run.status": {
           const r = s.runs[e.conversationId];
           return r ? { runs: { ...s.runs, [e.conversationId]: { ...r, status: e.label } } } : s;
         }
         case "run.text": {
-          const r = s.runs[e.conversationId] ?? { runId: e.runId, text: "", status: "", steps: [], active: true };
+          const r = s.runs[e.conversationId] ?? {
+            runId: e.runId,
+            text: "",
+            status: "",
+            steps: [],
+            active: true,
+          };
           return { runs: { ...s.runs, [e.conversationId]: { ...r, text: r.text + e.delta } } };
         }
         case "run.step": {
           const r = s.runs[e.conversationId];
           if (!r) return s;
-          const steps = r.steps.some((x) => x.id === e.step.id) ? r.steps.map((x) => (x.id === e.step.id ? e.step : x)) : [...r.steps, e.step];
+          const steps = r.steps.some((x) => x.id === e.step.id)
+            ? r.steps.map((x) => (x.id === e.step.id ? e.step : x))
+            : [...r.steps, e.step];
           return { runs: { ...s.runs, [e.conversationId]: { ...r, steps } } };
         }
         case "run.finished":
@@ -56,10 +87,26 @@ export const useLive = create<LiveState>((set) => ({
           // The persisted message replaces the streamed text.
           if (e.message.role !== "assistant") return s;
           const r = s.runs[e.message.conversationId];
-          return r ? { runs: { ...s.runs, [e.message.conversationId]: { ...r, text: "", steps: r.steps.filter((x) => x.status === "running") } } } : s;
+          return r
+            ? {
+                runs: {
+                  ...s.runs,
+                  [e.message.conversationId]: {
+                    ...r,
+                    text: "",
+                    steps: r.steps.filter((x) => x.status === "running"),
+                  },
+                },
+              }
+            : s;
         }
         case "browser.frame":
-          return { frames: { ...s.frames, [e.conversationId]: { url: e.url, jpegBase64: e.jpegBase64, at: Date.now() } } };
+          return {
+            frames: {
+              ...s.frames,
+              [e.conversationId]: { url: e.url, jpegBase64: e.jpegBase64, at: Date.now() },
+            },
+          };
         default:
           return s;
       }
@@ -77,7 +124,9 @@ export function startLive(qc: QueryClient): void {
     let ws: WebSocket;
     try {
       const { base, token } = await endpoint();
-      ws = new WebSocket(`${base.replace(/^http/, "ws")}/api/events?token=${encodeURIComponent(token)}`);
+      ws = new WebSocket(
+        `${base.replace(/^http/, "ws")}/api/events?token=${encodeURIComponent(token)}`,
+      );
     } catch {
       setTimeout(connect, 1500);
       return;
@@ -128,7 +177,10 @@ export function startLive(qc: QueryClient): void {
         case "run.error":
           void qc.invalidateQueries({ queryKey: ["conversation", e.conversationId] });
           // A fetch that started before these events may land after them; refetch once more.
-          setTimeout(() => void qc.invalidateQueries({ queryKey: ["conversation", e.conversationId] }), 600);
+          setTimeout(
+            () => void qc.invalidateQueries({ queryKey: ["conversation", e.conversationId] }),
+            600,
+          );
           break;
         case "notify":
           if (!document.hasFocus()) void notify(e.title, e.body);

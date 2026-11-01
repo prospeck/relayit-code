@@ -4,7 +4,11 @@ export class TimeoutError extends Error {
   }
 }
 
-export async function withTimeout<T>(label: string, ms: number, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
+export async function withTimeout<T>(
+  label: string,
+  ms: number,
+  fn: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
   const ctrl = new AbortController();
   let timer: NodeJS.Timeout | undefined;
   const timeout = new Promise<never>((_, reject) => {

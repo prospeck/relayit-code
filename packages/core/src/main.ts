@@ -23,12 +23,19 @@ const opt = (name: string) => {
 const dev = flag("dev");
 const keyFromStdin = flag("key-from-stdin");
 // Capture EOF even during startup. Windows has no catchable SIGTERM; the shell closes this pipe.
-const stdinClosed = keyFromStdin ? new Promise<void>((resolve) => {
-  process.stdin.once("end", resolve);
-  process.stdin.once("close", resolve);
-}) : null;
-const dataDir = opt("data-dir") ?? process.env.RELAYIT_DATA_DIR ?? (dev ? join(process.cwd(), "../../.relayit-dev") : join(homedir(), ".relayit"));
-const keyProvider: KeyProvider = keyFromStdin ? new StdinKeyProvider() : new DevFileKeyProvider(join(dataDir, "dev-master.key"));
+const stdinClosed = keyFromStdin
+  ? new Promise<void>((resolve) => {
+      process.stdin.once("end", resolve);
+      process.stdin.once("close", resolve);
+    })
+  : null;
+const dataDir =
+  opt("data-dir") ??
+  process.env.RELAYIT_DATA_DIR ??
+  (dev ? join(process.cwd(), "../../.relayit-dev") : join(homedir(), ".relayit"));
+const keyProvider: KeyProvider = keyFromStdin
+  ? new StdinKeyProvider()
+  : new DevFileKeyProvider(join(dataDir, "dev-master.key"));
 const token = dev ? (process.env.RELAYIT_DEV_TOKEN ?? "dev") : newToken();
 const port = Number(opt("port") ?? (dev ? 47821 : 0));
 
@@ -36,14 +43,20 @@ const app = new App({
   dataDir,
   keyProvider,
   mockModel: process.env.RELAYIT_MOCK_MODEL === "1",
-  fakeGoogleUrl: process.env.RELAYIT_FAKE_GOOGLE === "1" ? "auto" : (process.env.RELAYIT_FAKE_GOOGLE_URL ?? null),
+  fakeGoogleUrl:
+    process.env.RELAYIT_FAKE_GOOGLE === "1"
+      ? "auto"
+      : (process.env.RELAYIT_FAKE_GOOGLE_URL ?? null),
 });
 
 await app.start();
 const modules = await loadPlugins(app);
 const server = await startServer(app, { port, token, modules });
-process.stdout.write(`RELAYIT_READY ${JSON.stringify({ port: server.port, token: dev ? token : token })}\n`);
-if (dev) console.error(`[relayit] core listening on http://127.0.0.1:${server.port} (data: ${dataDir})`);
+process.stdout.write(
+  `RELAYIT_READY ${JSON.stringify({ port: server.port, token: dev ? token : token })}\n`,
+);
+if (dev)
+  console.error(`[relayit] core listening on http://127.0.0.1:${server.port} (data: ${dataDir})`);
 
 let stopping = false;
 const shutdown = async () => {

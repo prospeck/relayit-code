@@ -7,23 +7,38 @@ const searchInput = z.object({
   contents: z.object({ text: z.object({ maxCharacters: z.number().int().positive() }) }),
   startPublishedDate: z.string().optional(),
 });
-const searchResponse = z.object({ results: z.array(z.object({
-  title: z.string().nullish(),
-  url: z.url({ protocol: /^https?$/ }),
-  publishedDate: z.string().nullish(),
-  text: z.string().nullish(),
-})) });
+const searchResponse = z.object({
+  results: z.array(
+    z.object({
+      title: z.string().nullish(),
+      url: z.url({ protocol: /^https?$/ }),
+      publishedDate: z.string().nullish(),
+      text: z.string().nullish(),
+    }),
+  ),
+});
 
 export type ExaSearchInput = z.infer<typeof searchInput>;
-export type ExaResult = { title: string; url: string; publishedDate: string | null; snippet: string };
+export type ExaResult = {
+  title: string;
+  url: string;
+  publishedDate: string | null;
+  snippet: string;
+};
 
 export class ExaClient {
   #apiKey: string;
   #baseUrl: string;
   #fetch: typeof globalThis.fetch;
 
-  constructor({ apiKey, baseUrl = "https://api.exa.ai", fetch = globalThis.fetch }: {
-    apiKey: string; baseUrl?: string; fetch?: typeof globalThis.fetch;
+  constructor({
+    apiKey,
+    baseUrl = "https://api.exa.ai",
+    fetch = globalThis.fetch,
+  }: {
+    apiKey: string;
+    baseUrl?: string;
+    fetch?: typeof globalThis.fetch;
   }) {
     this.#apiKey = apiKey;
     this.#baseUrl = baseUrl.replace(/\/+$/, "");
@@ -46,9 +61,12 @@ export class ExaClient {
     }
     if (!response.ok) {
       await response.body?.cancel();
-      if (response.status === 401) throw new Error("Exa rejected the API key. Update it in Settings → Connections.");
-      if (response.status === 429) throw new Error("Exa search is rate limited. Please try again shortly.");
-      if (response.status >= 500) throw new Error("Exa search is temporarily unavailable. Please try again later.");
+      if (response.status === 401)
+        throw new Error("Exa rejected the API key. Update it in Settings → Connections.");
+      if (response.status === 429)
+        throw new Error("Exa search is rate limited. Please try again shortly.");
+      if (response.status >= 500)
+        throw new Error("Exa search is temporarily unavailable. Please try again later.");
       throw new Error(`Exa search failed (HTTP ${response.status}).`);
     }
     const parsed = searchResponse.safeParse(await response.json());

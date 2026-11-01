@@ -3,3 +3,7 @@ dist
 target
 pnpm-lock.yaml
 apps/desktop/src-tauri/gen
+evals/results
+*.md
+.github
+pnpm-lock.yaml

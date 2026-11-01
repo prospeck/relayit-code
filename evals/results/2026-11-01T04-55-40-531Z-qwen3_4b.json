@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "startedAt": "2026-11-01T04:55:40.531Z",
+  "resumedAt": [],
+  "updatedAt": "2026-11-01T04:55:40.593Z",
+  "complete": false,
+  "configuration": {
+    "provider": "ollama",
+    "model": "qwen3:4b",
+    "baseUrl": "http://127.0.0.1:11434/v1",
+    "repeat": 1,
+    "only": "food-restaurant",
+    "timeoutMs": 600000,
+    "node": "v26.11.1",
+    "timeZone": "Asia/Kolkata",
+    "approvals": "always refuse",
+    "fakeGoogle": true,
+    "startupTriage": "heuristic before onboarding",
+    "browser": "disabled",
+    "tokens": "provider usage in persisted runs; interrupted partial requests may be unreported"
+  },
+  "summary": {
+    "passed": 0,
+    "total": 0,
+    "planned": 1,
+    "passRate": 0,
+    "scenarios": [
+      {
+        "id": "food-restaurant",
+        "passed": 0,
+        "total": 0,
+        "passRate": null,
+        "flaky": false
+      }
+    ]
+  },
+  "results": []
+}

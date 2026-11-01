@@ -17,7 +17,11 @@ export const DEFAULT_BASE_URLS: Record<ProviderId, string> = {
   ollama: "http://127.0.0.1:11434/v1",
 };
 
-export function createProvider(provider: ProviderId | "mock", apiKey: string | null, baseUrl?: string): ModelProvider {
+export function createProvider(
+  provider: ProviderId | "mock",
+  apiKey: string | null,
+  baseUrl?: string,
+): ModelProvider {
   const base = baseUrl || (provider === "mock" ? "" : DEFAULT_BASE_URLS[provider]);
   switch (provider) {
     case "mock":
@@ -27,7 +31,10 @@ export function createProvider(provider: ProviderId | "mock", apiKey: string | n
       return new AnthropicProvider(apiKey, base);
     case "openrouter":
       if (!apiKey) throw new Error("OpenRouter needs an API key");
-      return new OpenAICompatProvider("openrouter", base, apiKey, { "HTTP-Referer": "https://relayit.app", "X-Title": "RelayIt" });
+      return new OpenAICompatProvider("openrouter", base, apiKey, {
+        "HTTP-Referer": "https://relayit.app",
+        "X-Title": "RelayIt",
+      });
     case "ollama":
       return new OpenAICompatProvider("ollama", base, null);
     case "openai":
@@ -38,7 +45,11 @@ export function createProvider(provider: ProviderId | "mock", apiKey: string | n
 }
 
 /** Cheap validation: list models (free on every provider). */
-export async function validateKey(provider: ProviderId, apiKey: string | undefined, baseUrl?: string): Promise<ValidateKeyResult> {
+export async function validateKey(
+  provider: ProviderId,
+  apiKey: string | undefined,
+  baseUrl?: string,
+): Promise<ValidateKeyResult> {
   try {
     const p = createProvider(provider, apiKey ?? null, baseUrl);
     const models = await p.listModels();
@@ -62,9 +73,15 @@ export async function validateKey(provider: ProviderId, apiKey: string | undefin
 export function rankModels(provider: ProviderId, models: string[]): string[] {
   const score = (m: string): number => {
     const s = m.toLowerCase();
-    if (/embed|whisper|tts|dall|image|audio|realtime|moderation|transcribe|search|vision-preview/.test(s)) return -100;
+    if (
+      /embed|whisper|tts|dall|image|audio|realtime|moderation|transcribe|search|vision-preview/.test(
+        s,
+      )
+    )
+      return -100;
     let v = 0;
-    if (provider === "anthropic") v += /sonnet/.test(s) ? 30 : /opus/.test(s) ? 20 : /haiku/.test(s) ? 10 : 0;
+    if (provider === "anthropic")
+      v += /sonnet/.test(s) ? 30 : /opus/.test(s) ? 20 : /haiku/.test(s) ? 10 : 0;
     if (provider === "openai") v += /^gpt-/.test(s) ? 20 : /^o\d/.test(s) ? 10 : -50;
     if (provider === "gemini") v += /gemini/.test(s) ? 20 : -50;
     if (/mini|flash|haiku|small|nano|lite/.test(s)) v -= 3;
@@ -79,11 +96,15 @@ export function rankModels(provider: ProviderId, models: string[]): string[] {
 /** Picks a cheap model from the same provider for routing, if the user didn't set one. */
 export function suggestRouterModel(cfg: ModelConfig, available: string[]): string | undefined {
   if (cfg.routerModel) return cfg.routerModel;
-  const cheap = available.find((m) => /haiku|mini|flash|nano|lite/i.test(m) && !/embed|audio|image/i.test(m));
+  const cheap = available.find(
+    (m) => /haiku|mini|flash|nano|lite/i.test(m) && !/embed|audio|image/i.test(m),
+  );
   return cheap;
 }
 
-export async function detectOllama(baseUrl = "http://127.0.0.1:11434"): Promise<{ running: boolean; models: string[] }> {
+export async function detectOllama(
+  baseUrl = "http://127.0.0.1:11434",
+): Promise<{ running: boolean; models: string[] }> {
   try {
     const res = await fetch(`${baseUrl}/api/tags`, { signal: AbortSignal.timeout(1500) });
     if (!res.ok) return { running: false, models: [] };

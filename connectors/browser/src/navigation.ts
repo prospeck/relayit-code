@@ -16,11 +16,16 @@ export async function readAfterNavigation<T>(page: Page, read: () => Promise<T>)
     try {
       return await read();
     } catch (error) {
-      if (!(error instanceof Error) || !error.message.includes("Execution context was destroyed")) throw error;
-      if (!committed) await new Promise<void>((resolve, reject) => {
-        onCommit = resolve;
-        timer = setTimeout(() => reject(new Error("Browser navigation did not commit within 4 seconds")), 4000);
-      });
+      if (!(error instanceof Error) || !error.message.includes("Execution context was destroyed"))
+        throw error;
+      if (!committed)
+        await new Promise<void>((resolve, reject) => {
+          onCommit = resolve;
+          timer = setTimeout(
+            () => reject(new Error("Browser navigation did not commit within 4 seconds")),
+            4000,
+          );
+        });
       await page.waitForLoadState("domcontentloaded", { timeout: 4000 });
       return await read();
     }

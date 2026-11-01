@@ -1,4 +1,12 @@
-import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, Mic, Square } from "lucide-react";
@@ -19,16 +27,30 @@ type Props = {
 };
 
 /** The one input that matters. Enter sends, Shift+Enter adds a line, "/" opens skills, the mic does push-to-talk. */
-export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ onSend, onStop, busy, placeholder, autoFocus, size = "dock", disabled }, ref) {
+export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
+  { onSend, onStop, busy, placeholder, autoFocus, size = "dock", disabled },
+  ref,
+) {
   const [text, setText] = useState("");
   const [slashIdx, setSlashIdx] = useState(0);
   const [slashDismissed, setSlashDismissed] = useState(false);
   const listId = useId();
   const hintId = useId();
   const ta = useRef<HTMLTextAreaElement>(null);
-  const skills = useQuery({ queryKey: ["skills"], queryFn: api.skills, staleTime: 60_000, retry: false });
+  const skills = useQuery({
+    queryKey: ["skills"],
+    queryFn: api.skills,
+    staleTime: 60_000,
+    retry: false,
+  });
 
-  useImperativeHandle(ref, () => ({ focus: () => ta.current?.focus(), setText: (t) => { setText(t); requestAnimationFrame(() => ta.current?.focus()); } }));
+  useImperativeHandle(ref, () => ({
+    focus: () => ta.current?.focus(),
+    setText: (t) => {
+      setText(t);
+      requestAnimationFrame(() => ta.current?.focus());
+    },
+  }));
 
   useEffect(() => {
     const el = ta.current;
@@ -39,7 +61,10 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
 
   const slashQuery = /^\/([a-z0-9-]*)$/.exec(text)?.[1];
   const matches = useMemo(
-    () => (slashQuery === undefined || slashDismissed ? [] : (skills.data ?? []).filter((s) => s.slug.startsWith(slashQuery)).slice(0, 6)),
+    () =>
+      slashQuery === undefined || slashDismissed
+        ? []
+        : (skills.data ?? []).filter((s) => s.slug.startsWith(slashQuery)).slice(0, 6),
     [slashQuery, skills.data, slashDismissed],
   );
 
@@ -65,7 +90,9 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
             aria-label="Skills"
             className="absolute bottom-full mb-2 left-0 right-0 bg-surface border border-line-strong rounded-[14px] shadow-lg p-1.5 z-20"
           >
-            <div className="px-2.5 pt-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">Skills</div>
+            <div className="px-2.5 pt-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">
+              Skills
+            </div>
             {matches.map((s, i) => (
               <button
                 key={s.id}
@@ -78,10 +105,15 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
                   setText(`/${s.slug} `);
                   ta.current?.focus();
                 }}
-                className={cx("w-full flex items-baseline gap-3 px-2.5 py-2 rounded-[9px] text-left", i === slashIdx && "bg-surface-2")}
+                className={cx(
+                  "w-full flex items-baseline gap-3 px-2.5 py-2 rounded-[9px] text-left",
+                  i === slashIdx && "bg-surface-2",
+                )}
               >
                 <span className="text-[13.5px] font-medium text-accent-text">/{s.slug}</span>
-                <span className="text-[12.5px] text-muted truncate">{s.description || s.title}</span>
+                <span className="text-[12.5px] text-muted truncate">
+                  {s.description || s.title}
+                </span>
               </button>
             ))}
           </motion.div>
@@ -91,7 +123,9 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
       <div
         className={cx(
           "group relative bg-surface border border-control transition-[border,box-shadow] duration-200 focus-within:border-accent focus-within:shadow-[var(--ring),var(--shadow-md)]",
-          size === "hero" ? "rounded-[22px] shadow-md px-5 pt-4 pb-3" : "rounded-[18px] shadow-sm px-4 pt-3 pb-2.5",
+          size === "hero"
+            ? "rounded-[22px] shadow-md px-5 pt-4 pb-3"
+            : "rounded-[18px] shadow-sm px-4 pt-3 pb-2.5",
         )}
       >
         <textarea
@@ -117,7 +151,9 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
             }
             if (matches.length && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
               e.preventDefault();
-              setSlashIdx((i) => (i + (e.key === "ArrowDown" ? 1 : matches.length - 1)) % matches.length);
+              setSlashIdx(
+                (i) => (i + (e.key === "ArrowDown" ? 1 : matches.length - 1)) % matches.length,
+              );
               return;
             }
             if (matches.length && e.key === "Enter" && !e.shiftKey) {
@@ -131,10 +167,12 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
             }
           }}
           rows={1}
-          placeholder={voice.recording ? "Listening…" : placeholder ?? "Say it once…"}
+          placeholder={voice.recording ? "Listening…" : (placeholder ?? "Say it once…")}
           className={cx(
             "block w-full resize-none bg-transparent outline-none placeholder:text-faint text-ink",
-            size === "hero" ? "text-[17px] leading-[1.5] min-h-[52px]" : "text-[14.5px] leading-[1.55] min-h-[24px]",
+            size === "hero"
+              ? "text-[17px] leading-[1.5] min-h-[52px]"
+              : "text-[14.5px] leading-[1.55] min-h-[24px]",
           )}
         />
         <div className={cx("flex items-center gap-1", size === "hero" ? "mt-3" : "mt-1.5")}>
@@ -165,7 +203,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
               disabled={voice.busy}
               className={cx(
                 "size-8 rounded-full flex items-center justify-center transition-colors",
-                voice.recording ? "bg-accent-soft text-accent" : voice.busy ? "text-muted animate-pulse" : "text-muted hover:text-ink hover:bg-surface-2",
+                voice.recording
+                  ? "bg-accent-soft text-accent"
+                  : voice.busy
+                    ? "text-muted animate-pulse"
+                    : "text-muted hover:text-ink hover:bg-surface-2",
               )}
               aria-label={voice.recording ? "Recording — release to stop" : "Hold to talk"}
             >
@@ -173,7 +215,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
             </button>
           </Tooltip>
           {busy ? (
-            <button onClick={onStop} aria-label="Stop" className="size-8 rounded-full bg-ink text-bg flex items-center justify-center hover:opacity-85 transition-opacity">
+            <button
+              onClick={onStop}
+              aria-label="Stop"
+              className="size-8 rounded-full bg-ink text-bg flex items-center justify-center hover:opacity-85 transition-opacity"
+            >
               <Square className="size-3 fill-current" />
             </button>
           ) : (

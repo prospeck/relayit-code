@@ -27,23 +27,38 @@ describe("secret storage and API boundaries", () => {
     const api = buildApi(app, "test-session");
     const secret = "synthetic-model-key-without-recognised-prefix";
     const response = await api.request("/api/models/config", {
-      method: "PUT", headers: { authorization: "Bearer test-session", "content-type": "application/json" },
-      body: JSON.stringify({ model: { provider: "openai", model: "test-chat", baseUrl }, apiKey: secret }),
+      method: "PUT",
+      headers: { authorization: "Bearer test-session", "content-type": "application/json" },
+      body: JSON.stringify({
+        model: { provider: "openai", model: "test-chat", baseUrl },
+        apiKey: secret,
+      }),
     });
     expect(response.status).toBe(200);
     expect(await response.text()).not.toContain(secret);
     expect(await app.secrets.get("model.apiKey.openai")).toBe(secret);
     // Exercise both free-text and nested audit redaction, rather than just an empty log.
-    await app.audit.log({ kind: "tool.result", summary: `Result included ${secret}`, data: { safe: [secret], apiKey: secret } });
+    await app.audit.log({
+      kind: "tool.result",
+      summary: `Result included ${secret}`,
+      data: { safe: [secret], apiKey: secret },
+    });
     const rows = await app.db.selectFrom("audit_events").selectAll().execute();
     expect(rows.some((r) => r.kind === "secret.saved")).toBe(true);
     expect(JSON.stringify(rows)).not.toContain(secret);
     expect(JSON.stringify(rows)).toContain("[redacted]");
-    const stateResponse = await api.request("/api/state", { headers: { authorization: "Bearer test-session" } });
+    const stateResponse = await api.request("/api/state", {
+      headers: { authorization: "Bearer test-session" },
+    });
     expect(stateResponse.status).toBe(200);
     const stateJson = await stateResponse.text();
     expect(stateJson).not.toContain(secret);
-    expect(JSON.parse(stateJson)).toMatchObject({ keySaved: true, model: { provider: "openai", model: "test-chat" } });
-    expect(JSON.stringify(await app.db.selectFrom("secrets").selectAll().execute())).not.toContain(secret);
+    expect(JSON.parse(stateJson)).toMatchObject({
+      keySaved: true,
+      model: { provider: "openai", model: "test-chat" },
+    });
+    expect(JSON.stringify(await app.db.selectFrom("secrets").selectAll().execute())).not.toContain(
+      secret,
+    );
   });
 });

@@ -27,7 +27,11 @@ export function Steps({ steps, live }: { steps: Step[]; live?: boolean }) {
   return (
     <div className="mb-2">
       {!live && (
-        <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="group inline-flex items-center gap-1 min-h-[24px] text-[12.5px] text-muted hover:text-ink transition-colors">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="group inline-flex items-center gap-1 min-h-[24px] text-[12.5px] text-muted hover:text-ink transition-colors"
+        >
           <ChevronRight className={cx("size-3.5 transition-transform", open && "rotate-90")} />
           {steps.length === 1 ? steps[0]!.label : `${done} of ${steps.length} steps`}
         </button>
@@ -48,9 +52,13 @@ export function Steps({ steps, live }: { steps: Step[]; live?: boolean }) {
                 animate={{ opacity: 1, x: 0 }}
                 className="relative flex items-center gap-2.5 py-[3px] text-[12.5px]"
               >
-                {i < steps.length - 1 && <span className="absolute left-[7.5px] top-[18px] h-[calc(100%-10px)] w-px bg-line-strong" />}
+                {i < steps.length - 1 && (
+                  <span className="absolute left-[7.5px] top-[18px] h-[calc(100%-10px)] w-px bg-line-strong" />
+                )}
                 <StepIcon status={s.status} />
-                <span className={cx(s.status === "running" ? "shimmer font-medium" : "text-muted")}>{s.label}</span>
+                <span className={cx(s.status === "running" ? "shimmer font-medium" : "text-muted")}>
+                  {s.label}
+                </span>
               </motion.li>
             ))}
           </motion.ol>

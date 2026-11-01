@@ -253,7 +253,7 @@
     clip-path: inset(0 50% 0 0);
   }
 
-.approval-detail > dt::after {
+  .approval-detail > dt::after {
     content: "";
     display: inline-block;
     width: 12px;

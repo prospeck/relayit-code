@@ -26,7 +26,11 @@ export class ScriptedModel implements ModelProvider {
   }
 }
 
-export const text = (delta: string): ModelEvent[] => [{ type: "text", delta }, { type: "done", stopReason: "end_turn" }];
+export const text = (delta: string): ModelEvent[] => [
+  { type: "text", delta },
+  { type: "done", stopReason: "end_turn" },
+];
 export const call = (name: string, args: unknown = {}, id = `call_${name}`): ModelEvent => ({
-  type: "tool_call", call: { id, name, args, rawArgs: JSON.stringify(args) },
+  type: "tool_call",
+  call: { id, name, args, rawArgs: JSON.stringify(args) },
 });

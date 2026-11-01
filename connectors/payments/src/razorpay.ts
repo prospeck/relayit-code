@@ -10,7 +10,10 @@ const linkSchema = z.object({
   currency: z.literal("INR"),
   status: z.enum(["created", "partially_paid", "paid", "cancelled", "expired"]),
   reference_id: z.string().optional(),
-  payments: z.array(z.object({ payment_id: z.string() })).nullable().optional(),
+  payments: z
+    .array(z.object({ payment_id: z.string() }))
+    .nullable()
+    .optional(),
 });
 
 export type PaymentLink = {
@@ -36,7 +39,11 @@ export class RazorpayClient {
   #keySecret: string;
   #baseUrl: string;
 
-  constructor({ keyId, keySecret, baseUrl = "https://api.razorpay.com/v1" }: {
+  constructor({
+    keyId,
+    keySecret,
+    baseUrl = "https://api.razorpay.com/v1",
+  }: {
     keyId: string;
     keySecret: string;
     baseUrl?: string;
@@ -78,7 +85,8 @@ export class RazorpayClient {
       },
     });
     // Do not echo remote bodies: an upstream error can contain sensitive request data.
-    if (!response.ok) throw new Error(`Razorpay payment-link request failed (HTTP ${response.status})`);
+    if (!response.ok)
+      throw new Error(`Razorpay payment-link request failed (HTTP ${response.status})`);
     const result = linkSchema.safeParse(await response.json());
     if (!result.success) throw new Error("Invalid Razorpay payment-link response");
     const data = result.data;

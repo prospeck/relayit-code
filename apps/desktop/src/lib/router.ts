@@ -4,7 +4,10 @@ import { useSyncExternalStore } from "react";
 export type Route = { screen: string; param: string | null; sub: string | null };
 
 function parse(): Route {
-  const [screen = "today", param = null, sub = null] = window.location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  const [screen = "today", param = null, sub = null] = window.location.hash
+    .replace(/^#\/?/, "")
+    .split("/")
+    .filter(Boolean);
   return { screen, param, sub };
 }
 

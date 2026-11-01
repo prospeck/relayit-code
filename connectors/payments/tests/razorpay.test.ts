@@ -7,10 +7,18 @@ let mock: Awaited<ReturnType<typeof startMockCheckout>>;
 let client: RazorpayClient;
 beforeAll(async () => {
   mock = await startMockCheckout();
-  client = new RazorpayClient({ keyId: "rzp_test_local", keySecret: "unused-local-placeholder", baseUrl: mock.baseUrl });
+  client = new RazorpayClient({
+    keyId: "rzp_test_local",
+    keySecret: "unused-local-placeholder",
+    baseUrl: mock.baseUrl,
+  });
 });
-afterAll(async () => { await mock?.close(); });
-afterEach(() => { vi.restoreAllMocks(); });
+afterAll(async () => {
+  await mock?.close();
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function create(description = "Asha’s store") {
   return client.createPaymentLink({ amountInr: 12345.67, description, referenceId: randomUUID() });
@@ -39,10 +47,16 @@ describe("Razorpay and local checkout", () => {
     const response = await fetch(`${mock.baseUrl}/payment_links`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: 10000000, currency: "INR", description: "Local merchant", reference_id: randomUUID(), reminder_enable: false }),
+      body: JSON.stringify({
+        amount: 10000000,
+        currency: "INR",
+        description: "Local merchant",
+        reference_id: randomUUID(),
+        reminder_enable: false,
+      }),
     });
     expect(response.status).toBe(200);
-    const link = await response.json() as { short_url: string };
+    const link = (await response.json()) as { short_url: string };
     expect(await (await fetch(link.short_url)).text()).toContain("₹1,00,000.00");
   });
 
@@ -56,7 +70,10 @@ describe("Razorpay and local checkout", () => {
 
   it("expires a request and does not accept payment afterwards", async () => {
     const link = await client.createPaymentLink({
-      amountInr: 10, description: "Expired", referenceId: randomUUID(), expireBy: Math.floor(Date.now() / 1000) - 1,
+      amountInr: 10,
+      description: "Expired",
+      referenceId: randomUUID(),
+      expireBy: Math.floor(Date.now() / 1000) - 1,
     });
     await fetch(`${link.checkoutUrl}/complete`, { method: "POST" });
     expect((await client.getPaymentLink(link.id)).status).toBe("expired");
@@ -72,7 +89,10 @@ describe("Razorpay and local checkout", () => {
 
   it("rejects requests from another browser origin", async () => {
     const link = await create();
-    const response = await fetch(`${link.checkoutUrl}/complete`, { method: "POST", headers: { Origin: "https://other.example" } });
+    const response = await fetch(`${link.checkoutUrl}/complete`, {
+      method: "POST",
+      headers: { Origin: "https://other.example" },
+    });
     expect(response.status).toBe(403);
     expect((await client.getPaymentLink(link.id)).status).toBe("created");
   });
@@ -90,11 +110,23 @@ describe("Razorpay and local checkout", () => {
   });
 
   it("sends paise, INR, Basic auth and reminder_enable false, with optional customer and expiry", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
-      id: "plink_fixture", short_url: "http://localhost/pay/fixture", amount: 1999, currency: "INR", status: "created",
-    })));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "plink_fixture",
+          short_url: "http://localhost/pay/fixture",
+          amount: 1999,
+          currency: "INR",
+          status: "created",
+        }),
+      ),
+    );
     await client.createPaymentLink({
-      amountInr: 19.99, description: "Tea", referenceId: "test-ref", customer: { name: "Test user", email: "test@example.com", contact: "test-contact" }, expireBy: 2_000_000_000,
+      amountInr: 19.99,
+      description: "Tea",
+      referenceId: "test-ref",
+      customer: { name: "Test user", email: "test@example.com", contact: "test-contact" },
+      expireBy: 2_000_000_000,
     });
     const [url, init] = fetchSpy.mock.calls[0]!;
     expect(url).toBe(`${mock.baseUrl}/payment_links`);
@@ -102,29 +134,57 @@ describe("Razorpay and local checkout", () => {
     const headers = init?.headers as Record<string, string>;
     expect(headers.Authorization?.startsWith("Basic ")).toBe(true);
     expect(JSON.parse(init?.body as string)).toEqual({
-      amount: 1999, currency: "INR", description: "Tea", reference_id: "test-ref", reminder_enable: false,
-      customer: { name: "Test user", email: "test@example.com", contact: "test-contact" }, expire_by: 2_000_000_000,
+      amount: 1999,
+      currency: "INR",
+      description: "Tea",
+      reference_id: "test-ref",
+      reminder_enable: false,
+      customer: { name: "Test user", email: "test@example.com", contact: "test-contact" },
+      expire_by: 2_000_000_000,
     });
   });
 
-  it.each(["created", "partially_paid", "paid", "cancelled", "expired"] as const)("maps %s API status", async (status) => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
-      id: "plink_fixture", short_url: "http://localhost/pay/fixture", amount: 100, currency: "INR", status,
-    })));
-    expect((await client.getPaymentLink("plink_fixture")).status).toBe(status);
-  });
+  it.each(["created", "partially_paid", "paid", "cancelled", "expired"] as const)(
+    "maps %s API status",
+    async (status) => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            id: "plink_fixture",
+            short_url: "http://localhost/pay/fixture",
+            amount: 100,
+            currency: "INR",
+            status,
+          }),
+        ),
+      );
+      expect((await client.getPaymentLink("plink_fixture")).status).toBe(status);
+    },
+  );
 
   it("does not echo upstream error bodies", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("private upstream details", { status: 401 }));
-    await expect(client.getPaymentLink("plink_fixture")).rejects.toThrow(/^Razorpay payment-link request failed \(HTTP 401\)$/);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("private upstream details", { status: 401 }),
+    );
+    await expect(client.getPaymentLink("plink_fixture")).rejects.toThrow(
+      /^Razorpay payment-link request failed \(HTTP 401\)$/,
+    );
   });
 
   it("rejects malformed responses and unsafe checkout URL schemes", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}"));
     await expect(client.getPaymentLink("plink_fixture")).rejects.toThrow("Invalid Razorpay");
-    fetchSpy.mockResolvedValue(new Response(JSON.stringify({
-      id: "plink_fixture", short_url: "javascript:alert(1)", amount: 100, currency: "INR", status: "created",
-    })));
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "plink_fixture",
+          short_url: "javascript:alert(1)",
+          amount: 100,
+          currency: "INR",
+          status: "created",
+        }),
+      ),
+    );
     await expect(client.getPaymentLink("plink_fixture")).rejects.toThrow("Invalid Razorpay");
   });
 });

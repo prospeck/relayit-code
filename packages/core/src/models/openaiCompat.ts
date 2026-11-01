@@ -12,7 +12,12 @@ export class OpenAICompatProvider implements ModelProvider {
   private baseUrl: string;
   private apiKey: string | null;
   private extraHeaders: Record<string, string>;
-  constructor(id: string, baseUrl: string, apiKey: string | null, extraHeaders: Record<string, string> = {}) {
+  constructor(
+    id: string,
+    baseUrl: string,
+    apiKey: string | null,
+    extraHeaders: Record<string, string> = {},
+  ) {
     this.id = id;
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
@@ -47,7 +52,12 @@ export class OpenAICompatProvider implements ModelProvider {
       ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
       ...(req.json ? { response_format: { type: "json_object" } } : {}),
       ...(req.tools?.length
-        ? { tools: req.tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } })) }
+        ? {
+            tools: req.tools.map((t) => ({
+              type: "function",
+              function: { name: t.name, description: t.description, parameters: t.parameters },
+            })),
+          }
         : {}),
     };
     // Ollama and some gateways reject max_completion_tokens.
@@ -58,7 +68,10 @@ export class OpenAICompatProvider implements ModelProvider {
       }
     }
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST", headers: this.headers(), body: JSON.stringify(body), signal: req.signal ?? null,
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify(body),
+      signal: req.signal ?? null,
     });
     if (!res.ok) {
       const e = await errorFromResponse(res, this.id);
@@ -71,11 +84,16 @@ export class OpenAICompatProvider implements ModelProvider {
       if (data === "[DONE]") break;
       const chunk = JSON.parse(data) as Record<string, any>;
       if (chunk.error) throw new ModelError(chunk.error.message ?? `${this.id} stream error`);
-      if (chunk.usage) usage = { inputTokens: chunk.usage.prompt_tokens ?? 0, outputTokens: chunk.usage.completion_tokens ?? 0 };
+      if (chunk.usage)
+        usage = {
+          inputTokens: chunk.usage.prompt_tokens ?? 0,
+          outputTokens: chunk.usage.completion_tokens ?? 0,
+        };
       const choice = chunk.choices?.[0];
       if (!choice) continue;
       const delta = choice.delta ?? {};
-      if (typeof delta.content === "string" && delta.content) yield { type: "text", delta: delta.content };
+      if (typeof delta.content === "string" && delta.content)
+        yield { type: "text", delta: delta.content };
       for (const tc of delta.tool_calls ?? []) {
         const idx = tc.index ?? 0;
         const cur = partial.get(idx) ?? { id: "", name: "", args: "" };
@@ -87,7 +105,12 @@ export class OpenAICompatProvider implements ModelProvider {
       if (choice.finish_reason) stop = choice.finish_reason;
     }
     for (const [, t] of [...partial.entries()].sort((a, b) => a[0] - b[0])) {
-      const call: ToolCall = { id: t.id || `call_${randomUUID().slice(0, 8)}`, name: t.name, rawArgs: t.args, args: safeJson(t.args) };
+      const call: ToolCall = {
+        id: t.id || `call_${randomUUID().slice(0, 8)}`,
+        name: t.name,
+        rawArgs: t.args,
+        args: safeJson(t.args),
+      };
       yield { type: "tool_call", call };
     }
     if (usage) yield { type: "usage", ...usage };
@@ -104,7 +127,13 @@ function toOpenAI(system: string, messages: ChatMessage[]) {
         role: "assistant",
         content: m.content ?? "",
         ...(m.toolCalls?.length
-          ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.rawArgs || JSON.stringify(c.args ?? {}) } })) }
+          ? {
+              tool_calls: m.toolCalls.map((c) => ({
+                id: c.id,
+                type: "function",
+                function: { name: c.name, arguments: c.rawArgs || JSON.stringify(c.args ?? {}) },
+              })),
+            }
           : {}),
       });
     else out.push({ role: "tool", tool_call_id: m.toolCallId, content: m.content });

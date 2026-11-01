@@ -17,7 +17,11 @@ export class AnthropicProvider implements ModelProvider {
   }
 
   private headers() {
-    return { "x-api-key": this.apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" };
+    return {
+      "x-api-key": this.apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    };
   }
 
   async listModels(): Promise<string[]> {
@@ -39,11 +43,20 @@ export class AnthropicProvider implements ModelProvider {
       system: [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }],
       messages: toAnthropic(req.messages, req.json),
       ...(req.tools?.length
-        ? { tools: req.tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) }
+        ? {
+            tools: req.tools.map((t) => ({
+              name: t.name,
+              description: t.description,
+              input_schema: t.parameters,
+            })),
+          }
         : {}),
     };
     const res = await fetch(`${this.baseUrl}/v1/messages`, {
-      method: "POST", headers: this.headers(), body: JSON.stringify(body), signal: req.signal ?? null,
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify(body),
+      signal: req.signal ?? null,
     });
     if (!res.ok) {
       const e = await errorFromResponse(res, "Anthropic");
@@ -62,7 +75,8 @@ export class AnthropicProvider implements ModelProvider {
           input += ev.message?.usage?.cache_creation_input_tokens ?? 0;
           break;
         case "content_block_start":
-          if (ev.content_block?.type === "tool_use") tools.set(ev.index, { id: ev.content_block.id, name: ev.content_block.name, json: "" });
+          if (ev.content_block?.type === "tool_use")
+            tools.set(ev.index, { id: ev.content_block.id, name: ev.content_block.name, json: "" });
           break;
         case "content_block_delta":
           if (ev.delta?.type === "text_delta") yield { type: "text", delta: ev.delta.text };
@@ -74,7 +88,10 @@ export class AnthropicProvider implements ModelProvider {
         case "content_block_stop": {
           const t = tools.get(ev.index);
           if (t) {
-            yield { type: "tool_call", call: { id: t.id, name: t.name, rawArgs: t.json, args: safeJson(t.json) } };
+            yield {
+              type: "tool_call",
+              call: { id: t.id, name: t.name, rawArgs: t.json, args: safeJson(t.json) },
+            };
             tools.delete(ev.index);
           }
           break;
@@ -84,7 +101,11 @@ export class AnthropicProvider implements ModelProvider {
           output = ev.usage?.output_tokens ?? output;
           break;
         case "error":
-          throw new ModelError(ev.error?.message ?? "Anthropic stream error", undefined, ev.error?.type === "overloaded_error");
+          throw new ModelError(
+            ev.error?.message ?? "Anthropic stream error",
+            undefined,
+            ev.error?.type === "overloaded_error",
+          );
       }
     }
     yield { type: "usage", inputTokens: input, outputTokens: output };
@@ -103,9 +124,22 @@ function toAnthropic(messages: ChatMessage[], json?: boolean) {
     if (m.role === "user") push("user", { type: "text", text: m.content || "(empty)" });
     else if (m.role === "assistant") {
       if (m.content) push("assistant", { type: "text", text: m.content });
-      for (const c of m.toolCalls ?? []) push("assistant", { type: "tool_use", id: c.id, name: c.name, input: c.args && typeof c.args === "object" ? c.args : {} });
-      if (!m.content && !m.toolCalls?.length) push("assistant", { type: "text", text: "(no reply)" });
-    } else push("user", { type: "tool_result", tool_use_id: m.toolCallId, content: m.content, ...(m.isError ? { is_error: true } : {}) });
+      for (const c of m.toolCalls ?? [])
+        push("assistant", {
+          type: "tool_use",
+          id: c.id,
+          name: c.name,
+          input: c.args && typeof c.args === "object" ? c.args : {},
+        });
+      if (!m.content && !m.toolCalls?.length)
+        push("assistant", { type: "text", text: "(no reply)" });
+    } else
+      push("user", {
+        type: "tool_result",
+        tool_use_id: m.toolCallId,
+        content: m.content,
+        ...(m.isError ? { is_error: true } : {}),
+      });
   }
   if (json) push("user", { type: "text", text: "Reply with a single JSON object only." });
   return out;

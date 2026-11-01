@@ -5,7 +5,8 @@ import { buildUpiUri } from "./upi.ts";
 import { upiQrSvg } from "./qr.ts";
 import type { RazorpayClient } from "./razorpay.ts";
 
-export type PaymentStatus = "pending" | "paid" | "user_confirmed" | "cancelled" | "expired" | "failed";
+export type PaymentStatus =
+  "pending" | "paid" | "user_confirmed" | "cancelled" | "expired" | "failed";
 
 export type Payment = {
   id: string;
@@ -79,7 +80,11 @@ export class PaymentService {
   #now: () => Date;
   #locks = new Map<string, Promise<void>>();
 
-  constructor({ store, razorpay, now = () => new Date() }: {
+  constructor({
+    store,
+    razorpay,
+    now = () => new Date(),
+  }: {
     store: PaymentStore;
     razorpay?: RazorpayClient;
     now?: () => Date;
@@ -156,7 +161,11 @@ export class PaymentService {
 
   async refreshStatus(id: string, options: { signal?: AbortSignal } = {}): Promise<Payment> {
     const payment = await this.getPayment(id);
-    if (!this.#razorpay || !payment.razorpayLinkId || !["pending", "user_confirmed"].includes(payment.status)) {
+    if (
+      !this.#razorpay ||
+      !payment.razorpayLinkId ||
+      !["pending", "user_confirmed"].includes(payment.status)
+    ) {
       return payment;
     }
     const link = await this.#razorpay.getPaymentLink(payment.razorpayLinkId, options);
@@ -183,11 +192,13 @@ export class PaymentService {
   }
 
   async userConfirmedUpi(id: string, utr?: string): Promise<Payment> {
-    if (utr !== undefined && !/^\d{12}$/.test(utr)) throw new Error("UTR must be exactly 12 digits");
+    if (utr !== undefined && !/^\d{12}$/.test(utr))
+      throw new Error("UTR must be exactly 12 digits");
     return this.#withLock(`payment:${id}`, async () => {
       const payment = await this.getPayment(id);
       if (payment.status === "user_confirmed" || payment.status === "paid") return payment;
-      if (payment.status !== "pending") throw new Error(`Cannot confirm a ${payment.status} payment`);
+      if (payment.status !== "pending")
+        throw new Error(`Cannot confirm a ${payment.status} payment`);
       const timestamp = this.#now().toISOString();
       const patch: PaymentPatch = {
         status: "user_confirmed",
@@ -201,13 +212,28 @@ export class PaymentService {
     });
   }
 
-  async pollUntilSettled(id: string, { intervalMs = 1_000, timeoutMs = 60_000, signal, onUpdate }: {
-    intervalMs?: number;
-    timeoutMs?: number;
-    signal?: AbortSignal;
-    onUpdate?: (payment: Payment) => void | Promise<void>;
-  } = {}): Promise<Payment> {
-    if (!Number.isFinite(intervalMs) || intervalMs <= 0 || intervalMs > 2_147_483_647 || !Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > 2_147_483_647) {
+  async pollUntilSettled(
+    id: string,
+    {
+      intervalMs = 1_000,
+      timeoutMs = 60_000,
+      signal,
+      onUpdate,
+    }: {
+      intervalMs?: number;
+      timeoutMs?: number;
+      signal?: AbortSignal;
+      onUpdate?: (payment: Payment) => void | Promise<void>;
+    } = {},
+  ): Promise<Payment> {
+    if (
+      !Number.isFinite(intervalMs) ||
+      intervalMs <= 0 ||
+      intervalMs > 2_147_483_647 ||
+      !Number.isFinite(timeoutMs) ||
+      timeoutMs < 0 ||
+      timeoutMs > 2_147_483_647
+    ) {
       throw new Error("Invalid polling interval or timeout");
     }
     signal?.throwIfAborted();
@@ -238,7 +264,9 @@ export class PaymentService {
   async #withLock<T>(key: string, work: () => Promise<T>): Promise<T> {
     const previous = this.#locks.get(key) ?? Promise.resolve();
     let release!: () => void;
-    const current = new Promise<void>((resolve) => { release = resolve; });
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     this.#locks.set(key, current);
     await previous;
     try {

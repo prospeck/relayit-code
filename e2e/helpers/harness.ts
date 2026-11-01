@@ -67,7 +67,11 @@ export class UiHarness {
       await harness.newContext();
       // Finish the cold Vite compilation in setup, before a test starts clicking through onboarding.
       await harness.open();
-      await expect.poll(() => harness.page.getByPlaceholder("Your first name").isVisible(), { timeout: 20_000 }).toBe(true);
+      await expect
+        .poll(() => harness.page.getByPlaceholder("Your first name").isVisible(), {
+          timeout: 20_000,
+        })
+        .toBe(true);
       return harness;
     } catch (error) {
       await harness.close();
@@ -76,16 +80,24 @@ export class UiHarness {
   }
 
   private async newContext(): Promise<void> {
-    this.context = await this.browser.newContext({ viewport: { width: 1280, height: 820 }, colorScheme: "light" });
+    this.context = await this.browser.newContext({
+      viewport: { width: 1280, height: 820 },
+      colorScheme: "light",
+    });
     // Suppress the automatic daily brief without changing the UI flow under test.
     await this.context.addInitScript(() => {
-      if (location.protocol === "http:") localStorage.setItem("relayit.lastBrief", new Date().toDateString());
+      if (location.protocol === "http:")
+        localStorage.setItem("relayit.lastBrief", new Date().toDateString());
     });
     this.context.on("page", (page) => {
       page.on("console", (message) => {
         if (message.type() === "error") {
-          if (this.restartingCore && message.args().length === 0
-            && isCoreRestartNetworkError(message.text(), message.location().url, this.coreUrl)) return;
+          if (
+            this.restartingCore &&
+            message.args().length === 0 &&
+            isCoreRestartNetworkError(message.text(), message.location().url, this.coreUrl)
+          )
+            return;
           this.consoleErrors.push(message.text());
         }
       });
@@ -112,17 +124,33 @@ export class UiHarness {
   }
 
   private async startCore(port = 0): Promise<void> {
-    this.app = new App({ dataDir: this.dataDir, keyProvider: new StaticKeyProvider(this.key), mockModel: true, fakeGoogleUrl: null });
+    this.app = new App({
+      dataDir: this.dataDir,
+      keyProvider: new StaticKeyProvider(this.key),
+      mockModel: true,
+      fakeGoogleUrl: null,
+    });
     await this.app.start();
     const modules = await loadPlugins(this.app);
     this.core = await startServer(this.app, { port, token: "e2e", modules });
     this.coreUrl = `http://127.0.0.1:${this.core.port}`;
     // Plugins connect in the background. Wait for both built-in subprocesses before using them or stopping core.
-    await expect.poll(async () => {
-      const servers = await this.api<{ id: string; status: string }[]>("/api/mcp/servers");
-      return ["builtin-food", "builtin-travel"].every((id) => servers.some((s) => s.id === id && s.status === "connected"));
-    }, { timeout: 10_000 }).toBe(true);
-    await this.api("/api/settings", "PATCH", { briefOnFirstOpen: false, notifications: false, briefTime: "23:59" });
+    await expect
+      .poll(
+        async () => {
+          const servers = await this.api<{ id: string; status: string }[]>("/api/mcp/servers");
+          return ["builtin-food", "builtin-travel"].every((id) =>
+            servers.some((s) => s.id === id && s.status === "connected"),
+          );
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(true);
+    await this.api("/api/settings", "PATCH", {
+      briefOnFirstOpen: false,
+      notifications: false,
+      briefTime: "23:59",
+    });
   }
 
   async api<T = unknown>(path: string, method = "GET", body?: unknown): Promise<T> {
@@ -133,12 +161,18 @@ export class UiHarness {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (!response.ok) throw new Error(`${method} ${path} returned ${response.status}`);
-    return await response.json() as T;
+    return (await response.json()) as T;
   }
 
   async onboard(name = "Asha"): Promise<AppState> {
     const request: OnboardingRequest = {
-      profile: { name, city: "Pune", addresses: [{ id: "home", label: "Home", line: "1 Test Street", city: "Pune", pincode: "" }] },
+      profile: {
+        name,
+        city: "Pune",
+        addresses: [
+          { id: "home", label: "Home", line: "1 Test Street", city: "Pune", pincode: "" },
+        ],
+      },
       model: { provider: "ollama", model: "mock" },
     };
     return this.api<AppState>("/api/onboarding", "POST", request);
@@ -147,7 +181,10 @@ export class UiHarness {
   async open(): Promise<void> {
     let connected = false;
     const onSocket = (socket: WebSocket) => {
-      if (new URL(socket.url()).pathname === "/api/events") socket.on("framereceived", () => { connected = true; });
+      if (new URL(socket.url()).pathname === "/api/events")
+        socket.on("framereceived", () => {
+          connected = true;
+        });
     };
     this.page.on("websocket", onSocket);
     try {
@@ -165,7 +202,9 @@ export class UiHarness {
   }
 
   async sendFromToday(text: string): Promise<void> {
-    const composer = this.page.getByPlaceholder("Say it once… “Order something from California Pizza”");
+    const composer = this.page.getByPlaceholder(
+      "Say it once… “Order something from California Pizza”",
+    );
     await composer.fill(text);
     await composer.press("Enter");
     await expect.poll(() => this.page.url()).toMatch(/#\/chat\//);
@@ -176,7 +215,9 @@ export class UiHarness {
     const deadline = Date.now() + 5_000;
     do {
       const conversations = await this.api<Conversation[]>("/api/conversations");
-      const details = await Promise.all(conversations.map((c) => this.api<{ busy: boolean }>(`/api/conversations/${c.id}`)));
+      const details = await Promise.all(
+        conversations.map((c) => this.api<{ busy: boolean }>(`/api/conversations/${c.id}`)),
+      );
       if (details.every((d) => !d.busy)) return;
       await delay(25);
     } while (Date.now() < deadline);

@@ -20,7 +20,13 @@ export function coreTools(deps: { memory: MemoryRepo }): ToolDef[] {
       async run(input) {
         return { shown: true, options: input.options };
       },
-      toParts: (_o, input) => [{ type: "choices", ...(input.question ? { question: input.question } : {}), options: input.options }],
+      toParts: (_o, input) => [
+        {
+          type: "choices",
+          ...(input.question ? { question: input.question } : {}),
+          options: input.options,
+        },
+      ],
     }),
     defineTool({
       name: "remember_fact",
@@ -36,7 +42,9 @@ export function coreTools(deps: { memory: MemoryRepo }): ToolDef[] {
       }),
       label: (i) => `Remembering ${i.key}`,
       async run(input) {
-        if (/\b(\d{4}[ -]?){3}\d{4}\b|password|otp|cvv|\bpin\b/i.test(`${input.key} ${input.value}`))
+        if (
+          /\b(\d{4}[ -]?){3}\d{4}\b|password|otp|cvv|\bpin\b/i.test(`${input.key} ${input.value}`)
+        )
           return { saved: false, reason: "Refused to store something that looks like a secret." };
         const fact = await deps.memory.upsert(input, "agent");
         return { saved: true, id: fact.id };
@@ -62,7 +70,8 @@ export function demoTools(): ToolDef[] {
   return [
     defineTool({
       name: "demo_prepare_note",
-      description: "DEMO: draft a short note to someone. Use when the user asks to try a demo action.",
+      description:
+        "DEMO: draft a short note to someone. Use when the user asks to try a demo action.",
       domain: "demo",
       toolClass: "prepare",
       service: "Demo",
@@ -78,11 +87,16 @@ export function demoTools(): ToolDef[] {
     }),
     defineTool({
       name: "demo_send_note",
-      description: "DEMO: send a note drafted with demo_prepare_note. Nothing actually leaves the machine.",
+      description:
+        "DEMO: send a note drafted with demo_prepare_note. Nothing actually leaves the machine.",
       domain: "demo",
       toolClass: "act",
       service: "Demo",
-      input: z.object({ to: z.string().min(1), subject: z.string().min(1), body: z.string().min(1) }),
+      input: z.object({
+        to: z.string().min(1),
+        subject: z.string().min(1),
+        body: z.string().min(1),
+      }),
       label: (i) => `Sending to ${i.to}`,
       preview: (i) => ({
         title: `Send note to ${i.to}`,
@@ -99,19 +113,30 @@ export function demoTools(): ToolDef[] {
         const key = `demo.sent.${ctx.idempotencyKey}`;
         const prior = await ctx.kv.get<{ id: string }>(key);
         if (prior) return { ...prior, duplicate: true };
-        const result = { id: `note_${Date.now().toString(36)}`, to: input.to, subject: input.subject, sentAt: new Date().toISOString() };
+        const result = {
+          id: `note_${Date.now().toString(36)}`,
+          to: input.to,
+          subject: input.subject,
+          sentAt: new Date().toISOString(),
+        };
         await ctx.kv.set(key, result);
         return result;
       },
     }),
     defineTool({
       name: "demo_book_table",
-      description: "DEMO: book a restaurant table that needs a deposit. Shows a money approval card.",
+      description:
+        "DEMO: book a restaurant table that needs a deposit. Shows a money approval card.",
       domain: "demo",
       toolClass: "act",
       service: "Demo",
       involvesMoney: true,
-      input: z.object({ restaurant: z.string(), partySize: z.number().int().min(1).max(20), time: z.string(), depositInr: z.number().positive() }),
+      input: z.object({
+        restaurant: z.string(),
+        partySize: z.number().int().min(1).max(20),
+        time: z.string(),
+        depositInr: z.number().positive(),
+      }),
       label: (i) => `Booking ${i.restaurant}`,
       preview: (i) => ({
         title: `Book a table at ${i.restaurant}`,

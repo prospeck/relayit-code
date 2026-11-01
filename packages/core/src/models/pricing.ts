@@ -16,7 +16,12 @@ const TABLE: [RegExp, number, number][] = [
 ];
 export const USD_TO_INR = 88;
 
-export function estimateCostInr(provider: string, model: string, input: number, output: number): number | null {
+export function estimateCostInr(
+  provider: string,
+  model: string,
+  input: number,
+  output: number,
+): number | null {
   if (provider === "ollama" || provider === "mock") return 0;
   const name = model.includes("/") ? model.split("/").pop()! : model;
   const row = TABLE.find(([re]) => re.test(name));

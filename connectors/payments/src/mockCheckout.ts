@@ -9,7 +9,9 @@ const createSchema = z.object({
   currency: z.literal("INR"),
   description: z.string(),
   reference_id: z.string().min(1),
-  customer: z.object({ name: z.string(), email: z.string().optional(), contact: z.string().optional() }).optional(),
+  customer: z
+    .object({ name: z.string(), email: z.string().optional(), contact: z.string().optional() })
+    .optional(),
   expire_by: z.number().int().positive().optional(),
   reminder_enable: z.literal(false),
 });
@@ -22,19 +24,35 @@ type MockLink = z.infer<typeof createSchema> & {
 };
 
 function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[char]!);
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char]!,
+  );
 }
 
 function checkoutPage(link: MockLink): string {
   const amount = `₹${(link.amount / 100).toLocaleString("en-IN", {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })}`;
   const pending = link.status === "created" || link.status === "partially_paid";
-  const heading = pending ? "A little peace of mind." : link.status === "paid" ? "You’re all done." : "Request closed.";
-  const message = pending ? "Review your test payment below." : link.status === "paid"
-    ? "Test payment recorded. No money moved." : `This test request is ${link.status}. No money moved.`;
+  const heading = pending
+    ? "A little peace of mind."
+    : link.status === "paid"
+      ? "You’re all done."
+      : "Request closed.";
+  const message = pending
+    ? "Review your test payment below."
+    : link.status === "paid"
+      ? "Test payment recorded. No money moved."
+      : `This test request is ${link.status}. No money moved.`;
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RelayIt · Test checkout</title><style>
@@ -50,9 +68,12 @@ button:hover{filter:brightness(.96)}button:focus-visible{outline:3px solid #9db7
 <div class="brand"><span class="mark" aria-hidden="true">↗</span>RelayIt</div>
 <h1>${heading}</h1><p role="status">${message}</p><div class="amount">${amount}</div>
 <div class="label">Paying</div><div class="payee">${escapeHtml(link.description || "RelayIt test merchant")}</div><div class="divider"></div>
-${pending ? `<form method="post" action="/pay/${link.id}/complete"><button class="pay" type="submit">Pay ${amount} (test)</button></form>
+${
+  pending
+    ? `<form method="post" action="/pay/${link.id}/complete"><button class="pay" type="submit">Pay ${amount} (test)</button></form>
 <form method="post" action="/pay/${link.id}/cancel"><button class="cancel" type="submit">Cancel</button></form>`
-    : `<div class="done">${link.status === "paid" ? "✓ Test payment complete" : "Test checkout closed"}</div>`}
+    : `<div class="done">${link.status === "paid" ? "✓ Test payment complete" : "Test checkout closed"}</div>`
+}
 <footer>A local simulation. No bank details or UPI PIN needed.</footer></div></main></body></html>`;
 }
 
@@ -102,7 +123,13 @@ export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
         return;
       }
       const id = `plink_${randomUUID().replaceAll("-", "")}`;
-      const link: MockLink = { ...input.data, id, short_url: `${origin}/pay/${id}`, status: "created", payments: [] };
+      const link: MockLink = {
+        ...input.data,
+        id,
+        short_url: `${origin}/pay/${id}`,
+        status: "created",
+        payments: [],
+      };
       links.set(id, link);
       sendJson(res, 200, link);
       return;
@@ -115,7 +142,8 @@ export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
       sendJson(res, 404, { error: "Payment link not found" });
       return;
     }
-    if (link.expire_by && link.expire_by <= Date.now() / 1000 && link.status === "created") link.status = "expired";
+    if (link.expire_by && link.expire_by <= Date.now() / 1000 && link.status === "created")
+      link.status = "expired";
     if (api && req.method === "GET") {
       sendJson(res, 200, link);
       return;
@@ -129,14 +157,16 @@ export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
         }
         if (link.status === "created") {
           link.status = action === "complete" ? "paid" : "cancelled";
-          if (link.status === "paid") link.payments.push({ payment_id: `pay_mock_${randomUUID()}` });
+          if (link.status === "paid")
+            link.payments.push({ payment_id: `pay_mock_${randomUUID()}` });
         }
       }
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+        "Content-Security-Policy":
+          "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
       });
       res.end(checkoutPage(link));
       return;
@@ -159,9 +189,10 @@ export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
     port: address.port,
     origin,
     baseUrl: `${origin}/v1`,
-    close: () => new Promise<void>((resolve, reject) => {
-      server.close((error) => error ? reject(error) : resolve());
-      server.closeIdleConnections();
-    }),
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+        server.closeIdleConnections();
+      }),
   };
 }

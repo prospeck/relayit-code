@@ -2,7 +2,8 @@
  * Redaction for anything written to the audit log or sent to the UI as "data".
  * Three layers: sensitive field names, known secret values, and key-shaped strings.
  */
-const SENSITIVE_KEY = /(api[_-]?key|secret|token|password|passwd|authorization|cookie|otp|\bpin\b|cvv|card[_-]?number|private[_-]?key|refresh)/i;
+const SENSITIVE_KEY =
+  /(api[_-]?key|secret|token|password|passwd|authorization|cookie|otp|\bpin\b|cvv|card[_-]?number|private[_-]?key|refresh)/i;
 const KEY_SHAPES: RegExp[] = [
   /sk-ant-[A-Za-z0-9_-]{10,}/g,
   /sk-(proj-|or-v1-)?[A-Za-z0-9_-]{16,}/g,
@@ -36,12 +37,14 @@ export class Redactor {
 
   value(input: unknown, depth = 0): unknown {
     if (depth > 8) return "[…]";
-    if (typeof input === "string") return this.text(input.length > 4000 ? `${input.slice(0, 4000)}…` : input);
+    if (typeof input === "string")
+      return this.text(input.length > 4000 ? `${input.slice(0, 4000)}…` : input);
     if (Array.isArray(input)) return input.slice(0, 50).map((v) => this.value(v, depth + 1));
     if (input && typeof input === "object") {
       const out: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(input)) {
-        out[k] = SENSITIVE_KEY.test(k) && v != null && v !== "" ? REDACTED : this.value(v, depth + 1);
+        out[k] =
+          SENSITIVE_KEY.test(k) && v != null && v !== "" ? REDACTED : this.value(v, depth + 1);
       }
       return out;
     }

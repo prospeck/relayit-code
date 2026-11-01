@@ -60,16 +60,23 @@ const MIGRATIONS: { id: number; name: string; up: string }[] = [
 ];
 
 export async function migrate(db: Kysely<DB>): Promise<void> {
-  await sql`CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)`.execute(db);
+  await sql`CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)`.execute(
+    db,
+  );
   const applied = await sql<{ id: number }>`SELECT id FROM _migrations`.execute(db);
   const done = new Set(applied.rows.map((r) => r.id));
   for (const m of MIGRATIONS) {
     if (done.has(m.id)) continue;
     await db.transaction().execute(async (trx) => {
-      for (const stmt of m.up.split(";").map((s) => s.trim()).filter(Boolean)) {
+      for (const stmt of m.up
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean)) {
         await sql.raw(stmt).execute(trx);
       }
-      await sql`INSERT INTO _migrations (id, name, applied_at) VALUES (${m.id}, ${m.name}, ${new Date().toISOString()})`.execute(trx);
+      await sql`INSERT INTO _migrations (id, name, applied_at) VALUES (${m.id}, ${m.name}, ${new Date().toISOString()})`.execute(
+        trx,
+      );
     });
   }
 }

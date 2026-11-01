@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, ExternalLink, HardDrive, KeyRound, Lock, ShieldCheck, Wallet } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ExternalLink,
+  HardDrive,
+  KeyRound,
+  Lock,
+  ShieldCheck,
+  Wallet,
+} from "lucide-react";
 import type { ProviderId } from "@relayit/shared";
 import { api, ApiError } from "../lib/api";
 import { cx } from "../lib/format";
@@ -9,23 +19,77 @@ import { openExternal, platform } from "../lib/tauri";
 import { Button, Field, Input, Select } from "../components/ui";
 import { LogoMark } from "../components/Logo";
 
-const CITIES = ["Bengaluru", "Mumbai", "Delhi NCR", "Hyderabad", "Chennai", "Pune", "Kolkata", "Ahmedabad"];
+const CITIES = [
+  "Bengaluru",
+  "Mumbai",
+  "Delhi NCR",
+  "Hyderabad",
+  "Chennai",
+  "Pune",
+  "Kolkata",
+  "Ahmedabad",
+];
 
-export const PROVIDERS: { id: ProviderId; name: string; blurb: string; keyUrl: string | null; keyHint: string }[] = [
-  { id: "anthropic", name: "Anthropic", blurb: "Claude — careful, great with tools", keyUrl: "https://console.anthropic.com/settings/keys", keyHint: "sk-ant-…" },
-  { id: "openai", name: "OpenAI", blurb: "GPT models", keyUrl: "https://platform.openai.com/api-keys", keyHint: "sk-…" },
-  { id: "gemini", name: "Google Gemini", blurb: "Fast, generous free tier", keyUrl: "https://aistudio.google.com/apikey", keyHint: "AIza…" },
-  { id: "openrouter", name: "OpenRouter", blurb: "One key, hundreds of models", keyUrl: "https://openrouter.ai/keys", keyHint: "sk-or-…" },
-  { id: "ollama", name: "Ollama", blurb: "Runs on this computer, free and private", keyUrl: null, keyHint: "" },
+export const PROVIDERS: {
+  id: ProviderId;
+  name: string;
+  blurb: string;
+  keyUrl: string | null;
+  keyHint: string;
+}[] = [
+  {
+    id: "anthropic",
+    name: "Anthropic",
+    blurb: "Claude — careful, great with tools",
+    keyUrl: "https://console.anthropic.com/settings/keys",
+    keyHint: "sk-ant-…",
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    blurb: "GPT models",
+    keyUrl: "https://platform.openai.com/api-keys",
+    keyHint: "sk-…",
+  },
+  {
+    id: "gemini",
+    name: "Google Gemini",
+    blurb: "Fast, generous free tier",
+    keyUrl: "https://aistudio.google.com/apikey",
+    keyHint: "AIza…",
+  },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    blurb: "One key, hundreds of models",
+    keyUrl: "https://openrouter.ai/keys",
+    keyHint: "sk-or-…",
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    blurb: "Runs on this computer, free and private",
+    keyUrl: null,
+    keyHint: "",
+  },
 ];
 
 const STEPS = ["you", "places", "brain", "promise"] as const;
 type Step = (typeof STEPS)[number];
 
 const HEADLINES: Record<Step, { title: string; body: string }> = {
-  you: { title: "Say it once.\nRelayIt handles the rest.", body: "Your own agent for email, calendar, food, travel and payments — on your computer." },
-  places: { title: "Where should\nthings arrive?", body: "Saved places let RelayIt fill in addresses so you never type them again." },
-  brain: { title: "Pick the brain\nthat powers it.", body: "Bring your own key, or run a model locally with Ollama. Keys are encrypted and never shown again." },
+  you: {
+    title: "Say it once.\nRelayIt handles the rest.",
+    body: "Your own agent for email, calendar, food, travel and payments — on your computer.",
+  },
+  places: {
+    title: "Where should\nthings arrive?",
+    body: "Saved places let RelayIt fill in addresses so you never type them again.",
+  },
+  brain: {
+    title: "Pick the brain\nthat powers it.",
+    body: "Bring your own key, or run a model locally with Ollama. Keys are encrypted and never shown again.",
+  },
   promise: { title: "You stay\nin charge.", body: "RelayIt does the legwork. You make the calls." },
 };
 
@@ -44,7 +108,11 @@ export function Onboarding() {
   const [keyError, setKeyError] = useState<string | null>(null);
   const [verified, setVerified] = useState(false);
 
-  const ollama = useQuery({ queryKey: ["ollama"], queryFn: api.ollama, refetchInterval: provider === "ollama" && !verified ? 4000 : false });
+  const ollama = useQuery({
+    queryKey: ["ollama"],
+    queryFn: api.ollama,
+    refetchInterval: provider === "ollama" && !verified ? 4000 : false,
+  });
   const state = useQuery({ queryKey: ["state"], queryFn: api.state });
   const mock = state.data?.mockMode.model;
 
@@ -53,7 +121,11 @@ export function Onboarding() {
       setModels(ollama.data.models);
       setModel((m) => m || ollama.data!.models[0] || "");
       setVerified(ollama.data.models.length > 0);
-      setKeyError(ollama.data.models.length ? null : "Ollama is running but has no models. Run `ollama pull llama3.2` in a terminal.");
+      setKeyError(
+        ollama.data.models.length
+          ? null
+          : "Ollama is running but has no models. Run `ollama pull llama3.2` in a terminal.",
+      );
     }
   }, [provider, ollama.data]);
 
@@ -79,8 +151,12 @@ export function Onboarding() {
           name: name.trim(),
           city,
           addresses: [
-            ...(home.trim() ? [{ id: "home", label: "Home", line: home.trim(), city, pincode: "" }] : []),
-            ...(work.trim() ? [{ id: "work", label: "Work", line: work.trim(), city, pincode: "" }] : []),
+            ...(home.trim()
+              ? [{ id: "home", label: "Home", line: home.trim(), city, pincode: "" }]
+              : []),
+            ...(work.trim()
+              ? [{ id: "work", label: "Work", line: work.trim(), city, pincode: "" }]
+              : []),
           ],
         },
         model: { provider, model: model || (mock ? "mock-smart" : "") },
@@ -97,7 +173,14 @@ export function Onboarding() {
     setDir(d);
     setStep(STEPS[Math.max(0, Math.min(STEPS.length - 1, idx + d))]!);
   };
-  const canNext = step === "you" ? name.trim().length > 0 : step === "places" ? true : step === "brain" ? (verified && !!model) || !!mock : true;
+  const canNext =
+    step === "you"
+      ? name.trim().length > 0
+      : step === "places"
+        ? true
+        : step === "brain"
+          ? (verified && !!model) || !!mock
+          : true;
   const h = HEADLINES[step];
   const mac = platform() === "mac";
 
@@ -113,14 +196,34 @@ export function Onboarding() {
         <RelayArt step={idx} />
         <div className="relative">
           <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-              <h1 className="font-display text-[46px] leading-[1.02] whitespace-pre-line">{h.title}</h1>
-              <p className="mt-4 text-[15px] leading-relaxed text-[#b9b2a8] max-w-[380px]">{h.body}</p>
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <h1 className="font-display text-[46px] leading-[1.02] whitespace-pre-line">
+                {h.title}
+              </h1>
+              <p className="mt-4 text-[15px] leading-relaxed text-[#b9b2a8] max-w-[380px]">
+                {h.body}
+              </p>
             </motion.div>
           </AnimatePresence>
           <div className="flex gap-1.5 mt-8">
             {STEPS.map((s, i) => (
-              <span key={s} className={cx("h-1 rounded-full transition-all duration-500", i === idx ? "w-8 bg-[#f26a3d]" : i < idx ? "w-3 bg-[#f26a3d]/60" : "w-3 bg-white/15")} />
+              <span
+                key={s}
+                className={cx(
+                  "h-1 rounded-full transition-all duration-500",
+                  i === idx
+                    ? "w-8 bg-[#f26a3d]"
+                    : i < idx
+                      ? "w-3 bg-[#f26a3d]/60"
+                      : "w-3 bg-white/15",
+                )}
+              />
             ))}
           </div>
         </div>
@@ -143,15 +246,28 @@ export function Onboarding() {
                 {step === "you" && (
                   <div>
                     <p className="text-[13px] font-medium text-accent-text mb-2">Welcome</p>
-                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-6">What should I call you?</h2>
-                    <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your first name" className="h-12 text-[16px]" onKeyDown={(e) => e.key === "Enter" && canNext && go(1)} />
+                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-6">
+                      What should I call you?
+                    </h2>
+                    <Input
+                      autoFocus
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your first name"
+                      className="h-12 text-[16px]"
+                      onKeyDown={(e) => e.key === "Enter" && canNext && go(1)}
+                    />
                   </div>
                 )}
 
                 {step === "places" && (
                   <div>
-                    <p className="text-[13px] font-medium text-accent-text mb-2">Hi {name.trim()} 👋</p>
-                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-6">Which city are you in?</h2>
+                    <p className="text-[13px] font-medium text-accent-text mb-2">
+                      Hi {name.trim()} 👋
+                    </p>
+                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-6">
+                      Which city are you in?
+                    </h2>
                     <div className="flex flex-wrap gap-2 mb-7">
                       {CITIES.map((c) => (
                         <button
@@ -159,7 +275,9 @@ export function Onboarding() {
                           onClick={() => setCity(c)}
                           className={cx(
                             "h-9 px-3.5 rounded-full border text-[13.5px] font-medium transition-all",
-                            city === c ? "bg-ink text-bg border-ink" : "border-line-strong bg-surface hover:border-ink/30",
+                            city === c
+                              ? "bg-ink text-bg border-ink"
+                              : "border-line-strong bg-surface hover:border-ink/30",
                           )}
                         >
                           {c}
@@ -169,10 +287,18 @@ export function Onboarding() {
                     </div>
                     <div className="space-y-4">
                       <Field label="Home address" hint="Used for deliveries and cabs. Optional.">
-                        <Input value={home} onChange={(e) => setHome(e.target.value)} placeholder="Flat, building, street, area" />
+                        <Input
+                          value={home}
+                          onChange={(e) => setHome(e.target.value)}
+                          placeholder="Flat, building, street, area"
+                        />
                       </Field>
                       <Field label="Work address" hint="Optional.">
-                        <Input value={work} onChange={(e) => setWork(e.target.value)} placeholder="Office, area" />
+                        <Input
+                          value={work}
+                          onChange={(e) => setWork(e.target.value)}
+                          placeholder="Office, area"
+                        />
                       </Field>
                     </div>
                   </div>
@@ -181,7 +307,9 @@ export function Onboarding() {
                 {step === "brain" && (
                   <div>
                     <p className="text-[13px] font-medium text-accent-text mb-2">Your model</p>
-                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-6">Which AI should RelayIt use?</h2>
+                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-6">
+                      Which AI should RelayIt use?
+                    </h2>
                     <div className="grid grid-cols-1 gap-2 mb-5">
                       {PROVIDERS.map((p) => (
                         <button
@@ -195,19 +323,37 @@ export function Onboarding() {
                           }}
                           className={cx(
                             "flex items-center gap-3 px-4 h-[54px] rounded-[14px] border text-left transition-all",
-                            provider === p.id ? "border-accent/60 bg-accent-softer shadow-[var(--ring)]" : "border-line-strong bg-surface hover:border-ink/25",
+                            provider === p.id
+                              ? "border-accent/60 bg-accent-softer shadow-[var(--ring)]"
+                              : "border-line-strong bg-surface hover:border-ink/25",
                           )}
                         >
-                          <span className={cx("size-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0", provider === p.id ? "border-accent bg-accent" : "border-line-strong")}>
-                            {provider === p.id && <span className="size-1.5 rounded-full bg-white" />}
+                          <span
+                            className={cx(
+                              "size-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0",
+                              provider === p.id ? "border-accent bg-accent" : "border-line-strong",
+                            )}
+                          >
+                            {provider === p.id && (
+                              <span className="size-1.5 rounded-full bg-white" />
+                            )}
                           </span>
                           <span className="flex-1 min-w-0">
                             <span className="block text-[14px] font-medium">{p.name}</span>
-                            <span className="block text-[12.5px] text-muted truncate">{p.blurb}</span>
+                            <span className="block text-[12.5px] text-muted truncate">
+                              {p.blurb}
+                            </span>
                           </span>
                           {p.id === "ollama" && (
-                            <span className={cx("text-[11.5px] font-medium", ollama.data?.running ? "text-success" : "text-faint")}>
-                              {ollama.data?.running ? `Running · ${ollama.data.models.length} model${ollama.data.models.length === 1 ? "" : "s"}` : "Not detected"}
+                            <span
+                              className={cx(
+                                "text-[11.5px] font-medium",
+                                ollama.data?.running ? "text-success" : "text-faint",
+                              )}
+                            >
+                              {ollama.data?.running
+                                ? `Running · ${ollama.data.models.length} model${ollama.data.models.length === 1 ? "" : "s"}`
+                                : "Not detected"}
                             </span>
                           )}
                         </button>
@@ -221,7 +367,8 @@ export function Onboarding() {
                           error={keyError}
                           hint={
                             <span className="inline-flex items-center gap-1.5">
-                              <Lock className="size-3" /> Encrypted on this computer. You won't see it again after saving.
+                              <Lock className="size-3" /> Encrypted on this computer. You won't see
+                              it again after saving.
                             </span>
                           }
                         >
@@ -239,61 +386,126 @@ export function Onboarding() {
                               placeholder={PROVIDERS.find((p) => p.id === provider)!.keyHint}
                               className="font-mono text-[13px]"
                             />
-                            <Button variant={verified ? "secondary" : "primary"} onClick={() => validate.mutate()} loading={validate.isPending} disabled={!apiKey.trim()} icon={verified ? <Check className="size-4 text-success" /> : <KeyRound className="size-4" />}>
+                            <Button
+                              variant={verified ? "secondary" : "primary"}
+                              onClick={() => validate.mutate()}
+                              loading={validate.isPending}
+                              disabled={!apiKey.trim()}
+                              icon={
+                                verified ? (
+                                  <Check className="size-4 text-success" />
+                                ) : (
+                                  <KeyRound className="size-4" />
+                                )
+                              }
+                            >
                               {verified ? "Verified" : "Check"}
                             </Button>
                           </div>
                         </Field>
-                        <button onClick={() => void openExternal(PROVIDERS.find((p) => p.id === provider)!.keyUrl!)} className="inline-flex items-center gap-1 text-[12.5px] text-accent-text hover:underline">
-                          Get a {PROVIDERS.find((p) => p.id === provider)!.name} key <ExternalLink className="size-3" />
+                        <button
+                          onClick={() =>
+                            void openExternal(PROVIDERS.find((p) => p.id === provider)!.keyUrl!)
+                          }
+                          className="inline-flex items-center gap-1 text-[12.5px] text-accent-text hover:underline"
+                        >
+                          Get a {PROVIDERS.find((p) => p.id === provider)!.name} key{" "}
+                          <ExternalLink className="size-3" />
                         </button>
                       </div>
                     ) : (
                       !ollama.data?.running && (
                         <div className="rounded-[12px] bg-surface-2 border border-line p-4 text-[13px] text-ink-2 leading-relaxed">
                           Install Ollama from{" "}
-                          <button className="text-accent-text hover:underline" onClick={() => void openExternal("https://ollama.com/download")}>
+                          <button
+                            className="text-accent-text hover:underline"
+                            onClick={() => void openExternal("https://ollama.com/download")}
+                          >
                             ollama.com
                           </button>
-                          , open it, then run <code className="font-mono text-[12px] bg-surface px-1.5 py-0.5 rounded border border-line">ollama pull qwen3</code>. RelayIt will notice automatically.
+                          , open it, then run{" "}
+                          <code className="font-mono text-[12px] bg-surface px-1.5 py-0.5 rounded border border-line">
+                            ollama pull qwen3
+                          </code>
+                          . RelayIt will notice automatically.
                           {keyError && <p className="text-danger mt-2">{keyError}</p>}
                         </div>
                       )
                     )}
 
                     {verified && models.length > 0 && (
-                      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-5"
+                      >
                         <Field label="Model" hint="You can change this any time in Settings.">
-                          <Select value={model} onValueChange={setModel} options={models.slice(0, 40).map((m) => ({ value: m, label: m }))} />
+                          <Select
+                            value={model}
+                            onValueChange={setModel}
+                            options={models.slice(0, 40).map((m) => ({ value: m, label: m }))}
+                          />
                         </Field>
                       </motion.div>
                     )}
-                    {mock && !verified && <p className="mt-4 text-[12.5px] text-muted">Demo mode is on: you can continue without a key.</p>}
+                    {mock && !verified && (
+                      <p className="mt-4 text-[12.5px] text-muted">
+                        Demo mode is on: you can continue without a key.
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {step === "promise" && (
                   <div>
                     <p className="text-[13px] font-medium text-accent-text mb-2">Three promises</p>
-                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-7">How RelayIt works for you</h2>
+                    <h2 className="text-[26px] font-semibold tracking-[-0.02em] mb-7">
+                      How RelayIt works for you
+                    </h2>
                     <div className="space-y-5">
                       {[
-                        { icon: ShieldCheck, title: "It asks before it acts", body: "Sending, paying, booking or deleting always shows you a card first. Allow once, always, or refuse." },
-                        { icon: Wallet, title: "It never touches your money", body: "It gets the order ready. You pay in your own UPI app, with your own PIN." },
-                        { icon: HardDrive, title: "Everything stays here", body: "Chats, memory, keys and the activity log live on this computer, encrypted. No RelayIt server." },
+                        {
+                          icon: ShieldCheck,
+                          title: "It asks before it acts",
+                          body: "Sending, paying, booking or deleting always shows you a card first. Allow once, always, or refuse.",
+                        },
+                        {
+                          icon: Wallet,
+                          title: "It never touches your money",
+                          body: "It gets the order ready. You pay in your own UPI app, with your own PIN.",
+                        },
+                        {
+                          icon: HardDrive,
+                          title: "Everything stays here",
+                          body: "Chats, memory, keys and the activity log live on this computer, encrypted. No RelayIt server.",
+                        },
                       ].map((p, i) => (
-                        <motion.div key={p.title} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 * i + 0.1 }} className="flex gap-4">
+                        <motion.div
+                          key={p.title}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.08 * i + 0.1 }}
+                          className="flex gap-4"
+                        >
                           <span className="size-10 shrink-0 rounded-[12px] bg-accent-soft text-accent flex items-center justify-center">
                             <p.icon className="size-[18px]" />
                           </span>
                           <div>
                             <div className="text-[14.5px] font-semibold">{p.title}</div>
-                            <div className="text-[13.5px] text-muted leading-relaxed mt-0.5">{p.body}</div>
+                            <div className="text-[13.5px] text-muted leading-relaxed mt-0.5">
+                              {p.body}
+                            </div>
                           </div>
                         </motion.div>
                       ))}
                     </div>
-                    {finish.error && <p className="mt-5 text-[13px] text-danger">{finish.error instanceof ApiError ? finish.error.message : "Something went wrong"}</p>}
+                    {finish.error && (
+                      <p className="mt-5 text-[13px] text-danger">
+                        {finish.error instanceof ApiError
+                          ? finish.error.message
+                          : "Something went wrong"}
+                      </p>
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -301,11 +513,21 @@ export function Onboarding() {
           </div>
         </div>
         <div className="shrink-0 px-8 py-5 flex items-center justify-between border-t border-line">
-          <Button variant="ghost" onClick={() => go(-1)} className={cx(idx === 0 && "invisible")} icon={<ArrowLeft className="size-4" />}>
+          <Button
+            variant="ghost"
+            onClick={() => go(-1)}
+            className={cx(idx === 0 && "invisible")}
+            icon={<ArrowLeft className="size-4" />}
+          >
             Back
           </Button>
           {step === "promise" ? (
-            <Button variant="primary" size="lg" onClick={() => finish.mutate()} loading={finish.isPending}>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => finish.mutate()}
+              loading={finish.isPending}
+            >
               Start using RelayIt
               <ArrowRight className="size-4" />
             </Button>
@@ -345,15 +567,54 @@ function RelayArt({ step }: { step: number }) {
           </feMerge>
         </filter>
       </defs>
-      <path d={path} fill="none" stroke="rgb(255 255 255 / 0.08)" strokeWidth="2" strokeDasharray="3 6" />
-      <motion.path d={path} fill="none" stroke="url(#relay-line)" strokeWidth="2.5" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: (step + 1) / 4 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }} />
+      <path
+        d={path}
+        fill="none"
+        stroke="rgb(255 255 255 / 0.08)"
+        strokeWidth="2"
+        strokeDasharray="3 6"
+      />
+      <motion.path
+        d={path}
+        fill="none"
+        stroke="url(#relay-line)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: (step + 1) / 4 }}
+        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+      />
       <circle r="5" fill="#ff8a62" filter="url(#glow)">
-        <animateMotion dur="3.2s" repeatCount="indefinite" path={path} keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines="0.45 0 0.55 1" />
+        <animateMotion
+          dur="3.2s"
+          repeatCount="indefinite"
+          path={path}
+          keyPoints="0;1"
+          keyTimes="0;1"
+          calcMode="spline"
+          keySplines="0.45 0 0.55 1"
+        />
       </circle>
       {nodes.map((n, i) => (
         <g key={n.label}>
-          <motion.circle cx={n.x} cy={n.y} r={i <= step ? 9 : 6} fill={i <= step ? "#f26a3d" : "#2a2622"} stroke={i <= step ? "#ff9a76" : "rgb(255 255 255 / 0.18)"} strokeWidth="1.5" animate={{ r: i <= step ? 9 : 6 }} transition={{ duration: 0.4 }} />
-          <text x={n.x} y={n.y + 30} textAnchor="middle" fontSize="12" fill={i <= step ? "#f3efe9" : "#7d766d"} fontFamily="Geist Variable, sans-serif">
+          <motion.circle
+            cx={n.x}
+            cy={n.y}
+            r={i <= step ? 9 : 6}
+            fill={i <= step ? "#f26a3d" : "#2a2622"}
+            stroke={i <= step ? "#ff9a76" : "rgb(255 255 255 / 0.18)"}
+            strokeWidth="1.5"
+            animate={{ r: i <= step ? 9 : 6 }}
+            transition={{ duration: 0.4 }}
+          />
+          <text
+            x={n.x}
+            y={n.y + 30}
+            textAnchor="middle"
+            fontSize="12"
+            fill={i <= step ? "#f3efe9" : "#7d766d"}
+            fontFamily="Geist Variable, sans-serif"
+          >
             {n.label}
           </text>
         </g>

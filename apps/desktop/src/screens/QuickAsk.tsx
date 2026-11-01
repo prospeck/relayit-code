@@ -32,7 +32,11 @@ export function QuickAsk() {
   }, []);
 
   const run = useLive((s) => (cid ? s.runs[cid] : undefined));
-  const detail = useQuery({ queryKey: ["conversation", cid], queryFn: () => api.conversation(cid!), enabled: !!cid });
+  const detail = useQuery({
+    queryKey: ["conversation", cid],
+    queryFn: () => api.conversation(cid!),
+    enabled: !!cid,
+  });
   const last = detail.data?.messages.filter((m) => m.role === "assistant").at(-1);
   const pendingAction = detail.data?.actions.find((a) => a.status === "pending");
 
@@ -52,18 +56,25 @@ export function QuickAsk() {
     const ro = new ResizeObserver(() => {
       void (async () => {
         const { getCurrentWindow, LogicalSize } = await import("@tauri-apps/api/window");
-        await getCurrentWindow().setSize(new LogicalSize(720, Math.min(560, Math.ceil(el.offsetHeight) + 16)));
+        await getCurrentWindow().setSize(
+          new LogicalSize(720, Math.min(560, Math.ceil(el.offsetHeight) + 16)),
+        );
       })().catch(() => {});
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const answer = run?.text || (last ? last.parts.map((p) => (p.type === "text" ? p.text : "")).join("\n\n") : "");
+  const answer =
+    run?.text ||
+    (last ? last.parts.map((p) => (p.type === "text" ? p.text : "")).join("\n\n") : "");
 
   return (
     <div className="p-2">
-      <div ref={card} className="max-h-[544px] flex flex-col bg-surface/95 backdrop-blur-xl border border-line-strong rounded-[22px] shadow-lg overflow-hidden">
+      <div
+        ref={card}
+        className="max-h-[544px] flex flex-col bg-surface/95 backdrop-blur-xl border border-line-strong rounded-[22px] shadow-lg overflow-hidden"
+      >
         <div className="flex items-center gap-3 px-5 h-[60px] shrink-0">
           <LogoMark size={24} />
           <input
@@ -83,9 +94,15 @@ export function QuickAsk() {
         </div>
         {(answer || run) && (
           <div className="border-t border-line px-5 py-4 overflow-y-auto min-h-0">
-            {run?.active && !run.text && <div className="text-[13px] shimmer font-medium">{run.status}</div>}
+            {run?.active && !run.text && (
+              <div className="text-[13px] shimmer font-medium">{run.status}</div>
+            )}
             {answer && <Markdown text={answer} />}
-            {pendingAction && <div className="mt-3 text-[13px] text-accent-text font-medium">Needs your OK: {pendingAction.title}</div>}
+            {pendingAction && (
+              <div className="mt-3 text-[13px] text-accent-text font-medium">
+                Needs your OK: {pendingAction.title}
+              </div>
+            )}
           </div>
         )}
         {cid && (

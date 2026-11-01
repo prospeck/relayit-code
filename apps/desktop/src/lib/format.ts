@@ -7,7 +7,10 @@ export function timeOfDay(d = new Date()): "morning" | "afternoon" | "evening" |
 }
 
 export function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).replace(" ", " ").toLowerCase();
+  return new Date(iso)
+    .toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
+    .replace(" ", " ")
+    .toLowerCase();
 }
 
 export function fmtDay(iso: string): string {

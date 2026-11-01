@@ -8,7 +8,16 @@
  */
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, rmSync, copyFileSync, chmodSync, existsSync, realpathSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  rmSync,
+  copyFileSync,
+  chmodSync,
+  existsSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,13 +40,23 @@ const common = {
   minifySyntax: true,
   legalComments: "none",
   external: ["playwright-core", "chromium-bidi", "electron"],
-  banner: { js: 'import { createRequire as __cr } from "node:module"; const require = __cr(import.meta.url);' },
+  banner: {
+    js: 'import { createRequire as __cr } from "node:module"; const require = __cr(import.meta.url);',
+  },
   logLevel: "warning",
 };
 
-await build({ ...common, entryPoints: [join(root, "packages/core/src/main.ts")], outfile: join(out, "main.mjs") });
+await build({
+  ...common,
+  entryPoints: [join(root, "packages/core/src/main.ts")],
+  outfile: join(out, "main.mjs"),
+});
 for (const name of ["food", "travel"]) {
-  await build({ ...common, entryPoints: [join(root, `connectors/${name}/src/server.ts`)], outfile: join(out, `connectors/${name}.mjs`) });
+  await build({
+    ...common,
+    entryPoints: [join(root, `connectors/${name}/src/server.ts`)],
+    outfile: join(out, `connectors/${name}.mjs`),
+  });
 }
 
 // playwright-core is pure JS; ship it beside main.mjs so `import("playwright-core")` resolves.
@@ -45,15 +64,30 @@ try {
   const pw = dirname(realpathSync(require.resolve("playwright-core/package.json")));
   cpSync(pw, join(out, "node_modules/playwright-core"), { recursive: true, dereference: true });
 } catch {
-  console.warn("[bundle] playwright-core not found; the browser agent will be unavailable in this build");
+  console.warn(
+    "[bundle] playwright-core not found; the browser agent will be unavailable in this build",
+  );
 }
 
 // Tauri sets TAURI_ENV_TARGET_TRIPLE during `tauri build`; otherwise ask rustc (also checked in ~/.cargo/bin).
-const cargoRustc = join(homedir(), ".cargo", "bin", process.platform === "win32" ? "rustc.exe" : "rustc");
+const cargoRustc = join(
+  homedir(),
+  ".cargo",
+  "bin",
+  process.platform === "win32" ? "rustc.exe" : "rustc",
+);
 const rustc = existsSync(cargoRustc) ? cargoRustc : "rustc";
-const triple = process.env.TAURI_ENV_TARGET_TRIPLE || execFileSync(rustc, ["-vV"], { encoding: "utf8" }).match(/host: (.+)/)[1].trim();
+const triple =
+  process.env.TAURI_ENV_TARGET_TRIPLE ||
+  execFileSync(rustc, ["-vV"], { encoding: "utf8" })
+    .match(/host: (.+)/)[1]
+    .trim();
 mkdirSync(join(tauri, "binaries"), { recursive: true });
-const bin = join(tauri, "binaries", `relayit-node-${triple}${triple.includes("windows") ? ".exe" : ""}`);
+const bin = join(
+  tauri,
+  "binaries",
+  `relayit-node-${triple}${triple.includes("windows") ? ".exe" : ""}`,
+);
 if (existsSync(bin)) rmSync(bin);
 copyFileSync(await officialNode(triple), bin);
 if (process.platform !== "win32") chmodSync(bin, 0o755);
@@ -65,7 +99,11 @@ if (process.platform !== "win32") chmodSync(bin, 0o755);
  */
 async function officialNode(targetTriple) {
   const version = process.env.RELAYIT_NODE_VERSION || process.version;
-  const plat = targetTriple.includes("apple-darwin") ? "darwin" : targetTriple.includes("windows") ? "win" : "linux";
+  const plat = targetTriple.includes("apple-darwin")
+    ? "darwin"
+    : targetTriple.includes("windows")
+      ? "win"
+      : "linux";
   const arch = targetTriple.startsWith("aarch64") ? "arm64" : "x64";
   const base = `node-${version}-${plat}-${arch}`;
   const file = plat === "win" ? `${base}.zip` : `${base}.tar.gz`;
@@ -76,17 +114,42 @@ async function officialNode(targetTriple) {
   const url = `https://nodejs.org/dist/${version}/${file}`;
   console.log(`[bundle] downloading ${url}`);
   const [sums, archive] = await Promise.all([
-    fetch(`https://nodejs.org/dist/${version}/SHASUMS256.txt`).then((r) => { if (!r.ok) throw new Error(`SHASUMS ${r.status}`); return r.text(); }),
-    fetch(url).then(async (r) => { if (!r.ok) throw new Error(`${url}: ${r.status}`); return Buffer.from(await r.arrayBuffer()); }),
+    fetch(`https://nodejs.org/dist/${version}/SHASUMS256.txt`).then((r) => {
+      if (!r.ok) throw new Error(`SHASUMS ${r.status}`);
+      return r.text();
+    }),
+    fetch(url).then(async (r) => {
+      if (!r.ok) throw new Error(`${url}: ${r.status}`);
+      return Buffer.from(await r.arrayBuffer());
+    }),
   ]);
-  const expected = sums.split("\n").find((l) => l.endsWith(`  ${file}`))?.split(/\s+/)[0];
+  const expected = sums
+    .split("\n")
+    .find((l) => l.endsWith(`  ${file}`))
+    ?.split(/\s+/)[0];
   const actual = createHash("sha256").update(archive).digest("hex");
   if (!expected || expected !== actual) throw new Error(`Checksum mismatch for ${file}`);
   const archivePath = join(cacheDir, file);
   writeFileSync(archivePath, archive);
   // Windows' bsdtar reads zip too: node-vX-win-x64/node.exe becomes cacheDir/node.exe.
-  if (plat === "win") execFileSync("tar", ["-xf", archivePath, "-C", cacheDir, "--strip-components=1", `${base}/node.exe`]);
-  else execFileSync("tar", ["-xzf", archivePath, "-C", cacheDir, "--strip-components=1", `${base}/bin/node`]);
+  if (plat === "win")
+    execFileSync("tar", [
+      "-xf",
+      archivePath,
+      "-C",
+      cacheDir,
+      "--strip-components=1",
+      `${base}/node.exe`,
+    ]);
+  else
+    execFileSync("tar", [
+      "-xzf",
+      archivePath,
+      "-C",
+      cacheDir,
+      "--strip-components=1",
+      `${base}/bin/node`,
+    ]);
   rmSync(archivePath);
   return exe;
 }

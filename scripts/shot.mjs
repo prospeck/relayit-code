@@ -2,12 +2,26 @@
 import { chromium } from "playwright-core";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-const [hash = "", out = join(tmpdir(), "shot.png"), scheme = "light", w = "1280", h = "820", js = ""] = process.argv.slice(2);
+const [
+  hash = "",
+  out = join(tmpdir(), "shot.png"),
+  scheme = "light",
+  w = "1280",
+  h = "820",
+  js = "",
+] = process.argv.slice(2);
 const browser = await chromium.launch({ channel: "chrome", headless: true });
-const page = await browser.newPage({ viewport: { width: +w, height: +h }, colorScheme: scheme === "dark" ? "dark" : "light", deviceScaleFactor: 2 });
+const page = await browser.newPage({
+  viewport: { width: +w, height: +h },
+  colorScheme: scheme === "dark" ? "dark" : "light",
+  deviceScaleFactor: 2,
+});
 await page.goto(`http://127.0.0.1:1420/#/${hash}`);
 await page.waitForTimeout(1200);
-if (js) { await page.evaluate(js); await page.waitForTimeout(1500); }
+if (js) {
+  await page.evaluate(js);
+  await page.waitForTimeout(1500);
+}
 await page.screenshot({ path: out });
 await browser.close();
 console.log(out);

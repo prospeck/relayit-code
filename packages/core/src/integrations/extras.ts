@@ -1,6 +1,12 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { BrowserSession, RECIPES, SITE_LIST, createBrowserTools, openLoginWindow } from "@relayit/connector-browser";
+import {
+  BrowserSession,
+  RECIPES,
+  SITE_LIST,
+  createBrowserTools,
+  openLoginWindow,
+} from "@relayit/connector-browser";
 import { createWebTools } from "@relayit/connector-web";
 import { detectLocalWhisper, pickTranscriber } from "@relayit/connector-voice";
 import type { ToolDef } from "@relayit/shared";
@@ -36,14 +42,19 @@ export class BrowserIntegration {
       // Remember which chat is driving the browser so live frames show up in the right place.
       run: async (input, ctx) => {
         this.currentConversation = ctx.conversationId;
-        const site = RECIPES.find((r) => typeof (input as { url?: string }).url === "string" && r.hosts.some((h) => (input as { url: string }).url.includes(h)));
+        const site = RECIPES.find(
+          (r) =>
+            typeof (input as { url?: string }).url === "string" &&
+            r.hosts.some((h) => (input as { url: string }).url.includes(h)),
+        );
         if (site) await this.app.kv.set(`browser.used.${site.id}`, nowIso());
         return t.run(input, ctx);
       },
     }));
     this.app.registry.registerAll(tools, "browser");
     this.app.addSystemExtra(async () => {
-      if (!(await this.app.settings()).browserAgentEnabled) return "# Browser agent\nThe browser agent is turned off in Settings.";
+      if (!(await this.app.settings()).browserAgentEnabled)
+        return "# Browser agent\nThe browser agent is turned off in Settings.";
       return `# Browser agent playbooks (best-effort; sites change)\n${RECIPES.map((r) => `- ${r.playbook}`).join("\n")}\nNever type passwords, OTPs, card numbers or UPI PINs — ask the user to do those steps in the RelayIt browser window.`;
     });
     this.app.onShutdown(async () => {
@@ -56,9 +67,18 @@ export class BrowserIntegration {
     if (this.session && this.headless === settings.browserHeadless) return this.session;
     await this.session?.close().catch(() => {});
     this.headless = settings.browserHeadless;
-    this.session = new BrowserSession({ profileDir: join(this.app.opts.dataDir, "browser-profile"), headless: settings.browserHeadless });
+    this.session = new BrowserSession({
+      profileDir: join(this.app.opts.dataDir, "browser-profile"),
+      headless: settings.browserHeadless,
+    });
     this.session.onFrame((f) => {
-      if (this.currentConversation) this.app.bus.emit({ type: "browser.frame", conversationId: this.currentConversation, url: f.url, jpegBase64: f.jpegBase64 });
+      if (this.currentConversation)
+        this.app.bus.emit({
+          type: "browser.frame",
+          conversationId: this.currentConversation,
+          url: f.url,
+          jpegBase64: f.jpegBase64,
+        });
     });
     return this.session;
   }
@@ -81,14 +101,18 @@ export class BrowserIntegration {
         const { site } = await body(c, z.object({ site: z.string() }));
         const s = SITE_LIST.find((x) => x.name === site || x.id === site);
         if (!s) throw new HttpError(404, "Unknown site");
-        if (this.app.opts.dataDir === ":memory:") throw new HttpError(400, "The browser agent needs a data folder.");
+        if (this.app.opts.dataDir === ":memory:")
+          throw new HttpError(400, "The browser agent needs a data folder.");
         try {
           // Sign-in always happens in a visible window, by the user.
           const settings = await this.app.settings();
           if (settings.browserHeadless) await this.app.updateSettings({ browserHeadless: false });
           await openLoginWindow(await this.get(), s.id);
           await this.app.kv.set(`browser.login.${s.id}`, nowIso());
-          await this.app.audit.log({ kind: "connection.changed", summary: `Opened ${s.name} sign-in in the RelayIt browser` });
+          await this.app.audit.log({
+            kind: "connection.changed",
+            summary: `Opened ${s.name} sign-in in the RelayIt browser`,
+          });
         } catch (e) {
           throw new HttpError(400, errMessage(e));
         }
@@ -114,13 +138,18 @@ export function voiceRoutes(app: App): RouteModule {
       if (buf.length < 1000) throw new HttpError(400, "That recording was too short.");
       if (buf.length > 25 * 1024 * 1024) throw new HttpError(413, "That recording is too long.");
       const model = await app.modelConfig();
-      const providerKey = model?.provider === "openai" ? await app.secrets.get(app.keyName("openai")) : null;
+      const providerKey =
+        model?.provider === "openai" ? await app.secrets.get(app.keyName("openai")) : null;
       const { transcriber, message } = pickTranscriber({
         local: await detectLocalWhisper().catch(() => null),
         openaiKey: (await app.secrets.get("key.openai")) ?? providerKey,
         groqKey: await app.secrets.get("key.groq"),
       });
-      if (!transcriber) throw new HttpError(400, message ?? "Voice needs local Whisper, or a Groq/OpenAI key in Connections → Extra keys.");
+      if (!transcriber)
+        throw new HttpError(
+          400,
+          message ?? "Voice needs local Whisper, or a Groq/OpenAI key in Connections → Extra keys.",
+        );
       try {
         const r = await transcriber.transcribe(buf, mime, { language: "en" });
         return c.json({ text: r.text, engine: r.engine });

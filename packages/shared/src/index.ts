@@ -91,7 +91,10 @@ export type ModelConfig = z.infer<typeof ModelConfig>;
 
 export const Settings = z.object({
   spendCapInr: z.number().int().positive().default(2000),
-  briefTime: z.string().regex(/^\d{2}:\d{2}$/).default("08:30"),
+  briefTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .default("08:30"),
   briefOnFirstOpen: z.boolean().default(true),
   notifications: z.boolean().default(true),
   quickAskShortcut: z.string().default("Alt+Space"),
@@ -329,7 +332,12 @@ export type ServerEvent =
       type: "run.step";
       runId: string;
       conversationId: string;
-      step: { id: string; label: string; tool: string; status: "running" | "done" | "error" | "waiting" };
+      step: {
+        id: string;
+        label: string;
+        tool: string;
+        status: "running" | "done" | "error" | "waiting";
+      };
     }
   | { type: "run.finished"; runId: string; conversationId: string }
   | { type: "run.error"; runId: string; conversationId: string; error: string }
@@ -342,7 +350,12 @@ export type ServerEvent =
   | { type: "connections.updated" }
   | { type: "routines.updated" }
   | { type: "browser.frame"; conversationId: string; url: string; jpegBase64: string }
-  | { type: "notify"; title: string; body: string; kind: "needs_you" | "order" | "routine" | "info" };
+  | {
+      type: "notify";
+      title: string;
+      body: string;
+      kind: "needs_you" | "order" | "routine" | "info";
+    };
 
 export const SERVICE_COLORS: Record<string, string> = {
   Gmail: "#EA4335",

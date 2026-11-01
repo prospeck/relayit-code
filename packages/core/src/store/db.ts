@@ -8,7 +8,9 @@ import { migrate } from "./migrations.ts";
 /** Adapts node:sqlite's DatabaseSync to the better-sqlite3-like shape Kysely's SqliteDialect expects. */
 function adapt(db: DatabaseSync): SqliteDatabase {
   const bind = (params: ReadonlyArray<unknown>) =>
-    params.map((p) => (typeof p === "boolean" ? (p ? 1 : 0) : p === undefined ? null : p)) as never[];
+    params.map((p) =>
+      typeof p === "boolean" ? (p ? 1 : 0) : p === undefined ? null : p,
+    ) as never[];
   return {
     close: () => db.close(),
     prepare(sql: string): SqliteStatement {

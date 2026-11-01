@@ -17,10 +17,16 @@ describe("AES-256-GCM secrets", () => {
   });
   it.each([0, 16, 31, 33])("rejects %i-byte keys for encrypt and decrypt", (length) => {
     expect(() => encrypt(Buffer.alloc(length), "value", "test")).toThrow("32 bytes");
-    expect(() => decrypt(Buffer.alloc(length), encrypt(key, "value", "test"), "test")).toThrow("32 bytes");
+    expect(() => decrypt(Buffer.alloc(length), encrypt(key, "value", "test"), "test")).toThrow(
+      "32 bytes",
+    );
   });
   it("uses distinct IVs for repeated encryptions", () => {
-    const ivs = Array.from({ length: 100 }, () => Buffer.from(encrypt(key, "value", "test"), "base64url").subarray(1, 13).toString("hex"));
+    const ivs = Array.from({ length: 100 }, () =>
+      Buffer.from(encrypt(key, "value", "test"), "base64url")
+        .subarray(1, 13)
+        .toString("hex"),
+    );
     expect(new Set(ivs).size).toBe(100);
   });
 });

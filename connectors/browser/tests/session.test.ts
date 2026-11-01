@@ -10,22 +10,31 @@ import { BrowserSession } from "../src/session.ts";
 const directories: string[] = [];
 async function profileDir() {
   const path = await mkdtemp(join(tmpdir(), "relayit-session-test-"));
-  directories.push(path); return path;
+  directories.push(path);
+  return path;
 }
 function contextResource() {
   let closed = false;
   const page = { isClosed: () => closed } as Page;
   const events = new EventEmitter();
   const context = Object.assign(events, {
-    pages: () => [page], setDefaultTimeout() {}, setDefaultNavigationTimeout() {},
-    async close() { closed = true; events.emit("close"); },
+    pages: () => [page],
+    setDefaultTimeout() {},
+    setDefaultNavigationTimeout() {},
+    async close() {
+      closed = true;
+      events.emit("close");
+    },
   });
   return { context: context as unknown as BrowserContext, page, closed: () => closed };
 }
 
 afterEach(async () => {
-  vi.restoreAllMocks(); vi.useRealTimers();
-  await Promise.all(directories.splice(0).map(path => rm(path, { recursive: true, force: true })));
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+  await Promise.all(
+    directories.splice(0).map((path) => rm(path, { recursive: true, force: true })),
+  );
 });
 
 describe("session lifecycle without a browser binary", () => {
@@ -62,7 +71,9 @@ describe("session lifecycle without a browser binary", () => {
   it("gives an install instruction when none of the three browsers launches", async () => {
     vi.spyOn(chromium, "launchPersistentContext").mockRejectedValue(new Error("not installed"));
     const session = new BrowserSession({ profileDir: await profileDir() });
-    await expect(session.getPage()).rejects.toThrow("Install Google Chrome to use the browser agent");
+    await expect(session.getPage()).rejects.toThrow(
+      "Install Google Chrome to use the browser agent",
+    );
     await session.close();
   });
 });

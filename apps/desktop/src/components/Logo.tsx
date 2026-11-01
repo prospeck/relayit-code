@@ -9,7 +9,14 @@ export function LogoMark({ size = 28 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect width="64" height="64" rx="17" fill="url(#rl-g)" />
-      <path d="M21 45V19h12.5a8.5 8.5 0 0 1 0 17H27m7 0 9.5 9" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M21 45V19h12.5a8.5 8.5 0 0 1 0 17H27m7 0 9.5 9"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="5.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

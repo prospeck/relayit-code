@@ -25,9 +25,15 @@ export async function startShop() {
   };
   const server = createServer((request, response) => {
     const path = new URL(request.url ?? "/", "http://localhost").pathname;
-    if (path === "/commit") { clicks++; response.end("OK"); return; }
+    if (path === "/commit") {
+      clicks++;
+      response.end("OK");
+      return;
+    }
     response.setHeader("Content-Type", "text/html; charset=utf-8");
-    response.end(`<!doctype html><html><head><title>Fixture Shop</title></head><body>${pages[path] ?? "<h1>Search results</h1>"}</body></html>`);
+    response.end(
+      `<!doctype html><html><head><title>Fixture Shop</title></head><body>${pages[path] ?? "<h1>Search results</h1>"}</body></html>`,
+    );
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -36,6 +42,9 @@ export async function startShop() {
   return {
     url: `http://127.0.0.1:${address.port}`,
     clicks: () => clicks,
-    close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())),
+    close: () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      ),
   };
 }

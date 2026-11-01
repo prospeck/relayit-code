@@ -1,7 +1,13 @@
 import { z } from "zod";
 import {
-  GOOGLE_SCOPES, GoogleClient, TokenStore, createGoogleTools, startFakeGoogle, startGoogleAuth,
-  type CalendarEvent, type TriageClassifier,
+  GOOGLE_SCOPES,
+  GoogleClient,
+  TokenStore,
+  createGoogleTools,
+  startFakeGoogle,
+  startGoogleAuth,
+  type CalendarEvent,
+  type TriageClassifier,
 } from "@relayit/connector-google";
 import type { ToolContext } from "@relayit/shared";
 import type { App } from "../app.ts";
@@ -13,7 +19,12 @@ import { openUrl } from "../util/openUrl.ts";
 import { errMessage } from "../util/time.ts";
 
 type Mode = "real" | "fake";
-export type GoogleStatus = { connected: boolean; email: string | null; mode: Mode | "none"; clientConfigured: boolean };
+export type GoogleStatus = {
+  connected: boolean;
+  email: string | null;
+  mode: Mode | "none";
+  clientConfigured: boolean;
+};
 
 /**
  * Gmail + Calendar. Two modes:
@@ -32,16 +43,27 @@ export class GoogleIntegration {
   async start(): Promise<void> {
     if (this.app.opts.fakeGoogleUrl && !(await this.mode())) {
       await this.app.kv.set("google.mode", "fake");
-      await this.app.kv.set("google.email", (await (await this.client()).getProfile()).emailAddress);
+      await this.app.kv.set(
+        "google.email",
+        (await (await this.client()).getProfile()).emailAddress,
+      );
     }
     this.app.registry.registerAll(
-      createGoogleTools({ getClient: (ctx) => this.client(ctx), classify: this.classifier() }).map((t) => ({ ...t })),
+      createGoogleTools({ getClient: (ctx) => this.client(ctx), classify: this.classifier() }).map(
+        (t) => ({ ...t }),
+      ),
       "google",
     );
     this.app.onShutdown(async () => {
       await this.fake?.close();
     });
-    setTimeout(() => void this.status().then((st) => (st.connected ? this.triage() : null)).catch(() => {}), 4000).unref();
+    setTimeout(
+      () =>
+        void this.status()
+          .then((st) => (st.connected ? this.triage() : null))
+          .catch(() => {}),
+      4000,
+    ).unref();
     // Triage new mail every 15 minutes while connected.
     this.app.every(15 * 60_000, async () => {
       if ((await this.status()).connected) await this.triage().catch(() => {});
@@ -53,8 +75,11 @@ export class GoogleIntegration {
   }
 
   private async clientOptions() {
-    const id = process.env.RELAYIT_GOOGLE_CLIENT_ID || (await this.app.secrets.get("google.client.id"));
-    const secret = process.env.RELAYIT_GOOGLE_CLIENT_SECRET || (await this.app.secrets.get("google.client.secret"));
+    const id =
+      process.env.RELAYIT_GOOGLE_CLIENT_ID || (await this.app.secrets.get("google.client.id"));
+    const secret =
+      process.env.RELAYIT_GOOGLE_CLIENT_SECRET ||
+      (await this.app.secrets.get("google.client.secret"));
     return id ? { clientId: id, ...(secret ? { clientSecret: secret } : {}) } : null;
   }
 
@@ -62,7 +87,11 @@ export class GoogleIntegration {
     const opts = await this.clientOptions();
     if (!opts) throw new Error("Google isn't set up. Add your OAuth client in Connections.");
     this.store ??= new TokenStore(
-      { get: (n) => this.app.secrets.get(n), set: (n, v) => this.app.secrets.set(n, v), delete: (n) => this.app.secrets.delete(n) },
+      {
+        get: (n) => this.app.secrets.get(n),
+        set: (n, v) => this.app.secrets.set(n, v),
+        delete: (n) => this.app.secrets.delete(n),
+      },
       opts,
     );
     return this.store;
@@ -77,7 +106,11 @@ export class GoogleIntegration {
     const mode = await this.mode();
     if (mode === "fake") {
       const f = await this.ensureFake();
-      return new GoogleClient({ getAccessToken: async () => "fake-token", gmailBase: f.url, calendarBase: `${f.url}/calendar/v3` });
+      return new GoogleClient({
+        getAccessToken: async () => "fake-token",
+        gmailBase: f.url,
+        calendarBase: `${f.url}/calendar/v3`,
+      });
     }
     if (mode === "real") {
       const store = await this.tokenStore();
@@ -90,10 +123,19 @@ export class GoogleIntegration {
     const mode = await this.mode();
     const clientConfigured = !!(await this.clientOptions());
     if (!mode) return { connected: false, email: null, mode: "none", clientConfigured };
-    return { connected: true, email: (await this.app.kv.get<string>("google.email")) ?? null, mode, clientConfigured };
+    return {
+      connected: true,
+      email: (await this.app.kv.get<string>("google.email")) ?? null,
+      mode,
+      clientConfigured,
+    };
   }
 
-  async connect(opts: { fake?: boolean; clientId?: string; clientSecret?: string }): Promise<GoogleStatus> {
+  async connect(opts: {
+    fake?: boolean;
+    clientId?: string;
+    clientSecret?: string;
+  }): Promise<GoogleStatus> {
     if (opts.fake) {
       await this.app.kv.set("google.mode", "fake");
       const c = await this.client();
@@ -101,18 +143,27 @@ export class GoogleIntegration {
     } else {
       if (opts.clientId) {
         await this.app.secrets.set("google.client.id", opts.clientId.trim());
-        if (opts.clientSecret) await this.app.secrets.set("google.client.secret", opts.clientSecret.trim());
+        if (opts.clientSecret)
+          await this.app.secrets.set("google.client.secret", opts.clientSecret.trim());
         this.store = null;
       }
       const client = await this.clientOptions();
       if (!client) throw new HttpError(400, "Add your Google OAuth client ID first.");
-      const tokens = await startGoogleAuth({ ...client, scopes: GOOGLE_SCOPES, openUrl: (u) => openUrl(u), timeoutMs: 5 * 60_000 });
+      const tokens = await startGoogleAuth({
+        ...client,
+        scopes: GOOGLE_SCOPES,
+        openUrl: (u) => openUrl(u),
+        timeoutMs: 5 * 60_000,
+      });
       await (await this.tokenStore()).set(tokens);
       await this.app.kv.set("google.mode", "real");
       const profile = await (await this.client()).getProfile().catch(() => null);
       await this.app.kv.set("google.email", profile?.emailAddress ?? tokens.email ?? null);
     }
-    await this.app.audit.log({ kind: "connection.changed", summary: `Connected Google${opts.fake ? " (demo account)" : ""}` });
+    await this.app.audit.log({
+      kind: "connection.changed",
+      summary: `Connected Google${opts.fake ? " (demo account)" : ""}`,
+    });
     this.app.bus.emit({ type: "connections.updated" });
     void this.firstDayIntro().catch((e) => console.error("[intro]", errMessage(e)));
     void this.triage().catch(() => {});
@@ -133,19 +184,44 @@ export class GoogleIntegration {
   async triage(): Promise<{ needsYou: number; canWait: number }> {
     const tool = this.app.registry.get("gmail_triage")!.def;
     const ctx: ToolContext = {
-      conversationId: "", runId: "triage", signal: AbortSignal.timeout(60_000), idempotencyKey: null,
-      profile: await this.app.profile(), memory: [], secrets: { get: async () => null, set: async () => {}, delete: async () => {} },
-      kv: { get: (k) => this.app.kv.get(k), set: (k, v) => this.app.kv.set(k, v) }, status: () => {},
+      conversationId: "",
+      runId: "triage",
+      signal: AbortSignal.timeout(60_000),
+      idempotencyKey: null,
+      profile: await this.app.profile(),
+      memory: [],
+      secrets: { get: async () => null, set: async () => {}, delete: async () => {} },
+      kv: { get: (k) => this.app.kv.get(k), set: (k, v) => this.app.kv.set(k, v) },
+      status: () => {},
     };
     const r = (await tool.run({ days: 3 }, ctx)) as {
       needsYou: { id: string; threadId: string; from: string; subject: string; reason: string }[];
       canWait: { id: string; threadId: string; from: string; subject: string; reason: string }[];
     };
     for (const m of r.needsYou)
-      await this.app.tasks.upsert({ title: m.subject || "(no subject)", detail: `${shortFrom(m.from)} — ${m.reason}`, status: "needs_you", source: "Gmail", sourceRef: `gmail:${m.threadId}` });
+      await this.app.tasks.upsert({
+        title: m.subject || "(no subject)",
+        detail: `${shortFrom(m.from)} — ${m.reason}`,
+        status: "needs_you",
+        source: "Gmail",
+        sourceRef: `gmail:${m.threadId}`,
+      });
     // "Can wait" mail isn't a task; keep the latest list for the Tasks screen.
-    await this.app.kv.set("triage.canWait", { at: new Date().toISOString(), items: r.canWait.map((m) => ({ threadId: m.threadId, subject: m.subject, from: shortFrom(m.from), reason: m.reason })) });
-    await this.app.audit.log({ kind: "tool.result", summary: `Sorted inbox: ${r.needsYou.length} need you, ${r.canWait.length} can wait`, toolName: "gmail_triage", toolClass: "read" });
+    await this.app.kv.set("triage.canWait", {
+      at: new Date().toISOString(),
+      items: r.canWait.map((m) => ({
+        threadId: m.threadId,
+        subject: m.subject,
+        from: shortFrom(m.from),
+        reason: m.reason,
+      })),
+    });
+    await this.app.audit.log({
+      kind: "tool.result",
+      summary: `Sorted inbox: ${r.needsYou.length} need you, ${r.canWait.length} can wait`,
+      toolName: "gmail_triage",
+      toolClass: "read",
+    });
     this.app.bus.emit({ type: "tasks.updated" });
     return { needsYou: r.needsYou.length, canWait: r.canWait.length };
   }
@@ -171,7 +247,10 @@ export class GoogleIntegration {
   }
 
   async canWait() {
-    return this.app.kv.get<{ at: string; items: { threadId: string; subject: string; from: string; reason: string }[] }>("triage.canWait");
+    return this.app.kv.get<{
+      at: string;
+      items: { threadId: string; subject: string; from: string; reason: string }[];
+    }>("triage.canWait");
   }
 
   async eventsToday(): Promise<CalendarEvent[]> {
@@ -208,7 +287,14 @@ export function googleRoutes(g: GoogleIntegration): RouteModule {
   return (api) => {
     api.get("/api/google/status", async (c) => c.json(await g.status()));
     api.post("/api/google/connect", async (c) => {
-      const b = await body(c, z.object({ fake: z.boolean().optional(), clientId: z.string().optional(), clientSecret: z.string().optional() }));
+      const b = await body(
+        c,
+        z.object({
+          fake: z.boolean().optional(),
+          clientId: z.string().optional(),
+          clientSecret: z.string().optional(),
+        }),
+      );
       try {
         return c.json(await g.connect(b));
       } catch (e) {
@@ -218,6 +304,8 @@ export function googleRoutes(g: GoogleIntegration): RouteModule {
     });
     api.post("/api/google/disconnect", async (c) => c.json(await g.disconnect()));
     api.post("/api/google/triage", async (c) => c.json(await g.triage()));
-    api.get("/api/google/can-wait", async (c) => c.json((await g.canWait()) ?? { at: null, items: [] }));
+    api.get("/api/google/can-wait", async (c) =>
+      c.json((await g.canWait()) ?? { at: null, items: [] }),
+    );
   };
 }

@@ -50,7 +50,11 @@ export async function complete(provider: ModelProvider, req: ModelRequest) {
   for await (const ev of provider.stream(req)) {
     if (ev.type === "text") text += ev.delta;
     else if (ev.type === "tool_call") toolCalls.push(ev.call);
-    else if (ev.type === "usage") usage = { inputTokens: usage.inputTokens + ev.inputTokens, outputTokens: usage.outputTokens + ev.outputTokens };
+    else if (ev.type === "usage")
+      usage = {
+        inputTokens: usage.inputTokens + ev.inputTokens,
+        outputTokens: usage.outputTokens + ev.outputTokens,
+      };
   }
   return { text, toolCalls, usage };
 }

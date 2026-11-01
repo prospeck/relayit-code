@@ -30,13 +30,19 @@ describe("UPI", () => {
     expect(parseUpiUri(uri)).toEqual({ ...withoutCode, amountInr: 1 });
   });
 
-  it.each(["", "missing", "@bank", "a@", "a@@bank", "a b@bank", "a@bank/path"])("rejects invalid VPA %j", (vpa) => {
-    expect(() => buildUpiUri({ ...request, vpa })).toThrow("VPA");
-  });
+  it.each(["", "missing", "@bank", "a@", "a@@bank", "a b@bank", "a@bank/path"])(
+    "rejects invalid VPA %j",
+    (vpa) => {
+      expect(() => buildUpiUri({ ...request, vpa })).toThrow("VPA");
+    },
+  );
 
-  it.each([0, -1, 100_000.01, NaN, Infinity, -Infinity, 0.001, 1.234])("rejects invalid amount %s", (amountInr) => {
-    expect(() => buildUpiUri({ ...request, amountInr })).toThrow("Amount");
-  });
+  it.each([0, -1, 100_000.01, NaN, Infinity, -Infinity, 0.001, 1.234])(
+    "rejects invalid amount %s",
+    (amountInr) => {
+      expect(() => buildUpiUri({ ...request, amountInr })).toThrow("Amount");
+    },
+  );
 
   it.each([0.01, 0.29, 100_000])("accepts valid amount %s", (amountInr) => {
     expect(parseUpiUri(buildUpiUri({ ...request, amountInr })).amountInr).toBe(amountInr);
@@ -44,10 +50,18 @@ describe("UPI", () => {
 
   it("limits notes to 80 Unicode characters", () => {
     expect(() => buildUpiUri({ ...request, note: "x".repeat(81) })).toThrow("80");
-    expect(parseUpiUri(buildUpiUri({ ...request, note: "🌾".repeat(80) })).note).toBe("🌾".repeat(80));
+    expect(parseUpiUri(buildUpiUri({ ...request, note: "🌾".repeat(80) })).note).toBe(
+      "🌾".repeat(80),
+    );
   });
 
-  it.each(["https://pay?pa=a@b", "upi://collect", "upi://pay/path", "upi://pay?cu=USD", "upi://pay?cu=INR"])("rejects invalid URI %s", (uri) => {
+  it.each([
+    "https://pay?pa=a@b",
+    "upi://collect",
+    "upi://pay/path",
+    "upi://pay?cu=USD",
+    "upi://pay?cu=INR",
+  ])("rejects invalid URI %s", (uri) => {
     expect(() => parseUpiUri(uri)).toThrow();
   });
 

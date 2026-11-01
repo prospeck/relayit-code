@@ -26,8 +26,15 @@ export const MessageView = memo(function MessageView({
   if (message.role === "user") {
     const text = message.parts.map((p) => (p.type === "text" ? p.text : "")).join("\n");
     return (
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex justify-end">
-        <div className="max-w-[78%] bg-surface-2 border border-line rounded-[18px] rounded-br-[6px] px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap selectable">{text}</div>
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="flex justify-end"
+      >
+        <div className="max-w-[78%] bg-surface-2 border border-line rounded-[18px] rounded-br-[6px] px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap selectable">
+          {text}
+        </div>
       </motion.div>
     );
   }
@@ -42,8 +49,14 @@ export const MessageView = memo(function MessageView({
         ))}
         {message.usage && (message.usage.inputTokens > 0 || message.usage.costInr) ? (
           <div className="text-[11px] text-faint opacity-0 group-hover:opacity-100 transition-opacity tnum">
-            {fmtTime(message.createdAt)} · {(message.usage.inputTokens + message.usage.outputTokens).toLocaleString("en-IN")} tokens
-            {message.usage.costInr != null && message.usage.costInr > 0 ? ` · ≈ ₹${message.usage.costInr < 0.01 ? "0.01" : message.usage.costInr.toFixed(2)}` : message.usage.costInr === 0 ? " · free" : ""}
+            {fmtTime(message.createdAt)} ·{" "}
+            {(message.usage.inputTokens + message.usage.outputTokens).toLocaleString("en-IN")}{" "}
+            tokens
+            {message.usage.costInr != null && message.usage.costInr > 0
+              ? ` · ≈ ₹${message.usage.costInr < 0.01 ? "0.01" : message.usage.costInr.toFixed(2)}`
+              : message.usage.costInr === 0
+                ? " · free"
+                : ""}
           </div>
         ) : null}
       </div>
@@ -51,7 +64,15 @@ export const MessageView = memo(function MessageView({
   );
 });
 
-function Part({ part, actions, onChoice }: { part: MessagePart; actions: Map<string, PendingAction>; onChoice?: (t: string) => void }) {
+function Part({
+  part,
+  actions,
+  onChoice,
+}: {
+  part: MessagePart;
+  actions: Map<string, PendingAction>;
+  onChoice?: (t: string) => void;
+}) {
   switch (part.type) {
     case "text":
       return <Markdown text={part.text} />;
@@ -76,7 +97,9 @@ function Part({ part, actions, onChoice }: { part: MessagePart; actions: Map<str
                 onClick={() => onChoice?.(o)}
                 className={cx(
                   "h-8 px-3.5 rounded-full border text-[13px] font-medium transition-colors",
-                  onChoice ? "border-line-strong bg-surface hover:border-accent/50 hover:bg-accent-softer hover:text-accent-text shadow-sm" : "border-line text-faint",
+                  onChoice
+                    ? "border-line-strong bg-surface hover:border-accent/50 hover:bg-accent-softer hover:text-accent-text shadow-sm"
+                    : "border-line text-faint",
                 )}
               >
                 {o}
@@ -87,13 +110,18 @@ function Part({ part, actions, onChoice }: { part: MessagePart; actions: Map<str
       );
     case "link":
       return (
-        <button onClick={() => void openExternal(part.url)} className="group/link max-w-[540px] w-full flex items-center gap-3 rounded-[14px] border border-line bg-surface px-4 py-3 text-left hover:border-line-strong hover:shadow-sm transition-all">
+        <button
+          onClick={() => void openExternal(part.url)}
+          className="group/link max-w-[540px] w-full flex items-center gap-3 rounded-[14px] border border-line bg-surface px-4 py-3 text-left hover:border-line-strong hover:shadow-sm transition-all"
+        >
           <span className="size-9 rounded-[10px] bg-surface-2 flex items-center justify-center text-muted shrink-0">
             <Globe className="size-4" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[13.5px] font-medium truncate">{part.title}</span>
-            <span className="block text-[12px] text-muted truncate">{part.subtitle ?? new URL(part.url).host}</span>
+            <span className="block text-[12px] text-muted truncate">
+              {part.subtitle ?? new URL(part.url).host}
+            </span>
           </span>
           <ArrowUpRight className="size-4 text-muted group-hover/link:text-ink transition-colors" />
         </button>
@@ -102,7 +130,11 @@ function Part({ part, actions, onChoice }: { part: MessagePart; actions: Map<str
       return (
         <div className="flex flex-wrap gap-1.5">
           {part.sources.map((s, i) => (
-            <button key={i} onClick={() => void openExternal(s.url)} className="inline-flex items-center gap-1.5 h-7 max-w-[260px] px-2.5 rounded-full bg-surface-2 border border-line text-[12px] text-ink-2 hover:text-ink hover:border-line-strong">
+            <button
+              key={i}
+              onClick={() => void openExternal(s.url)}
+              className="inline-flex items-center gap-1.5 h-7 max-w-[260px] px-2.5 rounded-full bg-surface-2 border border-line text-[12px] text-ink-2 hover:text-ink hover:border-line-strong"
+            >
               <span className="text-faint tnum">{i + 1}</span>
               <span className="truncate">{s.title || new URL(s.url).host}</span>
             </button>
@@ -113,12 +145,25 @@ function Part({ part, actions, onChoice }: { part: MessagePart; actions: Map<str
 }
 
 /** The in-flight reply: live steps, streaming text and a shimmering status line. */
-export function LiveRunView({ run, frame }: { run: LiveRun; frame?: { url: string; jpegBase64: string } | undefined }) {
+export function LiveRunView({
+  run,
+  frame,
+}: {
+  run: LiveRun;
+  frame?: { url: string; jpegBase64: string } | undefined;
+}) {
   const reduce = usePrefersReducedMotion();
   return (
     <div className="flex gap-3.5">
       <div className="pt-0.5 shrink-0">
-        <motion.div key={reduce ? "still" : "pulse"} className="motion-reduce:transform-none!" animate={reduce ? { scale: 1 } : { scale: [1, 1.06, 1] }} transition={reduce ? { duration: 0 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}>
+        <motion.div
+          key={reduce ? "still" : "pulse"}
+          className="motion-reduce:transform-none!"
+          animate={reduce ? { scale: 1 } : { scale: [1, 1.06, 1] }}
+          transition={
+            reduce ? { duration: 0 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }
+          }
+        >
           <LogoMark size={24} />
         </motion.div>
       </div>
@@ -126,7 +171,11 @@ export function LiveRunView({ run, frame }: { run: LiveRun; frame?: { url: strin
         {run.steps.length > 0 && <Steps steps={run.steps} live />}
         {frame && <BrowserPeek url={frame.url} jpeg={frame.jpegBase64} />}
         {run.text && <Markdown text={run.text} />}
-        {run.active && <div aria-hidden="true" className="text-[13px] shimmer font-medium h-5">{run.status || "Thinking…"}</div>}
+        {run.active && (
+          <div aria-hidden="true" className="text-[13px] shimmer font-medium h-5">
+            {run.status || "Thinking…"}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -140,7 +189,11 @@ function BrowserPeek({ url, jpeg }: { url: string; jpeg: string }) {
     /* keep raw */
   }
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-[420px] rounded-[14px] overflow-hidden border border-line shadow-md bg-surface">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="max-w-[420px] rounded-[14px] overflow-hidden border border-line shadow-md bg-surface"
+    >
       <div className="flex items-center gap-2 px-3 h-8 border-b border-line bg-surface-2/60">
         <span className="flex gap-1">
           <span className="size-2 rounded-full bg-line-strong" />
@@ -148,9 +201,15 @@ function BrowserPeek({ url, jpeg }: { url: string; jpeg: string }) {
           <span className="size-2 rounded-full bg-line-strong" />
         </span>
         <span className="text-[11.5px] text-muted truncate">{host}</span>
-        <span className="ml-auto text-[10.5px] font-medium text-accent-text uppercase tracking-wider">Live</span>
+        <span className="ml-auto text-[10.5px] font-medium text-accent-text uppercase tracking-wider">
+          Live
+        </span>
       </div>
-      <img src={`data:image/jpeg;base64,${jpeg}`} alt="What RelayIt sees in the browser" className="block w-full" />
+      <img
+        src={`data:image/jpeg;base64,${jpeg}`}
+        alt="What RelayIt sees in the browser"
+        className="block w-full"
+      />
     </motion.div>
   );
 }

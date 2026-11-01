@@ -27,6 +27,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r typecheck
       - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm test
 
   ui-e2e:

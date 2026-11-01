@@ -9,7 +9,9 @@ export function wrapUntrusted(source: string, content: string): string {
 
 export function stringifyResult(value: unknown, max = 24_000): string {
   const text = typeof value === "string" ? value : JSON.stringify(value, null, 1);
-  return text.length > max ? `${text.slice(0, max)}\n…[truncated ${text.length - max} chars]` : text;
+  return text.length > max
+    ? `${text.slice(0, max)}\n…[truncated ${text.length - max} chars]`
+    : text;
 }
 
 /** Pulls `_parts` out of a tool result so they go to the UI, not the model. */

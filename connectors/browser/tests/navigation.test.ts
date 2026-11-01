@@ -3,12 +3,17 @@ import type { Page } from "playwright-core";
 import { describe, expect, it, vi } from "vitest";
 import { readAfterNavigation } from "../src/navigation.ts";
 
-const navigationError = new Error("page.evaluate: Execution context was destroyed, most likely because of a navigation");
+const navigationError = new Error(
+  "page.evaluate: Execution context was destroyed, most likely because of a navigation",
+);
 function pageResource() {
   const waitForLoadState = vi.fn().mockResolvedValue(undefined);
   const frame = {};
   const events = new EventEmitter();
-  const page = Object.assign(events, { waitForLoadState, mainFrame: () => frame }) as unknown as Page;
+  const page = Object.assign(events, {
+    waitForLoadState,
+    mainFrame: () => frame,
+  }) as unknown as Page;
   const failDuringNavigation = async () => {
     events.emit("framenavigated", frame);
     throw navigationError;
@@ -19,10 +24,13 @@ function pageResource() {
 describe("reads during navigation", () => {
   it("waits for the replacement document and retries a destroyed context once", async () => {
     const { page, waitForLoadState, failDuringNavigation } = pageResource();
-    const read = vi.fn().mockImplementationOnce(failDuringNavigation).mockImplementationOnce(async () => {
-      expect(waitForLoadState).toHaveBeenCalledWith("domcontentloaded", { timeout: 4000 });
-      return "new document";
-    });
+    const read = vi
+      .fn()
+      .mockImplementationOnce(failDuringNavigation)
+      .mockImplementationOnce(async () => {
+        expect(waitForLoadState).toHaveBeenCalledWith("domcontentloaded", { timeout: 4000 });
+        return "new document";
+      });
     expect(await readAfterNavigation(page, read)).toBe("new document");
     expect(read).toHaveBeenCalledTimes(2);
   });
@@ -35,7 +43,10 @@ describe("reads during navigation", () => {
   });
   it("waits for main-frame commit rather than the old document's load state", async () => {
     const { page, events, frame, waitForLoadState } = pageResource();
-    const read = vi.fn().mockRejectedValueOnce(navigationError).mockResolvedValueOnce("new document");
+    const read = vi
+      .fn()
+      .mockRejectedValueOnce(navigationError)
+      .mockResolvedValueOnce("new document");
     const result = readAfterNavigation(page, read);
     await Promise.resolve();
     events.emit("framenavigated", {});
@@ -50,13 +61,17 @@ describe("reads during navigation", () => {
     try {
       const { page, events, waitForLoadState } = pageResource();
       const read = vi.fn().mockRejectedValue(navigationError);
-      const result = expect(readAfterNavigation(page, read)).rejects.toThrow("did not commit within 4 seconds");
+      const result = expect(readAfterNavigation(page, read)).rejects.toThrow(
+        "did not commit within 4 seconds",
+      );
       await vi.advanceTimersByTimeAsync(4000);
       await result;
       expect(read).toHaveBeenCalledTimes(1);
       expect(waitForLoadState).not.toHaveBeenCalled();
       expect(events.listenerCount("framenavigated")).toBe(0);
-    } finally { vi.useRealTimers(); }
+    } finally {
+      vi.useRealTimers();
+    }
   });
   it("propagates unrelated read errors without retrying", async () => {
     const { page, waitForLoadState } = pageResource();

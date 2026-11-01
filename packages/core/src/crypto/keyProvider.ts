@@ -41,7 +41,10 @@ export class StdinKeyProvider implements KeyProvider {
         resolve(key);
       };
       process.stdin.on("data", onData);
-      setTimeout(() => reject(new Error("Timed out waiting for master key on stdin")), 15000).unref();
+      setTimeout(
+        () => reject(new Error("Timed out waiting for master key on stdin")),
+        15000,
+      ).unref();
     });
     return this.keyPromise;
   }
