@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { Page } from "playwright-core";
-import { describe, expect, it, vi } from "vitest";
-import { readAfterNavigation } from "../src/navigation.ts";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readAfterNavigation, settleAfterAction } from "../src/navigation.ts";
 
 const navigationError = new Error(
   "page.evaluate: Execution context was destroyed, most likely because of a navigation",
@@ -20,6 +20,89 @@ function pageResource() {
   };
   return { page, events, frame, waitForLoadState, failDuringNavigation };
 }
+
+describe("settling an action", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("waits for action requests even when the old document is already loaded", async () => {
+    const { page, events, frame, waitForLoadState } = pageResource();
+    const request = { isNavigationRequest: () => false };
+    let done = false;
+    const result = settleAfterAction(page, async () => {
+      events.emit("request", request);
+    }).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(done).toBe(false);
+    expect(waitForLoadState).not.toHaveBeenCalled();
+    events.emit("requestfinished", request);
+    events.emit("framenavigated", frame);
+    await vi.advanceTimersByTimeAsync(500);
+    await result;
+    expect(waitForLoadState).toHaveBeenCalledWith("domcontentloaded", { timeout: 12_000 });
+    expect(events.eventNames()).toEqual([]);
+  });
+
+  it("waits for follow-up requests and handles failed requests", async () => {
+    const { page, events } = pageResource();
+    const request = { isNavigationRequest: () => false };
+    let done = false;
+    const result = settleAfterAction(page, async () => {}).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(400);
+    events.emit("request", request);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(done).toBe(false);
+    events.emit("requestfailed", request);
+    await vi.advanceTimersByTimeAsync(500);
+    await result;
+    expect(events.eventNames()).toEqual([]);
+  });
+
+  it("drops abandoned fetches when a replacement document starts loading", async () => {
+    const { page, events, frame } = pageResource();
+    const fetch = { isNavigationRequest: () => false };
+    const navigation = { isNavigationRequest: () => true, frame: () => frame };
+    let done = false;
+    const result = settleAfterAction(page, async () => {
+      events.emit("request", fetch);
+    }).then(() => (done = true));
+    events.emit("request", navigation);
+    events.emit("framenavigated", frame);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(done).toBe(false);
+    events.emit("requestfinished", navigation);
+    await vi.advanceTimersByTimeAsync(500);
+    await result;
+    expect(events.eventNames()).toEqual([]);
+  });
+
+  it("bounds an unsettled action without repeating it or leaking listeners", async () => {
+    const { page, events } = pageResource();
+    const action = vi.fn(async () => {
+      events.emit("request", { isNavigationRequest: () => false });
+    });
+    const result = expect(settleAfterAction(page, action)).rejects.toThrow(
+      "Browser action did not settle within 12 seconds",
+    );
+    await vi.advanceTimersByTimeAsync(12_000);
+    await result;
+    expect(action).toHaveBeenCalledTimes(1);
+    expect(events.eventNames()).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("propagates action failures and removes observers", async () => {
+    const { page, events } = pageResource();
+    const error = new Error("click failed");
+    await expect(
+      settleAfterAction(page, async () => {
+        throw error;
+      }),
+    ).rejects.toBe(error);
+    expect(events.eventNames()).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
 
 describe("reads during navigation", () => {
   it("waits for the replacement document and retries a destroyed context once", async () => {

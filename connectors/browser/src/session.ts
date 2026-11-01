@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { isAbsolute } from "node:path";
 import { chromium } from "playwright-core";
-import type { BrowserContext, Page } from "playwright-core";
+import type { BrowserContext, Frame, Page } from "playwright-core";
 
 export type BrowserFrame = { url: string; jpegBase64: string };
 export type BrowserSessionOptions = {
@@ -108,6 +108,13 @@ export class BrowserSession {
     if (!page || page.isClosed() || !this.frameCallbacks.size) return;
     try {
       const cdp = await page.context().newCDPSession(page);
+      let detaching: Promise<void> | undefined;
+      const detach = () => (detaching ??= cdp.detach().catch(() => {}));
+      const onNavigation = (frame: Frame) => {
+        // Chromium can leave a screenshot pending forever when its document is replaced.
+        if (frame === page.mainFrame()) void detach();
+      };
+      page.on("framenavigated", onNavigation);
       try {
         const size = page.viewportSize() ?? { width: 1280, height: 860 };
         const result = await cdp.send("Page.captureScreenshot", {
@@ -132,7 +139,8 @@ export class BrowserSession {
           }
         }
       } finally {
-        await cdp.detach().catch(() => {});
+        page.off("framenavigated", onNavigation);
+        await detach();
       }
     } catch {
       /* A navigation or closed tab can race a live peek. */
