@@ -1,12 +1,13 @@
 import type { Page } from "playwright-core";
 import { SENSITIVE_PATTERN } from "./policy.ts";
+import { readAfterNavigation } from "./navigation.ts";
 
 export type PageSnapshot = { title: string; url: string; text: string };
 const nextRefs = new WeakMap<Page, number>();
 
 /** New snapshots invalidate old refs so stale actions fail instead of hitting a new control. */
 export async function snapshot(page: Page): Promise<PageSnapshot> {
-  const result = await page.evaluate(({ start, sensitivePattern }) => {
+  const result = await readAfterNavigation(page, () => page.evaluate(({ start, sensitivePattern }) => {
     const clean = (value: string | null | undefined, cap = 160) => (value ?? "").replace(/\s+/g, " ").trim().slice(0, cap);
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
@@ -54,7 +55,7 @@ export async function snapshot(page: Page): Promise<PageSnapshot> {
       if (text && !seen.has(text)) { seen.add(text); blocks.push(/^H[1-6]$/.test(element.tagName) ? `Heading: ${text}` : text); }
     }
     return { title: clean(document.title, 250), url: location.href.slice(0, 1000), lines, blocks, next };
-  }, { start: nextRefs.get(page) ?? 1, sensitivePattern: SENSITIVE_PATTERN });
+  }, { start: nextRefs.get(page) ?? 1, sensitivePattern: SENSITIVE_PATTERN }));
   nextRefs.set(page, result.next);
   return { title: result.title, url: result.url,
     text: [`Title: ${result.title}`, `URL: ${result.url}`, ...result.lines, ...result.blocks].join("\n").slice(0, 6000) };

@@ -10,12 +10,14 @@ import type { Browser, BrowserContext, Page, WebSocket } from "playwright-core";
 import { createServer, type ViteDevServer } from "vite";
 import { expect } from "vitest";
 import { visible } from "./browser.ts";
+import { isCoreRestartNetworkError } from "./console-errors.ts";
 
 const desktopRoot = fileURLToPath(new URL("../../apps/desktop/", import.meta.url));
 
 export class UiHarness {
   private readonly suiteDir: string;
   private readonly browser: Browser;
+  private restartingCore = false;
   dataDir: string;
   key = randomBytes(32);
   readonly consoleErrors: string[] = [];
@@ -81,7 +83,11 @@ export class UiHarness {
     });
     this.context.on("page", (page) => {
       page.on("console", (message) => {
-        if (message.type() === "error") this.consoleErrors.push(message.text());
+        if (message.type() === "error") {
+          if (this.restartingCore && message.args().length === 0
+            && isCoreRestartNetworkError(message.text(), message.location().url, this.coreUrl)) return;
+          this.consoleErrors.push(message.text());
+        }
       });
       page.on("pageerror", (error) => this.uncaughtErrors.push(error.message));
     });
@@ -180,10 +186,15 @@ export class UiHarness {
   async restartCore(): Promise<void> {
     await this.waitForIdle();
     const port = this.core.port;
-    await this.core.close();
-    await this.app.stop();
-    // Keep the same endpoint so reload exercises persisted state, without changing Vite's configuration.
-    await this.startCore(port);
+    this.restartingCore = true;
+    try {
+      await this.core.close();
+      await this.app.stop();
+      // Keep the same endpoint so reload exercises persisted state, without changing Vite's configuration.
+      await this.startCore(port);
+    } finally {
+      this.restartingCore = false;
+    }
   }
 
   async persistedMessages(): Promise<Message[]> {

@@ -2,14 +2,16 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright-core";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ToolContext, ToolDef } from "@relayit/shared";
 import { BrowserSession, createBrowserTools, snapshot } from "../src/index.ts";
 import { startShop } from "./fixtures/shop/server.ts";
 
-// Never download a browser or touch the user's profile in tests: bundled Chromium first, then system Chrome
-// with a throwaway profile.
-const launchChannel = await chromium.launch({ headless: true }).then(async browser => { await browser.close(); return "chromium" as const; })
+// Windows runners use installed Edge for both probing and the throwaway persistent profile.
+// On macOS, keep bundled Chromium first, then system Chrome. Never download a browser.
+const launchChannel = process.platform === "win32"
+  ? await chromium.launch({ headless: true, channel: "msedge" }).then(async browser => { await browser.close(); return "msedge" as const; })
+  : await chromium.launch({ headless: true }).then(async browser => { await browser.close(); return "chromium" as const; })
   .catch(() => chromium.launch({ headless: true, channel: "chrome" }).then(async browser => { await browser.close(); return "chrome" as const; }))
   .catch(() => null);
 const browserAvailable = launchChannel !== null;
@@ -36,6 +38,7 @@ describe("offline browser connector", () => {
     };
   });
   afterEach(async () => {
+    vi.restoreAllMocks();
     if (!browserAvailable) return;
     await session.close(); await rm(profile, { recursive: true, force: true });
   });
@@ -128,7 +131,12 @@ describe("offline browser connector", () => {
     await open("/cart");
     const input = { ref: await ref("button") };
     const before = shop.clicks();
+    const page = await session.getPage();
+    const evaluate = page.evaluate.bind(page);
+    // Force a real document replacement during the first snapshot, after the approved click.
+    vi.spyOn(page, "evaluate").mockImplementationOnce(() => evaluate(() => new Promise<never>(() => { location.reload(); })));
     const [first, concurrent] = await Promise.all([run("browser_submit", input), run("browser_submit", input)]);
+    expect(first).toMatchObject({ submitted: true, handoff: true, url: shop.url + "/payment" });
     expect(concurrent).toEqual(first);
     tools = createBrowserTools({ getSession: async () => session, isEnabled: async () => true });
     expect(await run("browser_submit", input)).toEqual(first);

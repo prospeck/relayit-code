@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, win32 } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { OpenAICompatibleTranscriber, WhisperCppTranscriber, detectLocalWhisper, pickTranscriber } from "../src/index.ts";
 
@@ -173,8 +173,13 @@ describe("local whisper.cpp", () => {
     const ffmpeg = join(links, "ffmpeg.exe");
     await writeFile(whisper, "fixture");
     await writeFile(ffmpeg, "fixture");
-    expect(await detectLocalWhisper({ platform: "win32", env: { Path: directory, LOCALAPPDATA: directory, USERPROFILE: directory, WHISPER_MODEL: modelPath } }))
-      .toEqual({ available: true, binaryPath: whisper, modelPath, ffmpegPath: ffmpeg, missing: [] });
+    const detected = await detectLocalWhisper({ platform: "win32", env: { Path: directory, LOCALAPPDATA: directory, USERPROFILE: directory, WHISPER_MODEL: modelPath } });
+    expect(detected).toMatchObject({ available: true, missing: [] });
+    // Windows paths are case-insensitive; resolve() and join() may preserve different drive casing.
+    for (const [actual, expected] of [[detected.binaryPath, whisper], [detected.modelPath, modelPath], [detected.ffmpegPath, ffmpeg]]) {
+      expect(actual).not.toBeNull();
+      expect(win32.normalize(actual!).toLowerCase()).toBe(win32.normalize(expected!).toLowerCase());
+    }
   });
 });
 

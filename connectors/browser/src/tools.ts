@@ -4,6 +4,7 @@ import type { ActPreview, KvAccess, ToolContext, ToolDef } from "@relayit/shared
 import type { Locator, Page } from "playwright-core";
 import type { BrowserSession } from "./session.ts";
 import { snapshot } from "./snapshot.ts";
+import { readAfterNavigation } from "./navigation.ts";
 import { isCommit, isPaymentStep, isSensitiveField, SENSITIVE_PATTERN, validateUrl } from "./policy.ts";
 import { recipeFor, serviceFor, siteRecipe } from "./recipes.ts";
 
@@ -98,8 +99,8 @@ export function createBrowserTools(options: {
   }
   async function payment(session: BrowserSession, page: Page) {
     // Detection is independent of the extraction cap and includes sensitive card inputs.
-    const text = await page.locator("body").evaluate(body => (body as HTMLElement).innerText + "\n" +
-      Array.from(body.querySelectorAll("input")).map(input => [input.name, input.id, input.autocomplete, input.placeholder, input.getAttribute("aria-label")].join(" ")).join("\n"));
+    const text = await readAfterNavigation(page, () => page.locator("body").evaluate(body => (body as HTMLElement).innerText + "\n" +
+      Array.from(body.querySelectorAll("input")).map(input => [input.name, input.id, input.autocomplete, input.placeholder, input.getAttribute("aria-label")].join(" ")).join("\n")));
     if (!isPaymentStep(page.url(), text)) return false;
     await session.bringToFront();
     await session.afterAction();
