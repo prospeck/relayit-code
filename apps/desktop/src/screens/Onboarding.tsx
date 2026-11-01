@@ -13,7 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { ProviderId } from "@relayit/shared";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, type OllamaInfo } from "../lib/api";
 import { cx } from "../lib/format";
 import { openExternal, platform } from "../lib/tauri";
 import { Button, Field, Input, Select } from "../components/ui";
@@ -111,7 +111,14 @@ export function Onboarding() {
   const ollama = useQuery({
     queryKey: ["ollama"],
     queryFn: api.ollama,
-    refetchInterval: provider === "ollama" && !verified ? 4000 : false,
+    refetchInterval: (q) =>
+      provider !== "ollama"
+        ? false
+        : q.state.data?.pull && !q.state.data.pull.done
+          ? 1000
+          : !verified
+            ? 4000
+            : false,
   });
   const state = useQuery({ queryKey: ["state"], queryFn: api.state });
   const mock = state.data?.mockMode.model;
@@ -119,13 +126,9 @@ export function Onboarding() {
   useEffect(() => {
     if (provider === "ollama" && ollama.data?.running) {
       setModels(ollama.data.models);
-      setModel((m) => m || ollama.data!.models[0] || "");
+      setModel((m) => (m && ollama.data!.models.includes(m) ? m : ollama.data!.models[0] || ""));
       setVerified(ollama.data.models.length > 0);
-      setKeyError(
-        ollama.data.models.length
-          ? null
-          : "Ollama is running but has no models. Run `ollama pull llama3.2` in a terminal.",
-      );
+      setKeyError(ollama.data.models.length ? null : null);
     }
   }, [provider, ollama.data]);
 
@@ -413,6 +416,8 @@ export function Onboarding() {
                           <ExternalLink className="size-3" />
                         </button>
                       </div>
+                    ) : ollama.data?.running ? (
+                      <OllamaRecommend info={ollama.data} onPulled={() => void ollama.refetch()} />
                     ) : (
                       !ollama.data?.running && (
                         <div className="rounded-[12px] bg-surface-2 border border-line p-4 text-[13px] text-ink-2 leading-relaxed">
@@ -425,7 +430,7 @@ export function Onboarding() {
                           </button>
                           , open it, then run{" "}
                           <code className="font-mono text-[12px] bg-surface px-1.5 py-0.5 rounded border border-line">
-                            ollama pull qwen3
+                            ollama pull {ollama.data?.recommended.name ?? "qwen3:4b-instruct"}
                           </code>
                           . RelayIt will notice automatically.
                           {keyError && <p className="text-danger mt-2">{keyError}</p>}
@@ -620,5 +625,64 @@ function RelayArt({ step }: { step: number }) {
         </g>
       ))}
     </svg>
+  );
+}
+
+/** Offers the recommended local model when it isn't installed yet, with live download progress. */
+export function OllamaRecommend({ info, onPulled }: { info: OllamaInfo; onPulled: () => void }) {
+  const rec = info.recommended;
+  const have = info.models.some((m) => m === rec.name || m.startsWith(`${rec.name}-`));
+  const pull = info.pull && info.pull.model === rec.name ? info.pull : null;
+  const start = useMutation({ mutationFn: () => api.pullOllama(rec.name), onSuccess: onPulled });
+  useEffect(() => {
+    if (pull?.done && !pull.error) onPulled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pull?.done]);
+  if (have) return null;
+  const pct = pull && pull.total ? Math.round((pull.completed / pull.total) * 100) : 0;
+  return (
+    <div className="rounded-[14px] border border-line bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <div className="text-[13.5px] font-semibold">
+            {info.models.length ? "Recommended for speed" : "Download a model to get started"}
+          </div>
+          <p className="text-[12.5px] text-muted mt-0.5 leading-relaxed">
+            {rec.label} ({rec.sizeGb} GB) answers directly and handles RelayIt's tools well, even on
+            an 8 GB Mac.
+          </p>
+        </div>
+        {!pull || pull.done ? (
+          <Button
+            size="sm"
+            variant={info.models.length ? "secondary" : "primary"}
+            loading={start.isPending}
+            onClick={() => start.mutate()}
+          >
+            {pull?.error ? "Try again" : "Download"}
+          </Button>
+        ) : null}
+      </div>
+      {pull && !pull.done && (
+        <div className="mt-3" role="status" aria-live="polite">
+          <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+            <div
+              className="h-full bg-accent transition-[width] duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="text-[11.5px] text-muted mt-1.5 tnum">
+            {pull.total
+              ? `${pct}% · ${(pull.completed / 1e9).toFixed(1)} of ${(pull.total / 1e9).toFixed(1)} GB`
+              : pull.status}
+          </div>
+        </div>
+      )}
+      {pull?.error && (
+        <p role="alert" className="text-[12px] text-danger mt-2">
+          {pull.error}
+        </p>
+      )}
+    </div>
   );
 }

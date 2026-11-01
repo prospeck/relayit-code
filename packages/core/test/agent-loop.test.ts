@@ -497,3 +497,55 @@ describe("transcript integrity", () => {
     expect(answered).toEqual(["c1", "c2", "c3"]);
   });
 });
+
+describe("nudges for small-model stalls", async () => {
+  const { nudgeFor } = await import("../src/agent/loop.ts");
+  it("spots text quick replies, permission questions and announced steps", () => {
+    expect(nudgeFor("Pick one:\n[Yes, place this order]\n[Make changes]", true)).toMatch(
+      /offer_quick_replies/,
+    );
+    expect(
+      nudgeFor("Total ₹593. Would you like me to proceed with placing this order?", true),
+    ).toMatch(/approval card/);
+    expect(nudgeFor("Found it. Next, I'll check the menu.", true)).toMatch(/Carry out/);
+  });
+  it("leaves real answers and genuine questions alone", () => {
+    expect(nudgeFor("Your 3 meetings today are at 10, 2 and 5.", true)).toBeNull();
+    expect(nudgeFor("Which city are you travelling from?", true)).toBeNull();
+    expect(nudgeFor("Let me know if you need anything else.", false)).toBeNull();
+    expect(
+      nudgeFor("Done — the note is sent. Let me know if you need anything else.", true),
+    ).toBeNull();
+  });
+});
+
+describe("tool calls written as text", async () => {
+  const { recoverTextToolCall } = await import("../src/agent/loop.ts");
+  const names = new Set(["offer_quick_replies", "place_order"]);
+  it("recovers 'name {json}' and <tool_call> forms for known tools only", () => {
+    const a = recoverTextToolCall('Pick one.\n\noffer_quick_replies\n{"options":["A","B"]}', names);
+    expect(a?.call.name).toBe("offer_quick_replies");
+    expect(a?.text).toBe("Pick one.");
+    const b = recoverTextToolCall(
+      'Placing it.\n<tool_call>{"name":"place_order","arguments":{"cartId":"c1"}}</tool_call>',
+      names,
+    );
+    expect(b?.call.args).toEqual({ cartId: "c1" });
+    expect(recoverTextToolCall('unknown_tool {"x":1}', names)).toBeNull();
+    expect(recoverTextToolCall("Just an answer.", names)).toBeNull();
+  });
+});
+
+describe("permission-style quick replies", async () => {
+  const { isPermissionChoice } = await import("../src/agent/loop.ts");
+  it("treats Yes/No proceed buttons as permission and real choices as choices", () => {
+    expect(
+      isPermissionChoice({ question: "Proceed with this order?", options: ["Yes", "No"] }),
+    ).toBe(true);
+    expect(isPermissionChoice({ options: ["Confirm and place order", "Cancel"] })).toBe(true);
+    expect(
+      isPermissionChoice({ question: "Which restaurant?", options: ["Meghana Foods", "Empire"] }),
+    ).toBe(false);
+    expect(isPermissionChoice({ question: "Which class?", options: ["CC", "EC"] })).toBe(false);
+  });
+});

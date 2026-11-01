@@ -108,6 +108,20 @@ export type TodayData = {
   orders: { id: string; title: string; amountInr: number; status: string; updatedAt: string }[];
   brief: Brief;
 };
+export type OllamaPull = {
+  model: string;
+  status: string;
+  completed: number;
+  total: number;
+  done: boolean;
+  error: string | null;
+};
+export type OllamaInfo = {
+  running: boolean;
+  models: string[];
+  recommended: { name: string; sizeGb: number; label: string };
+  pull: OllamaPull | null;
+};
 export type GoogleStatus = {
   connected: boolean;
   email: string | null;
@@ -122,7 +136,8 @@ export const api = {
   saveSettings: (s: Partial<Settings>) => patch<Settings>("/api/settings", s),
   validateKey: (provider: ProviderId, apiKey?: string, baseUrl?: string) =>
     post<ValidateKeyResult>("/api/models/validate", { provider, apiKey, baseUrl }),
-  ollama: () => get<{ running: boolean; models: string[] }>("/api/models/ollama"),
+  ollama: () => get<OllamaInfo>("/api/models/ollama"),
+  pullOllama: (model: string) => post<OllamaPull>("/api/models/ollama/pull", { model }),
   saveModel: (model: ModelConfig, apiKey?: string) =>
     put<AppState>("/api/models/config", { model, apiKey }),
   deleteKey: (provider: ProviderId) => del<AppState>(`/api/models/key/${provider}`),

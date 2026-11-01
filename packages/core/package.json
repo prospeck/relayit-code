@@ -19,17 +19,18 @@
   "dependencies": {
     "@hono/node-server": "^2.1.5",
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "@relayit/connector-browser": "workspace:*",
+    "@relayit/connector-google": "workspace:*",
+    "@relayit/connector-payments": "workspace:*",
+    "@relayit/connector-voice": "workspace:*",
+    "@relayit/connector-web": "workspace:*",
     "@relayit/shared": "workspace:*",
     "croner": "^11.0.0",
     "hono": "^4.13.14",
     "kysely": "^0.29.7",
+    "undici": "^7.30.1",
     "ws": "^8.22.1",
-    "zod": "^4.6.7",
-    "@relayit/connector-google": "workspace:*",
-    "@relayit/connector-payments": "workspace:*",
-    "@relayit/connector-browser": "workspace:*",
-    "@relayit/connector-web": "workspace:*",
-    "@relayit/connector-voice": "workspace:*"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

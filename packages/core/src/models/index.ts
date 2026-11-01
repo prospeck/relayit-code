@@ -2,6 +2,7 @@ import type { ModelConfig, ProviderId, ValidateKeyResult } from "@relayit/shared
 import { AnthropicProvider } from "./anthropic.ts";
 import { OpenAICompatProvider } from "./openaiCompat.ts";
 import { MockProvider } from "./mock.ts";
+import { OllamaProvider } from "./ollama.ts";
 import type { ModelProvider } from "./types.ts";
 import { errMessage } from "../util/time.ts";
 
@@ -14,7 +15,7 @@ export const DEFAULT_BASE_URLS: Record<ProviderId, string> = {
   openai: "https://api.openai.com/v1",
   gemini: "https://generativelanguage.googleapis.com/v1beta/openai",
   openrouter: "https://openrouter.ai/api/v1",
-  ollama: "http://127.0.0.1:11434/v1",
+  ollama: "http://127.0.0.1:11434",
 };
 
 export function createProvider(
@@ -36,7 +37,7 @@ export function createProvider(
         "X-Title": "RelayIt",
       });
     case "ollama":
-      return new OpenAICompatProvider("ollama", base, null);
+      return new OllamaProvider(base);
     case "openai":
     case "gemini":
       if (!apiKey) throw new Error(`${provider} needs an API key`);
@@ -84,6 +85,9 @@ export function rankModels(provider: ProviderId, models: string[]): string[] {
       v += /sonnet/.test(s) ? 30 : /opus/.test(s) ? 20 : /haiku/.test(s) ? 10 : 0;
     if (provider === "openai") v += /^gpt-/.test(s) ? 20 : /^o\d/.test(s) ? 10 : -50;
     if (provider === "gemini") v += /gemini/.test(s) ? 20 : -50;
+    // Local: instruct models answer directly; thinking-only builds are many times slower on laptops.
+    if (provider === "ollama")
+      v += /instruct/.test(s) ? 25 : /qwen3|llama3\.[1-3]|mistral|gemma3/.test(s) ? 10 : 0;
     if (/mini|flash|haiku|small|nano|lite/.test(s)) v -= 3;
     if (/preview|exp|\d{4}-\d{2}-\d{2}/.test(s)) v -= 2;
     const ver = /(\d+(?:\.\d+)?)/.exec(s.replace(/-/g, "."));
@@ -113,4 +117,73 @@ export async function detectOllama(
   } catch {
     return { running: false, models: [] };
   }
+}
+
+/** The model RelayIt offers to download for local use: fast, good at tool calls, fits 8 GB Macs. */
+export const RECOMMENDED_OLLAMA_MODEL = {
+  name: "qwen3:4b-instruct",
+  sizeGb: 2.5,
+  label: "Qwen 3 4B Instruct",
+};
+
+type PullState = {
+  model: string;
+  status: string;
+  completed: number;
+  total: number;
+  done: boolean;
+  error: string | null;
+};
+let pull: PullState | null = null;
+
+/** Starts (or reports) a background `ollama pull`. One pull at a time. */
+export function ollamaPull(model: string, baseUrl = "http://127.0.0.1:11434"): PullState {
+  if (pull && !pull.done) return pull;
+  pull = { model, status: "starting", completed: 0, total: 0, done: false, error: null };
+  const state = pull;
+  void (async () => {
+    try {
+      const res = await fetch(`${baseUrl}/api/pull`, {
+        method: "POST",
+        body: JSON.stringify({ model, stream: true }),
+      });
+      if (!res.ok || !res.body) throw new Error(`Ollama returned ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const ev = JSON.parse(line) as {
+            status?: string;
+            completed?: number;
+            total?: number;
+            error?: string;
+          };
+          if (ev.error) throw new Error(ev.error);
+          if (ev.status) state.status = ev.status;
+          if (ev.total) {
+            state.total = ev.total;
+            state.completed = ev.completed ?? 0;
+          }
+        }
+      }
+      state.status = "success";
+    } catch (e) {
+      state.error = e instanceof Error ? e.message : String(e);
+    } finally {
+      state.done = true;
+    }
+  })();
+  return state;
+}
+
+export function ollamaPullStatus(): PullState | null {
+  return pull;
 }

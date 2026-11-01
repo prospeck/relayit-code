@@ -57,6 +57,8 @@ export type RunState = {
   invalidCalls: number;
   skill: string | null;
   endTurn: boolean;
+  /** Hidden "carry on" prompts used this turn (small models often announce a step instead of taking it). */
+  nudges?: number;
 };
 
 export type ToolHook = {
@@ -349,6 +351,14 @@ export class Agent {
           throw e;
         }
 
+        // Some small local models write the call as text ("tool_name {json}" or <tool_call>…</tool_call>).
+        if (!calls.length && text) {
+          const recovered = recoverTextToolCall(text, new Set(tools.map((t) => t.def.name)));
+          if (recovered) {
+            calls.push(recovered.call);
+            text = recovered.text;
+          }
+        }
         if (text) state.text += (state.text && !state.text.endsWith("\n") ? "\n\n" : "") + text;
         state.messages.push({
           role: "assistant",
@@ -356,7 +366,19 @@ export class Agent {
           ...(calls.length ? { toolCalls: calls } : {}),
         });
 
-        if (!calls.length) break;
+        if (!calls.length) {
+          // "I'll search…/Let me…/Next I'll…" with no tool call: the model stopped mid-task. Nudge it once or twice.
+          const nudge = nudgeFor(text, state.steps.length > 0);
+          if (nudge && (state.nudges ?? 0) < 3) {
+            state.nudges = (state.nudges ?? 0) + 1;
+            // The narration was a misstep; keep it in the model's context but not in the user's reply.
+            if (text && state.text.endsWith(text))
+              state.text = state.text.slice(0, -text.length).trimEnd();
+            state.messages.push({ role: "user", content: `[RelayIt] ${nudge}` });
+            continue;
+          }
+          break;
+        }
         // Copy: the queue is consumed, but the assistant message must keep its tool calls.
         state.queue = [...calls];
         const paused = await this.processCalls(runId, conversationId, state, ctrl.signal);
@@ -428,6 +450,18 @@ export class Agent {
         continue;
       }
       const input = parsed.data;
+      // Yes/No "shall I proceed?" buttons are just asking permission in a different way.
+      if (
+        tool.name === "offer_quick_replies" &&
+        isPermissionChoice(input as { question?: string; options: string[] })
+      ) {
+        this.toolError(
+          state,
+          call,
+          "Don't ask yes/no permission. Call the action tool now (e.g. place_order, gmail_send, calendar_create_event); the user approves or refuses on the card it shows.",
+        );
+        continue;
+      }
       const step: Step = {
         id: call.id,
         label: tool.label?.(input) ?? tool.name.replace(/_/g, " "),
@@ -884,6 +918,87 @@ export class Agent {
     const updated = await this.d.chat.getConversation(conversationId);
     if (updated) this.d.bus.emit({ type: "conversation.updated", conversation: updated });
   }
+}
+
+/**
+ * Small models often stop a task by describing it. Spot the common patterns and say what to do instead.
+ * Returns null when the reply is a real ending (an answer, or a genuine question).
+ */
+export function nudgeFor(text: string, usedTools: boolean): string | null {
+  const t = text.trim();
+  if (!t) return null;
+  if (
+    usedTools &&
+    (/\b(would you like me to|shall i|should i|do you want me to|want me to)\b[^.?!]{0,40}\b(proceed|place|book|send|confirm|go ahead|order|create|schedule)/i.test(
+      t,
+    ) ||
+      /\b(please confirm|confirm when|ready to proceed|confirm (?:and|to) (?:place|send|book))\b/i.test(
+        t,
+      ))
+  )
+    return "Don't ask for permission in text. Call the action tool now (e.g. place_order, gmail_send, calendar_create_event) — that shows the user an approval card where they decide.";
+  if (/\boffer_quick_replies\b|^\s*\[[^\]]{2,60}\]\s*$|^\s*\(?options?:/im.test(t))
+    return "Don't write choices as text. Call the offer_quick_replies tool with the options instead.";
+  if (
+    usedTools &&
+    /\b(i'll|i will|let me(?! know)|next,? i|i'm going to|i am going to|now i)\b/i.test(
+      t.slice(-400),
+    ) &&
+    !/\?$/.test(t)
+  )
+    return "Carry out that next step now with the tools instead of describing it. If you genuinely need the user's choice, call offer_quick_replies.";
+  return null;
+}
+
+export function isPermissionChoice(input: { question?: string; options: string[] }): boolean {
+  const yesNo = input.options.every((o) =>
+    /^(yes|no|ok|okay|sure|proceed|go ahead|confirm|cancel|place (the |this )?order|don'?t)\b/i.test(
+      o.trim(),
+    ),
+  );
+  const about = /\b(proceed|place|order|send|book|confirm|go ahead|schedule|create)\b/i.test(
+    `${input.question ?? ""} ${input.options.join(" ")}`,
+  );
+  return yesNo && about;
+}
+
+export function recoverTextToolCall(
+  text: string,
+  names: Set<string>,
+): { call: ToolCall; text: string } | null {
+  const patterns = [
+    /<tool_call>\s*(\{[\s\S]*?\})\s*<\/tool_call>\s*$/,
+    /(?:^|\n)\s*`{0,3}(?:json)?\s*([a-z][a-z0-9_]{2,63})\s*\n?\s*(\{[\s\S]*\})\s*`{0,3}\s*$/,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(text);
+    if (!m) continue;
+    try {
+      let name: string;
+      let args: unknown;
+      if (m.length === 2) {
+        const obj = JSON.parse(m[1]!) as { name?: string; arguments?: unknown };
+        name = obj.name ?? "";
+        args = obj.arguments ?? {};
+      } else {
+        name = m[1]!;
+        args = JSON.parse(m[2]!);
+      }
+      if (!names.has(name)) continue;
+      return {
+        call: {
+          id: `text_${Math.random().toString(36).slice(2, 10)}`,
+          name,
+          args,
+          rawArgs: JSON.stringify(args),
+        },
+        text: text.slice(0, m.index).trimEnd(),
+      };
+    } catch {
+      /* not JSON — leave the text alone */
+    }
+  }
+  return null;
 }
 
 export class BusyError extends Error {

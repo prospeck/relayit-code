@@ -31,7 +31,7 @@ import {
   Switch,
   Textarea,
 } from "../components/ui";
-import { PROVIDERS } from "./Onboarding";
+import { OllamaRecommend, PROVIDERS } from "./Onboarding";
 
 const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
@@ -217,6 +217,12 @@ function ModelSection() {
     }
   }, [cfg]);
 
+  const ollamaInfo = useQuery({
+    queryKey: ["ollama"],
+    queryFn: api.ollama,
+    enabled: provider === "ollama",
+    refetchInterval: (q) => (q.state.data?.pull && !q.state.data.pull.done ? 1000 : false),
+  });
   const savedForThis = state.data?.keySaved && cfg?.provider === provider;
 
   const check = useMutation({
@@ -332,6 +338,15 @@ function ModelSection() {
           </Field>
         )}
         {provider === "ollama" && error && <p className="text-[13px] text-danger">{error}</p>}
+        {provider === "ollama" && ollamaInfo.data?.running && (
+          <OllamaRecommend
+            info={ollamaInfo.data}
+            onPulled={() => {
+              void ollamaInfo.refetch();
+              check.mutate();
+            }}
+          />
+        )}
         <div className="grid grid-cols-2 gap-4">
           <Field label="Main model" hint="Does the thinking and talking.">
             <Select

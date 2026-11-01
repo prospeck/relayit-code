@@ -16,7 +16,14 @@ import {
   ValidateKeyRequest,
 } from "@relayit/shared";
 import { type App, HttpError } from "../app.ts";
-import { validateKey, detectOllama, rankModels } from "../models/index.ts";
+import {
+  validateKey,
+  detectOllama,
+  rankModels,
+  RECOMMENDED_OLLAMA_MODEL,
+  ollamaPull,
+  ollamaPullStatus,
+} from "../models/index.ts";
 import { BusyError } from "../agent/loop.ts";
 import { errMessage } from "../util/time.ts";
 
@@ -107,7 +114,24 @@ export function buildApi(app: App, token: string, modules: RouteModule[] = []): 
   });
   api.get("/api/models/ollama", async (c) => {
     const r = await detectOllama();
-    return c.json({ ...r, models: rankModels("ollama", r.models) });
+    return c.json({
+      ...r,
+      models: rankModels("ollama", r.models),
+      recommended: RECOMMENDED_OLLAMA_MODEL,
+      pull: ollamaPullStatus(),
+    });
+  });
+  api.post("/api/models/ollama/pull", async (c) => {
+    const { model } = await body(
+      c,
+      zod.object({
+        model: zod
+          .string()
+          .regex(/^[a-z0-9._:/-]+$/i)
+          .max(100),
+      }),
+    );
+    return c.json(ollamaPull(model));
   });
   api.put("/api/models/config", async (c) => {
     const { model, apiKey } = await body(c, OnboardingRequest.pick({ model: true, apiKey: true }));

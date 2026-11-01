@@ -241,6 +241,12 @@ export class McpManager {
     const preset = MCP_PRESETS.find((p) => p.url === serverRow.url);
     const prefix = builtin ? "" : `${slug(serverRow.name)}__`;
 
+    // Tools that only build approval cards for another tool are core-only.
+    const previewOnly = new Set(
+      tools
+        .map((t) => (t._meta as Record<string, unknown> | undefined)?.["relayit/previewTool"])
+        .filter((n): n is string => typeof n === "string"),
+    );
     for (const t of tools) {
       const meta = (t._meta ?? {}) as Record<string, unknown>;
       const declared = ToolClass.safeParse(meta["relayit/class"]);
@@ -270,7 +276,7 @@ export class McpManager {
           .execute();
       }
       if (!enabled) continue;
-      const internal = meta["relayit/internal"] === true;
+      const internal = meta["relayit/internal"] === true || previewOnly.has(t.name);
       const service =
         typeof meta["relayit/service"] === "string"
           ? (meta["relayit/service"] as string)

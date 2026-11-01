@@ -37,11 +37,11 @@ During onboarding (or **Settings → Model**) pick a provider and paste a key �
 
 ```bash
 brew install ollama   # or download from ollama.com
-ollama serve & ollama pull qwen3
+ollama serve
 pnpm dev               # pick "Ollama" in onboarding — it's detected automatically
 ```
 
-Pick a model with good tool calling (Qwen 3, Llama 3.1+, Mistral Small).
+Onboarding offers a one-click download of the recommended model, **Qwen 3 4B Instruct** (2.5 GB), which answers directly and handles RelayIt's tools well even on an 8 GB Mac. RelayIt talks to Ollama's native API so it can give the model an 8k context window (Ollama defaults to 4k, which is smaller than RelayIt's prompt) and keep "thinking" models' reasoning out of your replies. Avoid thinking-only builds such as plain `qwen3:4b` on small machines — they can spend minutes reasoning before every step.
 
 ### Fake Google mode
 
