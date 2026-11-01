@@ -1,0 +1,306 @@
+{
+  "version": 1,
+  "startedAt": "2026-11-01T06:56:14.328Z",
+  "resumedAt": [],
+  "updatedAt": "2026-11-01T06:57:44.817Z",
+  "complete": true,
+  "configuration": {
+    "provider": "ollama",
+    "model": "qwen3:4b-instruct",
+    "baseUrl": "http://127.0.0.1:11434/v1",
+    "repeat": 1,
+    "only": "remember-preference",
+    "timeoutMs": 600000,
+    "node": "v26.11.1",
+    "timeZone": "Asia/Kolkata",
+    "approvals": "always refuse",
+    "fakeGoogle": true,
+    "startupTriage": "heuristic before onboarding",
+    "browser": "disabled",
+    "tokens": "provider usage in persisted runs; interrupted partial requests may be unreported"
+  },
+  "summary": {
+    "passed": 1,
+    "total": 1,
+    "planned": 1,
+    "passRate": 1,
+    "scenarios": [
+      {
+        "id": "remember-preference",
+        "passed": 1,
+        "total": 1,
+        "passRate": 1,
+        "flaky": false
+      }
+    ]
+  },
+  "results": [
+    {
+      "audit": [
+        {
+          "id": "aud_4fda24d83e1c42ee9b7f",
+          "ts": "2026-11-01T06:57:04.374Z",
+          "kind": "tool.call",
+          "toolName": "remember_fact",
+          "toolClass": "prepare",
+          "summary": "RelayIt: Remembering seat_preference",
+          "data": {
+            "input": {
+              "category": "travel",
+              "key": "seat_preference",
+              "value": "window seat on daytime trains"
+            }
+          },
+          "conversationId": "conv_9ba93de4a5234c3a95ab"
+        },
+        {
+          "id": "aud_1f99d6a0ce00477283e6",
+          "ts": "2026-11-01T06:57:04.407Z",
+          "kind": "tool.result",
+          "toolName": "remember_fact",
+          "toolClass": "prepare",
+          "summary": "RelayIt: Remembering seat_preference — done",
+          "data": {
+            "output": {
+              "saved": true,
+              "id": "mem_a18e3ed9962546ce90b5"
+            }
+          },
+          "conversationId": "conv_9ba93de4a5234c3a95ab"
+        }
+      ],
+      "cards": [],
+      "texts": [
+        {
+          "text": "Got it! Your preference for a window seat on daytime trains is now saved. I’ll make sure to keep that in mind for future train bookings. 😊",
+          "phase": "intent"
+        }
+      ],
+      "links": [],
+      "memory": [
+        {
+          "id": "mem_efddff224beb44ceae81",
+          "category": "order",
+          "key": "usual pizza order",
+          "value": "One BBQ Chicken Pizza from California Pizza Kitchen, no extras",
+          "source": "user",
+          "updatedAt": "2026-11-01T06:56:18.497Z"
+        },
+        {
+          "id": "mem_555f470649fe466eb8a8",
+          "category": "person",
+          "key": "manager",
+          "value": "Kavya Rao, kavya.rao@greenpath.example.com",
+          "source": "user",
+          "updatedAt": "2026-11-01T06:56:18.498Z"
+        },
+        {
+          "id": "mem_b6b67ca134134d30bf0f",
+          "category": "preference",
+          "key": "veg preference",
+          "value": "false; I eat chicken and other non-vegetarian food",
+          "source": "user",
+          "updatedAt": "2026-11-01T06:56:18.497Z"
+        },
+        {
+          "id": "mem_a18e3ed9962546ce90b5",
+          "category": "travel",
+          "key": "seat_preference",
+          "value": "window seat on daytime trains",
+          "source": "agent",
+          "updatedAt": "2026-11-01T06:57:04.402Z"
+        },
+        {
+          "id": "mem_374f65fa876d4264aa73",
+          "category": "travel",
+          "key": "train seat preference",
+          "value": "lower berth, 3A",
+          "source": "user",
+          "updatedAt": "2026-11-01T06:56:18.498Z"
+        }
+      ],
+      "routines": [],
+      "steps": 2,
+      "errors": [],
+      "choiceMisses": [],
+      "refusalRetries": [],
+      "startedAt": "2026-11-01T06:56:18.498Z",
+      "id": "remember-preference",
+      "prompt": "remember I prefer a window seat on daytime trains",
+      "iteration": 1,
+      "checks": [
+        {
+          "name": "tool:remember_fact",
+          "pass": true,
+          "detail": "observed in audit"
+        },
+        {
+          "name": "forbidden_tools",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "name": "approval",
+          "pass": true,
+          "detail": "expected none (min 0); saw none"
+        },
+        {
+          "name": "questions",
+          "pass": true,
+          "detail": "0/0 before first card (all choices counted when no card)"
+        },
+        {
+          "name": "steps",
+          "pass": true,
+          "detail": "2/3 model steps, excluding refusal-only continuations"
+        },
+        {
+          "name": "quick_reply_simulation",
+          "pass": true,
+          "detail": "all offered choices matched; no invented button taps"
+        },
+        {
+          "name": "runtime",
+          "pass": true,
+          "detail": "no run/tool errors"
+        },
+        {
+          "name": "refused_all_cards",
+          "pass": true,
+          "detail": "no cards"
+        },
+        {
+          "name": "must_not:execute_act",
+          "pass": true,
+          "detail": "no approval or act execution"
+        },
+        {
+          "name": "must_not:claim_success",
+          "pass": true,
+          "detail": "no lexical success claim (heuristic; inspect transcript)"
+        },
+        {
+          "name": "must_not:retry_after_refusal",
+          "pass": true,
+          "detail": "no refused tool retried without a new user request"
+        },
+        {
+          "name": "must_not:request_act",
+          "pass": true,
+          "detail": "no act requests"
+        },
+        {
+          "name": "semantic:durable window preference",
+          "pass": true,
+          "detail": "[\"window seat on daytime trains\"]"
+        }
+      ],
+      "passed": true,
+      "wallTimeMs": 86310,
+      "intentWallTimeMs": 85989,
+      "tokens": {
+        "input": 11572,
+        "output": 70
+      },
+      "tools": [
+        "remember_fact"
+      ],
+      "questions": 0,
+      "finalAssistantText": "Got it! Your preference for a window seat on daytime trains is now saved. I’ll make sure to keep that in mind for future train bookings. 😊",
+      "runs": [
+        {
+          "id": "run_bd95bca75ee64f128e24",
+          "status": "done",
+          "error": null,
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": "remember I prefer a window seat on daytime trains"
+              },
+              {
+                "role": "assistant",
+                "content": "",
+                "toolCalls": [
+                  {
+                    "id": "call_f730d822",
+                    "name": "remember_fact",
+                    "args": {
+                      "category": "travel",
+                      "key": "seat_preference",
+                      "value": "window seat on daytime trains"
+                    },
+                    "rawArgs": "{\"category\":\"travel\",\"key\":\"seat_preference\",\"value\":\"window seat on daytime trains\"}"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "toolCallId": "call_f730d822",
+                "name": "remember_fact",
+                "content": "<untrusted_data source=\"tool:remember_fact\">\n{\n \"saved\": true,\n \"id\": \"mem_a18e3ed9962546ce90b5\"\n}\n</untrusted_data>"
+              },
+              {
+                "role": "assistant",
+                "content": "Got it! Your preference for a window seat on daytime trains is now saved. I’ll make sure to keep that in mind for future train bookings. 😊"
+              }
+            ],
+            "domains": "all",
+            "step": 2,
+            "tainted": false,
+            "queue": [],
+            "waitingActionId": null,
+            "steps": [
+              {
+                "id": "call_f730d822",
+                "label": "Remembering seat_preference",
+                "tool": "remember_fact",
+                "status": "done"
+              }
+            ],
+            "text": "Got it! Your preference for a window seat on daytime trains is now saved. I’ll make sure to keep that in mind for future train bookings. 😊",
+            "parts": [],
+            "usage": {
+              "inputTokens": 11572,
+              "outputTokens": 70
+            },
+            "invalidCalls": 0,
+            "skill": null,
+            "endTurn": false
+          }
+        }
+      ],
+      "replies": [],
+      "expected": {
+        "requiredTools": [
+          "remember_fact"
+        ],
+        "forbiddenTools": [
+          "gmail_send",
+          "place_order",
+          "calendar_create_event",
+          "calendar_cancel_event"
+        ],
+        "approval": {
+          "tools": []
+        },
+        "maxQuestions": 0,
+        "maxSteps": 3,
+        "mustNot": [
+          "execute_act",
+          "claim_success",
+          "retry_after_refusal",
+          "request_act"
+        ],
+        "semantics": [
+          {
+            "label": "durable window preference",
+            "source": "memory",
+            "path": "value",
+            "matches": "window"
+          }
+        ]
+      }
+    }
+  ]
+}

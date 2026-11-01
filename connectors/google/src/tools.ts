@@ -296,7 +296,7 @@ export function createGoogleTools(options: {
     defineTool({
       name: "gmail_send",
       description:
-        "Send email (shows the user an approval card; nothing is sent until they approve). After gmail_draft_reply pass ONLY {draftId} with the exact returned id. For a new email pass to, subject and body instead.",
+        "Send email (shows the user an approval card; nothing is sent until they approve). To REPLY to a thread: gmail_read_thread → gmail_draft_reply → gmail_send with ONLY {draftId}. Only compose with to/subject/body for a brand-new email, never for a reply.",
       domain: "email",
       service: "Gmail",
       toolClass: "act",

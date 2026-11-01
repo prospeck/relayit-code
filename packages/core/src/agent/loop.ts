@@ -371,7 +371,7 @@ export class Agent {
 
         if (!calls.length) {
           // "I'll search…/Let me…/Next I'll…" with no tool call: the model stopped mid-task. Nudge it once or twice.
-          const nudge = nudgeFor(text, state.steps.length > 0);
+          const nudge = nudgeFor(text, state.steps.length > 0, tools.map((t) => t.def.name));
           if (nudge && (state.nudges ?? 0) < 3) {
             state.nudges = (state.nudges ?? 0) + 1;
             // The narration was a misstep; keep it in the model's context but not in the user's reply.
@@ -935,9 +935,14 @@ export class Agent {
  * Small models often stop a task by describing it. Spot the common patterns and say what to do instead.
  * Returns null when the reply is a real ending (an answer, or a genuine question).
  */
-export function nudgeFor(text: string, usedTools: boolean): string | null {
+export function nudgeFor(text: string, usedTools: boolean, available: string[] = []): string | null {
   const t = text.trim();
   if (!t) return null;
+  // "I don't have access to your emails/calendar" while the tools are right there.
+  if (/\b(don'?t|do not|can'?t|cannot|unable to)\b[^.]{0,30}\b(have )?access\b|\bno access\b/i.test(t)) {
+    const useful = available.filter((n) => /^(gmail_|calendar_|search_|find_|web_|browser_open)/.test(n)).slice(0, 8);
+    if (useful.length) return `You do have access through your tools (${useful.join(", ")}). Use them now instead of saying you can't.`;
+  }
   if (
     usedTools &&
     (/\b(would you like me to|shall i|should i|do you want me to|want me to)\b[^.?!]{0,40}\b(proceed|place|book|send|confirm|go ahead|order|create|schedule)/i.test(
@@ -981,6 +986,16 @@ export function recoverTextToolCall(
     /<tool_call>\s*(\{[\s\S]*?\})\s*<\/tool_call>\s*$/,
     /(?:^|\n)\s*`{0,3}(?:json)?\s*([a-z][a-z0-9_]{2,63})\s*\n?\s*(\{[\s\S]*\})\s*`{0,3}\s*$/,
   ];
+  // "offer_quick_replies" followed by a bullet list of options (YAML-ish), no JSON.
+  const listed = /offer_quick_replies[\s\S]*?options:?\s*\n((?:\s*[-*•]\s*.+\n?){2,4})\s*$/i.exec(text);
+  if (listed && names.has("offer_quick_replies")) {
+    const options = listed[1]!.split("\n").map((l) => l.replace(/^\s*[-*•]\s*/, "").trim()).filter(Boolean).slice(0, 4);
+    const args = { options };
+    return {
+      call: { id: `text_${Math.random().toString(36).slice(2, 10)}`, name: "offer_quick_replies", args, rawArgs: JSON.stringify(args) },
+      text: text.slice(0, text.search(/offer_quick_replies/i)).trimEnd(),
+    };
+  }
   for (const re of patterns) {
     const m = re.exec(text);
     if (!m) continue;
