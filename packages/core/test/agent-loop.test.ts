@@ -553,12 +553,33 @@ describe("permission-style quick replies", async () => {
 describe("more small-model recoveries", async () => {
   const { nudgeFor, recoverTextToolCall } = await import("../src/agent/loop.ts");
   it("nudges 'no access' replies toward available tools", () => {
-    expect(nudgeFor("I don't have access to your emails.", false, ["gmail_triage", "calendar_list_events"])).toMatch(/gmail_triage/);
+    expect(
+      nudgeFor("I don't have access to your emails.", false, [
+        "gmail_triage",
+        "calendar_list_events",
+      ]),
+    ).toMatch(/gmail_triage/);
     expect(nudgeFor("I don't have access to that.", false, ["offer_quick_replies"])).toBeNull();
   });
   it("recovers bullet-list quick replies written as text", () => {
-    const r = recoverTextToolCall("No 3A seats.\n\noffer_quick_replies\n  options:\n  - CC (Chair Car)\n  - EC (Executive)", new Set(["offer_quick_replies"]));
+    const r = recoverTextToolCall(
+      "No 3A seats.\n\noffer_quick_replies\n  options:\n  - CC (Chair Car)\n  - EC (Executive)",
+      new Set(["offer_quick_replies"]),
+    );
     expect(r?.call.args).toEqual({ options: ["CC (Chair Car)", "EC (Executive)"] });
     expect(r?.text).toBe("No 3A seats.");
+  });
+});
+
+describe("choices written as a bullet list ending in a question", async () => {
+  const { nudgeFor } = await import("../src/agent/loop.ts");
+  it("asks for real buttons", () => {
+    expect(
+      nudgeFor(
+        "No 3A on that day. Available:\n- CC (Chair Car)\n- EC (Executive)\nWhich would you like?",
+        true,
+      ),
+    ).toMatch(/offer_quick_replies/);
+    expect(nudgeFor("Today:\n- 10am standup\n- 3pm dentist", true)).toBeNull();
   });
 });
