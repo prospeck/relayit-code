@@ -87,7 +87,7 @@ export function Routines() {
                 Run now
               </Button>
               <Switch checked={r.enabled} onCheckedChange={() => toggle.mutate(r)} label={`Enable ${r.title}`} />
-              <button onClick={() => del.mutate(r.id)} className="text-faint hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Delete">
+              <button onClick={() => del.mutate(r.id)} className="text-faint hover:text-danger opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100" aria-label="Delete">
                 <Trash2 className="size-4" />
               </button>
             </div>

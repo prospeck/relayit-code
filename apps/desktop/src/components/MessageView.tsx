@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { motion } from "motion/react";
+import { usePrefersReducedMotion } from "../lib/motion";
 import { ArrowUpRight, Globe } from "lucide-react";
 import type { Message, MessagePart, PendingAction } from "@relayit/shared";
 import { Markdown } from "./Markdown";
@@ -113,10 +114,11 @@ function Part({ part, actions, onChoice }: { part: MessagePart; actions: Map<str
 
 /** The in-flight reply: live steps, streaming text and a shimmering status line. */
 export function LiveRunView({ run, frame }: { run: LiveRun; frame?: { url: string; jpegBase64: string } | undefined }) {
+  const reduce = usePrefersReducedMotion();
   return (
     <div className="flex gap-3.5">
       <div className="pt-0.5 shrink-0">
-        <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}>
+        <motion.div key={reduce ? "still" : "pulse"} className="motion-reduce:transform-none!" animate={reduce ? { scale: 1 } : { scale: [1, 1.06, 1] }} transition={reduce ? { duration: 0 } : { repeat: Infinity, duration: 1.8, ease: "easeInOut" }}>
           <LogoMark size={24} />
         </motion.div>
       </div>
@@ -124,7 +126,7 @@ export function LiveRunView({ run, frame }: { run: LiveRun; frame?: { url: strin
         {run.steps.length > 0 && <Steps steps={run.steps} live />}
         {frame && <BrowserPeek url={frame.url} jpeg={frame.jpegBase64} />}
         {run.text && <Markdown text={run.text} />}
-        {run.active && <div className="text-[13px] shimmer font-medium h-5">{run.status || "Thinking…"}</div>}
+        {run.active && <div aria-hidden="true" className="text-[13px] shimmer font-medium h-5">{run.status || "Thinking…"}</div>}
       </div>
     </div>
   );

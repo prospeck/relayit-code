@@ -23,13 +23,14 @@ export function Settings() {
   const section = route.param ?? "profile";
   return (
     <div className="h-full flex">
-      <nav className="w-[220px] shrink-0 border-r border-line pt-14 px-3">
+      <nav aria-label="Settings" className="w-[220px] shrink-0 border-r border-line pt-14 px-3">
         <div className="drag absolute top-0 h-12 w-[220px]" />
-        <h1 className="font-display text-[28px] px-3 mb-5">Settings</h1>
+        <div className="font-display text-[28px] px-3 mb-5" aria-hidden="true">Settings</div>
         {SECTIONS.map((s) => (
           <button
             key={s.id}
             onClick={() => navigate(`settings/${s.id}`)}
+            aria-current={section === s.id ? "page" : undefined}
             className={cx(
               "w-full flex items-center gap-2.5 h-8 px-3 rounded-[9px] text-[13.5px] mb-px transition-colors",
               section === s.id ? "bg-surface shadow-sm border border-line text-ink font-medium" : "text-ink-2 hover:bg-surface-3/60",
@@ -55,7 +56,7 @@ export function Settings() {
 
 function Saved({ show }: { show: boolean }) {
   return show ? (
-    <span className="inline-flex items-center gap-1 text-[12.5px] text-success">
+    <span role="status" className="inline-flex items-center gap-1 text-[12.5px] text-success">
       <Check className="size-3.5" /> Saved
     </span>
   ) : null;
@@ -173,7 +174,7 @@ function ModelSection() {
 
   return (
     <Page title="Model" subtitle="Bring your own key or run locally. RelayIt never charges for model use — you pay your provider directly." width={680}>
-      <div className="grid grid-cols-5 gap-2 mb-6">
+      <div className="grid grid-cols-2 min-[1200px]:grid-cols-5 gap-2 mb-6">
         {PROVIDERS.map((p) => (
           <button
             key={p.id}
@@ -183,8 +184,9 @@ function ModelSection() {
               setReplacing(false);
               setError(null);
             }}
+            aria-pressed={provider === p.id}
             className={cx(
-              "rounded-[14px] border px-3 py-3 text-left transition-all",
+              "rounded-[14px] border px-3 py-3 text-left transition-all min-w-0 break-words",
               provider === p.id ? "border-accent/60 bg-accent-softer shadow-[var(--ring)]" : "border-line-strong bg-surface hover:border-ink/25",
             )}
           >
@@ -267,7 +269,7 @@ function ApprovalsSection() {
             <div className="text-[28px] font-semibold tracking-tight tnum">{cap != null ? formatInr(cap) : "—"}</div>
           </div>
         </div>
-        <input type="range" min={100} max={20000} step={100} value={cap ?? 2000} onChange={(e) => setCap(Number(e.target.value))} className="w-full mt-5 accent-[var(--accent)]" />
+        <input type="range" aria-label="Per-action spending limit" aria-valuetext={formatInr(cap ?? 2000)} min={100} max={20000} step={100} value={cap ?? 2000} onChange={(e) => setCap(Number(e.target.value))} className="w-full mt-5 accent-[var(--accent)]" />
         <div className="flex items-center justify-between mt-3">
           <div className="flex gap-1.5">
             {[500, 1000, 2000, 5000].map((v) => (
@@ -363,7 +365,7 @@ function MemorySection() {
                   <div className="w-[170px] shrink-0 text-[13px] font-medium text-ink-2 pt-px">{m.key}</div>
                   <div className="flex-1 text-[13.5px] selectable">{m.value}</div>
                   <span className="text-[11px] text-faint shrink-0 pt-0.5">{m.source === "agent" ? "learned" : "added"} {relTime(m.updatedAt)}</span>
-                  <button onClick={() => del.mutate(m.id)} className="text-faint hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Forget">
+                  <button onClick={() => del.mutate(m.id)} className="text-faint hover:text-danger opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100" aria-label="Forget">
                     <Trash2 className="size-4" />
                   </button>
                 </div>
@@ -388,13 +390,13 @@ function NotificationsSection() {
     <Page title="Brief & alerts" subtitle="How RelayIt reaches out first." width={640}>
       <Card className="divide-y divide-line">
         <Row title="Morning brief on first open" body="The first time you open RelayIt each day, it posts what needs you, today's calendar and anything pending.">
-          <Switch checked={s.briefOnFirstOpen} onCheckedChange={(v) => save.mutate({ briefOnFirstOpen: v })} />
+          <Switch label="Morning brief on first open" checked={s.briefOnFirstOpen} onCheckedChange={(v) => save.mutate({ briefOnFirstOpen: v })} />
         </Row>
         <Row title="Brief time" body="When RelayIt prepares the brief while it's running in the tray.">
-          <Input type="time" value={s.briefTime} onChange={(e) => save.mutate({ briefTime: e.target.value })} className="w-[120px] h-9" />
+          <Input type="time" aria-label="Brief time" value={s.briefTime} onChange={(e) => save.mutate({ briefTime: e.target.value })} className="w-[120px] h-9" />
         </Row>
         <Row title="Desktop notifications" body="“Needs you”, orders placed and finished routines.">
-          <Switch checked={s.notifications} onCheckedChange={(v) => save.mutate({ notifications: v })} />
+          <Switch label="Desktop notifications" checked={s.notifications} onCheckedChange={(v) => save.mutate({ notifications: v })} />
         </Row>
         <Row title="Quick Ask shortcut" body="Summon RelayIt from anywhere.">
           <span className="text-[13px] font-medium text-ink-2 bg-surface-2 border border-line rounded-[8px] px-2.5 h-8 inline-flex items-center">{s.quickAskShortcut.replace("Alt", "⌥ Option").replace("+", " + ")}</span>
@@ -416,10 +418,10 @@ function BrowserSection() {
     <Page title="Browser agent" subtitle="For services without an official API, RelayIt can use a separate browser profile — signed in as you — to get things done. Every submit and purchase still asks you first." width={680}>
       <Card className="divide-y divide-line mb-6">
         <Row title="Allow the browser agent" body="Used only when there's no official connection for a service.">
-          <Switch checked={s.browserAgentEnabled} onCheckedChange={(v) => save.mutate({ browserAgentEnabled: v })} />
+          <Switch label="Allow the browser agent" checked={s.browserAgentEnabled} onCheckedChange={(v) => save.mutate({ browserAgentEnabled: v })} />
         </Row>
         <Row title="Run in the background" body="Hide the browser window. Turn off to watch every step.">
-          <Switch checked={s.browserHeadless} onCheckedChange={(v) => save.mutate({ browserHeadless: v })} />
+          <Switch label="Run in the background" checked={s.browserHeadless} onCheckedChange={(v) => save.mutate({ browserHeadless: v })} />
         </Row>
       </Card>
       <h2 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted mb-3">Sign-ins</h2>

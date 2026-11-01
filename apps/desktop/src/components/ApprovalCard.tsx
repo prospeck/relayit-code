@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Ban, Check, Clock, ShieldCheck, Sparkles } from "lucide-react";
@@ -32,6 +32,7 @@ export function ApprovalCard({ action, compact }: { action: PendingAction; compa
     onError: (e) => setError(e instanceof ApiError ? e.message : "Something went wrong"),
   });
 
+  const titleId = useId();
   const pending = action.status === "pending";
   const overCap = action.involvesMoney && action.amountInr != null && action.spendCapInr != null && action.amountInr > action.spendCapInr;
   const hasAmount = action.amountInr != null && action.amountInr > 0;
@@ -44,6 +45,8 @@ export function ApprovalCard({ action, compact }: { action: PendingAction; compa
       initial={{ opacity: 0, y: 8, scale: 0.985 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      role="region"
+      aria-labelledby={titleId}
       className={cx(
         "relative bg-surface border border-line rounded-[20px] shadow-md overflow-hidden",
         compact ? "max-w-[480px]" : "max-w-[540px]",
@@ -66,17 +69,17 @@ export function ApprovalCard({ action, compact }: { action: PendingAction; compa
           </span>
         </div>
 
-        <h3 className="text-[19px] leading-snug font-semibold tracking-[-0.015em] text-ink">{action.title}</h3>
+        <h2 id={titleId} className="text-[19px] leading-snug font-semibold tracking-[-0.015em] text-ink break-words">{action.title}</h2>
         {action.recipient && !hasAmount && <p className="text-[13.5px] text-muted mt-1">to {action.recipient}</p>}
 
         {hasAmount && (
-          <div className="mt-4 flex items-end justify-between gap-4">
-            <div>
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 max-w-full">
               <div className="text-[11.5px] font-medium uppercase tracking-[0.1em] text-muted mb-1">You'll pay</div>
-              <div className="text-[46px] leading-none font-semibold tracking-[-0.035em] tnum text-ink">{formatInr(action.amountInr!)}</div>
+              <div className="text-[clamp(30px,4.2vw,46px)] leading-none font-semibold tracking-[-0.035em] tnum text-ink break-words">{formatInr(action.amountInr!)}</div>
             </div>
             {action.recipient && (
-              <div className="text-right text-[13px] text-muted pb-1 max-w-[50%]">
+              <div className="text-right text-[13px] text-muted pb-1 min-w-0 max-w-full" style={{ overflowWrap: "anywhere" }}>
                 to <span className="text-ink font-medium">{action.recipient}</span>
               </div>
             )}
@@ -93,13 +96,12 @@ export function ApprovalCard({ action, compact }: { action: PendingAction; compa
               d.value.length > 70 || d.value.includes("\n") ? (
                 <div key={i} className="text-[13px] pt-1">
                   <dt className="text-muted mb-1.5">{d.label}</dt>
-                  <dd className="selectable whitespace-pre-wrap text-ink-2 leading-relaxed bg-surface border border-line rounded-[10px] px-3.5 py-2.5 max-h-[180px] overflow-y-auto">{d.value}</dd>
+                  <dd tabIndex={0} aria-label={`${d.label}: ${d.value}`} className="selectable whitespace-pre-wrap text-ink-2 leading-relaxed bg-surface border border-line rounded-[10px] px-3.5 py-2.5 max-h-[180px] overflow-y-auto">{d.value}</dd>
                 </div>
               ) : (
-                <div key={i} className="flex items-baseline text-[13px]">
-                  <dt className="text-muted shrink-0">{d.label}</dt>
-                  <span className="dotted-leader" />
-                  <dd className="text-ink text-right selectable max-w-[70%] truncate">{d.value}</dd>
+                <div key={i} className="flex items-baseline gap-2 text-[13px]">
+                  <dt className="text-muted shrink-0 flex-1 flex items-baseline after:content-[''] after:flex-1 after:min-w-3 after:ml-2 after:border-b after:border-dotted after:border-line-strong">{d.label}</dt>
+                  <dd className="text-ink text-right selectable min-w-0 max-w-[70%] break-words" style={{ overflowWrap: "anywhere" }}>{d.value}</dd>
                 </div>
               ),
             )}
@@ -130,7 +132,7 @@ export function ApprovalCard({ action, compact }: { action: PendingAction; compa
         </div>
       )}
 
-      <div className="px-6 py-4 flex items-center gap-2">
+      <div className="px-6 py-4 flex flex-wrap items-center gap-2">
         <Button variant="ghost" icon={<Ban className="size-4" />} onClick={() => decide.mutate("refuse")} disabled={decide.isPending}>
           Refuse
         </Button>
@@ -158,7 +160,7 @@ export function ApprovalCard({ action, compact }: { action: PendingAction; compa
       </div>
       <AnimatePresence>
         {error && (
-          <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="px-6 pb-4 -mt-1 text-[12.5px] text-danger">
+          <motion.p role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="px-6 pb-4 -mt-1 text-[12.5px] text-danger">
             {error}
           </motion.p>
         )}
@@ -185,8 +187,13 @@ function HoldButton({ label, onConfirm, disabled }: { label: string; onConfirm: 
   const fired = useRef(false);
   const DURATION = 750;
 
+  const cancel = () => {
+    if (raf.current !== null) cancelAnimationFrame(raf.current);
+    raf.current = null;
+    if (!fired.current) setProgress(0);
+  };
   const begin = () => {
-    if (disabled) return;
+    if (disabled || raf.current !== null) return;
     fired.current = false;
     start.current = performance.now();
     const step = (t: number) => {
@@ -194,6 +201,7 @@ function HoldButton({ label, onConfirm, disabled }: { label: string; onConfirm: 
       setProgress(p);
       if (p >= 1 && !fired.current) {
         fired.current = true;
+        raf.current = null;
         onConfirm();
         return;
       }
@@ -201,26 +209,40 @@ function HoldButton({ label, onConfirm, disabled }: { label: string; onConfirm: 
     };
     raf.current = requestAnimationFrame(step);
   };
-  const cancel = () => {
-    if (raf.current) cancelAnimationFrame(raf.current);
-    if (!fired.current) setProgress(0);
-  };
+  // Never let a hold continue after the button is disabled, loses focus or unmounts.
+  useEffect(() => {
+    if (disabled) cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled]);
+  useEffect(() => () => {
+    if (raf.current !== null) cancelAnimationFrame(raf.current);
+  }, []);
 
   return (
     <button
       disabled={disabled}
+      aria-label={`${label} — press and hold`}
       onPointerDown={begin}
       onPointerUp={cancel}
       onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onBlur={cancel}
       onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && !e.repeat) begin();
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        if (!e.repeat) begin();
       }}
-      onKeyUp={cancel}
-      className="relative h-9 px-4 rounded-[11px] overflow-hidden bg-accent text-on-accent text-[13.5px] font-medium disabled:opacity-45 select-none shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_1px_2px_rgb(0_0_0/0.12)] active:scale-[0.98] transition-transform"
+      onKeyUp={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          cancel();
+        }
+      }}
+      className="relative min-h-9 h-auto py-2 px-4 max-w-full rounded-[11px] overflow-hidden bg-accent text-on-accent text-[13.5px] font-medium disabled:opacity-45 select-none shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_1px_2px_rgb(0_0_0/0.12)] active:scale-[0.98] transition-transform"
     >
       <span className="absolute inset-y-0 left-0 bg-black/15" style={{ width: `${progress * 100}%` }} />
-      <span className="relative inline-flex items-center gap-2">
-        <Sparkles className="size-4" />
+      <span className="relative inline-flex items-center gap-2 whitespace-normal">
+        <Sparkles className="size-4 shrink-0" />
         {progress >= 1 ? "Approved" : label}
       </span>
     </button>

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, Mic, Square } from "lucide-react";
@@ -22,6 +22,9 @@ type Props = {
 export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ onSend, onStop, busy, placeholder, autoFocus, size = "dock", disabled }, ref) {
   const [text, setText] = useState("");
   const [slashIdx, setSlashIdx] = useState(0);
+  const [slashDismissed, setSlashDismissed] = useState(false);
+  const listId = useId();
+  const hintId = useId();
   const ta = useRef<HTMLTextAreaElement>(null);
   const skills = useQuery({ queryKey: ["skills"], queryFn: api.skills, staleTime: 60_000, retry: false });
 
@@ -36,8 +39,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
 
   const slashQuery = /^\/([a-z0-9-]*)$/.exec(text)?.[1];
   const matches = useMemo(
-    () => (slashQuery === undefined ? [] : (skills.data ?? []).filter((s) => s.slug.startsWith(slashQuery)).slice(0, 6)),
-    [slashQuery, skills.data],
+    () => (slashQuery === undefined || slashDismissed ? [] : (skills.data ?? []).filter((s) => s.slug.startsWith(slashQuery)).slice(0, 6)),
+    [slashQuery, skills.data, slashDismissed],
   );
 
   const submit = () => {
@@ -57,12 +60,19 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
+            id={listId}
+            role="listbox"
+            aria-label="Skills"
             className="absolute bottom-full mb-2 left-0 right-0 bg-surface border border-line-strong rounded-[14px] shadow-lg p-1.5 z-20"
           >
             <div className="px-2.5 pt-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">Skills</div>
             {matches.map((s, i) => (
               <button
                 key={s.id}
+                id={`${listId}-${i}`}
+                role="option"
+                aria-selected={i === slashIdx}
+                tabIndex={-1}
                 onMouseEnter={() => setSlashIdx(i)}
                 onClick={() => {
                   setText(`/${s.slug} `);
@@ -80,7 +90,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
 
       <div
         className={cx(
-          "group relative bg-surface border border-line-strong transition-[border,box-shadow] duration-200 focus-within:border-accent/50 focus-within:shadow-[var(--ring),var(--shadow-md)]",
+          "group relative bg-surface border border-control transition-[border,box-shadow] duration-200 focus-within:border-accent focus-within:shadow-[var(--ring),var(--shadow-md)]",
           size === "hero" ? "rounded-[22px] shadow-md px-5 pt-4 pb-3" : "rounded-[18px] shadow-sm px-4 pt-3 pb-2.5",
         )}
       >
@@ -92,14 +102,25 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
           onChange={(e) => {
             setText(e.target.value);
             setSlashIdx(0);
+            setSlashDismissed(false);
           }}
+          aria-label="Message RelayIt"
+          aria-describedby={hintId}
+          aria-autocomplete="list"
+          aria-controls={matches.length ? listId : undefined}
+          aria-activedescendant={matches.length ? `${listId}-${slashIdx}` : undefined}
           onKeyDown={(e) => {
+            if (e.key === "Escape" && matches.length) {
+              e.preventDefault();
+              setSlashDismissed(true);
+              return;
+            }
             if (matches.length && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
               e.preventDefault();
               setSlashIdx((i) => (i + (e.key === "ArrowDown" ? 1 : matches.length - 1)) % matches.length);
               return;
             }
-            if (matches.length && (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey))) {
+            if (matches.length && e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               setText(`/${matches[slashIdx]!.slug} `);
               return;
@@ -117,7 +138,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
           )}
         />
         <div className={cx("flex items-center gap-1", size === "hero" ? "mt-3" : "mt-1.5")}>
-          <span className="text-[12px] text-faint pl-0.5 hidden sm:inline">
+          <span id={hintId} className="text-[12px] text-faint pl-0.5 hidden sm:inline">
             <span className="font-medium text-muted">/</span> for skills
           </span>
           <div className="flex-1" />
@@ -126,11 +147,27 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
               onPointerDown={voice.start}
               onPointerUp={voice.stop}
               onPointerLeave={voice.recording ? voice.stop : undefined}
+              onPointerCancel={voice.stop}
+              onBlur={voice.stop}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!e.repeat && !voice.busy) voice.start();
+                }
+              }}
+              onKeyUp={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  voice.stop();
+                }
+              }}
+              aria-pressed={voice.recording}
+              disabled={voice.busy}
               className={cx(
                 "size-8 rounded-full flex items-center justify-center transition-colors",
                 voice.recording ? "bg-accent-soft text-accent" : voice.busy ? "text-muted animate-pulse" : "text-muted hover:text-ink hover:bg-surface-2",
               )}
-              aria-label="Hold to talk"
+              aria-label={voice.recording ? "Recording — release to stop" : "Hold to talk"}
             >
               <Mic className="size-[17px]" />
             </button>
@@ -151,7 +188,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer({ on
           )}
         </div>
       </div>
-      {voice.error && <p className="text-[12px] text-danger mt-1.5 px-1">{voice.error}</p>}
+      {voice.error && (
+        <p role="alert" className="text-[12px] text-danger mt-1.5 px-1">
+          {voice.error}
+        </p>
+      )}
     </div>
   );
 });
@@ -162,12 +203,19 @@ function useVoice(onText: (t: string) => void) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const rec = useRef<MediaRecorder | null>(null);
+  const stopRequested = useRef(false);
   const chunks = useRef<Blob[]>([]);
 
   const start = async () => {
     setError(null);
+    stopRequested.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Released before the permission prompt resolved: don't start recording.
+      if (stopRequested.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       const mr = new MediaRecorder(stream);
       chunks.current = [];
       mr.ondataavailable = (e) => e.data.size && chunks.current.push(e.data);
@@ -189,10 +237,11 @@ function useVoice(onText: (t: string) => void) {
       rec.current = mr;
       setRecording(true);
     } catch {
-      setError("Microphone access was blocked. Allow it in System Settings.");
+      setError("Microphone access was blocked. Check microphone permissions for RelayIt.");
     }
   };
   const stop = () => {
+    stopRequested.current = true;
     if (rec.current && rec.current.state !== "inactive") rec.current.stop();
     rec.current = null;
     setRecording(false);

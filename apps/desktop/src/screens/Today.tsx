@@ -1,11 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, CheckCircle2, Coffee, Mail, Package, Sparkles, Sunrise } from "lucide-react";
 import { api } from "../lib/api";
 import { cx, fmtTime, formatInr, relTime, timeOfDay } from "../lib/format";
 import { navigate } from "../lib/router";
-import { Composer } from "../components/Composer";
+import { Composer, type ComposerHandle } from "../components/Composer";
+import { ApiError } from "../lib/api";
 import { Button, Card, SectionTitle, ServiceMark } from "../components/ui";
 
 const SUGGESTIONS: Record<string, string[]> = {
@@ -22,7 +23,15 @@ export function Today() {
   const tasks = useQuery({ queryKey: ["tasks"], queryFn: api.tasks, retry: false });
   const today = useQuery({ queryKey: ["today"], queryFn: api.today, retry: false, refetchInterval: 60_000 });
 
+  const composer = useRef<ComposerHandle>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const start = useMutation({
+    onMutate: () => setSendError(null),
+    onError: (e, text) => {
+      // Give the words back so nothing typed is lost.
+      composer.current?.setText(text);
+      setSendError(e instanceof ApiError ? e.message : "Couldn't send that. Try again.");
+    },
     mutationFn: async (text: string) => {
       const c = await api.createConversation();
       await api.send(c.id, text);
@@ -85,7 +94,12 @@ export function Today() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="mt-9">
-          <Composer size="hero" autoFocus busy={start.isPending} onSend={(t) => start.mutate(t)} placeholder="Say it once… “Order something from California Pizza”" />
+          <Composer ref={composer} size="hero" autoFocus busy={start.isPending} onSend={(t) => start.mutate(t)} placeholder="Say it once… “Order something from California Pizza”" />
+          {sendError && (
+            <p role="alert" className="text-[13px] text-danger mt-2.5 px-1">
+              {sendError}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2 mt-3.5">
             {SUGGESTIONS[tod]!.map((s) => (
               <button

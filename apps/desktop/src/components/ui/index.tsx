@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
@@ -80,7 +80,7 @@ export const IconButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
 /* ───────────── Inputs ───────────── */
 
 const fieldBase =
-  "w-full bg-surface text-ink placeholder:text-faint border border-line-strong rounded-[11px] px-3 transition-[border,box-shadow] duration-150 outline-none focus:border-accent/60 focus:shadow-[var(--ring)]";
+  "w-full bg-surface text-ink placeholder:text-faint border border-control rounded-[11px] px-3 transition-[border,box-shadow] duration-150 outline-none focus:border-accent focus:shadow-[var(--ring)]";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cx(fieldBase, "h-10 text-[14px]", className)} {...rest} />;
@@ -185,9 +185,9 @@ export function Switch({ checked, onCheckedChange, disabled, label }: { checked:
       onCheckedChange={onCheckedChange}
       disabled={disabled}
       aria-label={label}
-      className="relative h-[22px] w-[38px] rounded-full bg-surface-3 border border-line-strong data-[state=checked]:bg-accent data-[state=checked]:border-transparent transition-colors disabled:opacity-50 shrink-0"
+      className="relative h-[24px] w-[40px] rounded-full bg-surface-3 border border-control data-[state=checked]:bg-accent data-[state=checked]:border-transparent transition-colors disabled:opacity-50 shrink-0"
     >
-      <SwitchPrimitive.Thumb className="block size-[16px] rounded-full bg-white shadow-sm translate-x-[2px] data-[state=checked]:translate-x-[18px] transition-transform duration-200 ease-[var(--ease-out-soft)]" />
+      <SwitchPrimitive.Thumb className="block size-[16px] rounded-full bg-white shadow-sm translate-x-[3px] data-[state=checked]:translate-x-[19px] transition-transform duration-200 ease-[var(--ease-out-soft)]" />
     </SwitchPrimitive.Root>
   );
 }
@@ -240,13 +240,14 @@ export function Select({
 
 /* ───────────── Segmented control ───────────── */
 
-export function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[] }) {
+export function Segmented<T extends string>({ value, onChange, options, label }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; label?: string }) {
   return (
-    <div className="inline-flex p-[3px] rounded-[11px] bg-surface-2 border border-line">
+    <div role="group" aria-label={label} className="inline-flex p-[3px] rounded-[11px] bg-surface-2 border border-line">
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
+          aria-pressed={value === o.value}
           className={cx("relative h-7 px-3 text-[12.5px] font-medium rounded-[8px] transition-colors", value === o.value ? "text-ink" : "text-muted hover:text-ink")}
         >
           {value === o.value && <motion.span layoutId="seg" className="absolute inset-0 bg-surface rounded-[8px] shadow-sm border border-line" transition={{ type: "spring", bounce: 0.15, duration: 0.35 }} />}
@@ -276,6 +277,12 @@ export const TooltipProvider = TooltipPrimitive.Provider;
 /* ───────────── Dialog ───────────── */
 
 export function Dialog({ open, onOpenChange, title, description, children, width = 480 }: { open: boolean; onOpenChange: (v: boolean) => void; title: string; description?: ReactNode; children: ReactNode; width?: number }) {
+  // Dialogs here are opened from state, not a Radix Trigger, so remember and restore the opener's focus.
+  // Captured during render, before Radix moves focus into the dialog.
+  const opener = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
+  if (open && !wasOpen.current && typeof document !== "undefined") opener.current = document.activeElement as HTMLElement | null;
+  wasOpen.current = open;
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AnimatePresence>
@@ -284,7 +291,23 @@ export function Dialog({ open, onOpenChange, title, description, children, width
             <DialogPrimitive.Overlay asChild>
               <motion.div className="fixed inset-0 z-40 bg-[var(--scrim)] backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} />
             </DialogPrimitive.Overlay>
-            <DialogPrimitive.Content asChild>
+            <DialogPrimitive.Content
+              asChild
+              onOpenAutoFocus={(e) => {
+                // Start on the first field rather than the Close button.
+                const field = (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>("input:not([type=hidden]), textarea, [role=combobox]");
+                if (field) {
+                  e.preventDefault();
+                  field.focus();
+                }
+              }}
+              onCloseAutoFocus={(e) => {
+                if (opener.current?.isConnected) {
+                  e.preventDefault();
+                  opener.current.focus();
+                }
+              }}
+            >
               <motion.div
                 className="fixed z-50 left-1/2 top-[14vh] -translate-x-1/2 bg-surface border border-line rounded-[18px] shadow-lg p-6 max-h-[76vh] overflow-y-auto"
                 style={{ width: `min(${width}px, calc(100vw - 48px))` }}
@@ -298,10 +321,12 @@ export function Dialog({ open, onOpenChange, title, description, children, width
                     <DialogPrimitive.Title className="text-[17px] font-semibold tracking-tight">{title}</DialogPrimitive.Title>
                     {description && <DialogPrimitive.Description className="text-muted text-[13.5px] mt-1">{description}</DialogPrimitive.Description>}
                   </div>
-                  <DialogPrimitive.Close asChild>
-                    <IconButton label="Close" size="sm">
-                      <X className="size-4" />
-                    </IconButton>
+                  {/* Plain button (no tooltip): a focused tooltip would swallow the first Escape. */}
+                  <DialogPrimitive.Close
+                    aria-label="Close"
+                    className="inline-flex items-center justify-center size-7 rounded-[9px] text-muted hover:text-ink hover:bg-surface-3/70 transition-colors shrink-0"
+                  >
+                    <X className="size-4" />
                   </DialogPrimitive.Close>
                 </div>
                 {children}

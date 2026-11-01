@@ -37,8 +37,18 @@ export function App() {
   return (
     <TooltipProvider>
       <div className="h-full flex bg-bg">
+        <a
+          href="#main-content"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById("main-content")?.focus();
+          }}
+          className="sr-only-focusable fixed left-3 top-3 z-50 bg-surface border border-line-strong rounded-[10px] px-3 py-2 text-[13px] font-medium shadow-md"
+        >
+          Skip to content
+        </a>
         <Sidebar />
-        <main className="flex-1 min-w-0 relative">
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 relative outline-none">
           <div className="drag absolute inset-x-0 top-0 h-[38px] z-0" />
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -82,7 +92,7 @@ function Screen({ screen, param }: { screen: string; param: string | null }) {
 function Splash({ error, onRetry }: { error?: string; onRetry?: () => void }) {
   return (
     <div className="drag h-full flex flex-col items-center justify-center gap-5 bg-bg">
-      <motion.div animate={error ? {} : { scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 1.6 }}>
+      <motion.div className="motion-reduce:transform-none!" animate={error ? {} : { scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 1.6 }}>
         <LogoMark size={52} />
       </motion.div>
       {error ? (

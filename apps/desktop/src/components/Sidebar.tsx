@@ -68,7 +68,7 @@ export function Sidebar() {
         </div>
       )}
 
-      <nav className="px-2.5 space-y-px">
+      <nav aria-label="Primary" className="px-2.5 space-y-px">
         {NAV.map((n) => {
           const active = route.screen === n.id;
           const Icon = n.icon;
@@ -76,6 +76,7 @@ export function Sidebar() {
             <button
               key={n.id}
               onClick={() => navigate(n.id === "chat" && chats[0] ? `chat/${chats[0].id}` : n.id)}
+              aria-current={active ? "page" : undefined}
               className={cx(
                 "relative w-full flex items-center gap-2.5 h-8 px-2.5 rounded-[9px] text-[13.5px] transition-colors",
                 active ? "text-ink font-medium" : "text-ink-2 hover:bg-surface-3/60 hover:text-ink",
@@ -102,6 +103,7 @@ export function Sidebar() {
             <div key={c.id} className="group relative">
               <button
                 onClick={() => navigate(`chat/${c.id}`)}
+                aria-current={active ? "page" : undefined}
                 className={cx(
                   "w-full flex items-center gap-2 h-8 pl-2.5 pr-8 rounded-[9px] text-[13px] text-left transition-colors",
                   active ? "bg-surface-3/80 text-ink font-medium" : "text-ink-2 hover:bg-surface-3/50",
@@ -112,8 +114,8 @@ export function Sidebar() {
               </button>
               <button
                 onClick={() => remove.mutate(c.id)}
-                aria-label="Delete chat"
-                className="absolute right-1.5 top-1.5 size-5 rounded-[6px] items-center justify-center text-faint hover:text-danger hidden group-hover:flex"
+                aria-label={`Delete chat: ${c.title}`}
+                className="absolute right-1 top-1 size-[24px] rounded-[6px] flex items-center justify-center text-faint hover:text-danger opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <Trash2 className="size-3.5" />
               </button>

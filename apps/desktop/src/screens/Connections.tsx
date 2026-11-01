@@ -80,7 +80,7 @@ function GoogleCard() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-[15px] font-semibold">Gmail & Google Calendar</h3>
+            <h2 className="text-[15px] font-semibold">Gmail & Google Calendar</h2>
             {s?.connected && <Badge tone="success">Connected</Badge>}
             {s?.mode === "fake" && <Badge tone="info">Demo inbox</Badge>}
           </div>
@@ -240,6 +240,7 @@ function ServerRow({ server }: { server: McpServer }) {
                     <div className="text-[12px] text-muted line-clamp-1">{t.description}</div>
                   </div>
                   <Segmented<ToolClass>
+                    label={`${t.name} permission`}
                     value={t.toolClass}
                     onChange={(v) => setTool.mutate({ tool: t.name, toolClass: v })}
                     options={[
@@ -295,6 +296,7 @@ function AddServerDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Add an MCP server" description="Every tool from a new server starts as “Act”, so nothing runs without your OK until you reclassify it.">
       <Segmented
+        label="Connection type"
         value={kind}
         onChange={setKind}
         options={[
@@ -403,7 +405,7 @@ function KeysCard() {
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-medium flex items-center gap-1.5">
                 {l.label}
-                <button onClick={() => void openExternal(l.url)} className="text-faint hover:text-ink" aria-label="Get a key">
+                <button onClick={() => void openExternal(l.url)} className="text-faint hover:text-ink min-w-[24px] min-h-[24px] inline-flex items-center justify-center" aria-label={`Get a ${l.label} key`}>
                   <ExternalLink className="size-3" />
                 </button>
               </div>
@@ -417,7 +419,9 @@ function KeysCard() {
         ))}
       </div>
       <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)} title={editing ? LABELS[editing]!.label : ""} description="Stored encrypted. It won't be shown again.">
-        <Input type="password" value={value} onChange={(e) => setValue(e.target.value)} autoFocus />
+        <Field label="API key">
+          <Input type="password" value={value} onChange={(e) => setValue(e.target.value)} autoFocus />
+        </Field>
         <div className="flex justify-end mt-5">
           <Button variant="primary" onClick={() => save.mutate()} loading={save.isPending} disabled={!value.trim()}>
             Save key

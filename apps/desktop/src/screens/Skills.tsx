@@ -62,7 +62,7 @@ export function Skills() {
                 Edit
               </Button>
               {!s.builtin && (
-                <button onClick={() => del.mutate(s.id)} className="ml-auto text-faint hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Delete">
+                <button onClick={() => del.mutate(s.id)} className="ml-auto text-faint hover:text-danger opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100" aria-label="Delete">
                   <Trash2 className="size-4" />
                 </button>
               )}

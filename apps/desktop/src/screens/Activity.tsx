@@ -68,7 +68,7 @@ export function Activity() {
       subtitle="Everything RelayIt read, prepared and did — with secrets redacted. This log never leaves your computer."
     >
       <div className="flex items-center justify-between gap-4 mb-6">
-        <Segmented value={kind as (typeof FILTERS)[number]["value"]} onChange={setKind} options={FILTERS.map((f) => ({ value: f.value, label: f.label }))} />
+        <Segmented label="Activity filter" value={kind as (typeof FILTERS)[number]["value"]} onChange={setKind} options={FILTERS.map((f) => ({ value: f.value, label: f.label }))} />
         <div className="relative w-[240px]">
           <Search className="size-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search activity" className="h-9 pl-9 text-[13px]" />
@@ -99,7 +99,7 @@ function Row({ e }: { e: AuditEvent }) {
   const hasData = e.data != null && !(typeof e.data === "object" && Object.keys(e.data as object).length === 0);
   return (
     <div>
-      <button onClick={() => hasData && setOpen((v) => !v)} className={cx("w-full flex items-center gap-3 px-4 py-2.5 text-left", hasData && "hover:bg-surface-2/50")}>
+      <button onClick={() => hasData && setOpen((v) => !v)} disabled={!hasData} aria-expanded={hasData ? open : undefined} className={cx("w-full flex items-center gap-3 px-4 py-2.5 text-left disabled:cursor-default", hasData && "hover:bg-surface-2/50")}>
         <span className={cx("size-7 rounded-[8px] flex items-center justify-center shrink-0", tone)}>
           <Icon className="size-3.5" />
         </span>

@@ -17,7 +17,7 @@ function CanWait() {
   if (!items.length) return null;
   return (
     <div className="pt-2">
-      <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-1 px-1.5 text-[12px] font-medium text-muted hover:text-ink">
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex items-center gap-1 px-1.5 min-h-[24px] text-[12px] font-medium text-muted hover:text-ink">
         <ChevronRight className={cx("size-3.5 transition-transform", open && "rotate-90")} />
         Can wait · {items.length}
       </button>
@@ -62,11 +62,11 @@ export function Tasks() {
           </Button>
         )}
       </div>
-      <div className="flex-1 min-h-0 grid grid-cols-4 gap-4 px-10 pb-8">
+      <div className="flex-1 min-h-0 grid grid-cols-2 min-[1200px]:grid-cols-4 gap-4 px-10 pb-8 overflow-y-auto">
         {COLUMNS.map((col) => {
           const items = all.filter((t) => t.status === col.id).slice(0, col.id === "done" ? 40 : 100);
           return (
-            <section key={col.id} className="min-h-0 flex flex-col rounded-[18px] bg-surface-2/50 border border-line">
+            <section key={col.id} className="min-h-[280px] min-w-0 flex flex-col rounded-[18px] bg-surface-2/50 border border-line">
               <header className="flex items-center gap-2 px-4 pt-3.5 pb-2.5">
                 <span className={cx("size-2 rounded-full", col.tone)} />
                 <h2 className="text-[13px] font-semibold">{col.title}</h2>
@@ -125,7 +125,7 @@ function TaskCard({ task }: { task: Task }) {
         </div>
         <Popover.Root>
           <Popover.Trigger asChild>
-            <button className="opacity-0 group-hover:opacity-100 text-muted hover:text-ink p-0.5 rounded-[6px] transition-opacity" aria-label="More">
+            <button className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 text-muted hover:text-ink size-[28px] p-1 inline-flex items-center justify-center rounded-[6px]" aria-label={`Actions for ${task.title}`}>
               <MoreHorizontal className="size-4" />
             </button>
           </Popover.Trigger>
@@ -148,7 +148,7 @@ function TaskCard({ task }: { task: Task }) {
         </Popover.Root>
       </div>
       {task.status !== "done" && (
-        <div className="flex gap-1.5 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-3">
           <Button size="sm" variant="quiet" icon={task.conversationId ? <MessageCircle className="size-3.5" /> : <Sparkles className="size-3.5" />} loading={help.isPending} onClick={() => help.mutate()}>
             {task.conversationId ? "Open" : "Handle it"}
           </Button>

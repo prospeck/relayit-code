@@ -18,34 +18,35 @@
   --border-strong: rgb(28 25 20 / 0.14);
   --text: #1c1a16;
   --text-2: #4a463f;
-  --muted: #77726a;
-  --faint: #a8a39b;
+  --muted: #5d574f;
+  --faint: #6c665e;
+  --control-border: #8a8175;
 
-  --accent: #e4572e;
-  --accent-hover: #d14b23;
-  --accent-press: #bc4220;
+  --accent: #c4471f;
+  --accent-hover: #b3401b;
+  --accent-press: #a13916;
   --accent-soft: rgb(228 87 46 / 0.09);
   --accent-softer: rgb(228 87 46 / 0.05);
-  --accent-text: #c2461f;
+  --accent-text: #a93c1b;
   --on-accent: #ffffff;
 
-  --success: #23885b;
+  --success: #196c45;
   --success-soft: rgb(35 136 91 / 0.1);
-  --warning: #b77a0c;
+  --warning: #805209;
   --warning-soft: rgb(183 122 12 / 0.1);
-  --danger: #cf3f36;
+  --danger: #b5322c;
   --danger-soft: rgb(207 63 54 / 0.09);
-  --info: #3d6fd9;
+  --info: #315fc0;
   --info-soft: rgb(61 111 217 / 0.09);
 
-  --class-read: #3d6fd9;
-  --class-prepare: #8a5cd6;
-  --class-act: #e4572e;
+  --class-read: #315fc0;
+  --class-prepare: #7a4cc6;
+  --class-act: #c4471f;
 
   --shadow-sm: 0 1px 2px rgb(28 25 20 / 0.05);
   --shadow-md: 0 1px 2px rgb(28 25 20 / 0.04), 0 6px 20px -6px rgb(28 25 20 / 0.1);
   --shadow-lg: 0 2px 4px rgb(28 25 20 / 0.04), 0 18px 48px -12px rgb(28 25 20 / 0.18);
-  --ring: 0 0 0 3px rgb(228 87 46 / 0.22);
+  --ring: 0 0 0 3px rgb(196 71 31 / 0.28);
   --scrim: rgb(20 18 15 / 0.32);
 }
 
@@ -61,7 +62,9 @@
     --text: #f3efe9;
     --text-2: #d3cec6;
     --muted: #9c978f;
-    --faint: #6d6963;
+    --faint: #9a938a;
+    --control-border: #8a8175;
+    --on-accent: #1c1a16;
 
     --accent: #f26a3d;
     --accent-hover: #ff7a4d;
@@ -172,8 +175,8 @@
     background: var(--accent-soft);
   }
   :focus-visible:not(input, textarea, select) {
-    outline: none;
-    box-shadow: var(--ring);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
     border-radius: 8px;
   }
   * {
@@ -250,6 +253,20 @@
     clip-path: inset(0 50% 0 0);
   }
 
+.approval-detail > dt::after {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    margin-left: 8px;
+  }
+  .sr-only-focusable:not(:focus) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
   .dotted-leader {
     flex: 1;
     min-width: 12px;
@@ -370,5 +387,10 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+@theme inline {
+  --color-control: var(--control-border);
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
+import { usePrefersReducedMotion } from "../lib/motion";
 import { ArrowDown, MessageCircle } from "lucide-react";
 import type { Message, PendingAction } from "@relayit/shared";
 import { api, ApiError, type ConversationDetail } from "../lib/api";
@@ -53,6 +54,7 @@ function Thread({ id }: { id: string }) {
   });
   const frame = useLive((s) => s.frames[id]);
   const composer = useRef<ComposerHandle>(null);
+  const reduceMotion = usePrefersReducedMotion();
   const scroller = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +88,7 @@ function Thread({ id }: { id: string }) {
   // Stick to the bottom while new content streams in, unless the user scrolled up.
   useEffect(() => {
     const el = scroller.current;
-    if (el && atBottom) el.scrollTo({ top: el.scrollHeight, behavior: messages.length < 3 ? "auto" : "smooth" });
+    if (el && atBottom) el.scrollTo({ top: el.scrollHeight, behavior: messages.length < 3 || reduceMotion ? "auto" : "smooth" });
   }, [messages.length, run?.text, run?.steps.length, frame?.at, atBottom]);
 
   useEffect(() => {
@@ -101,9 +103,12 @@ function Thread({ id }: { id: string }) {
   return (
     <div className="h-full flex flex-col">
       <header className="drag h-[52px] shrink-0 flex items-center justify-center px-6 border-b border-line/0">
-        <h1 className="text-[13.5px] font-medium text-ink-2 truncate max-w-[60%]">{detail.data?.conversation.title ?? ""}</h1>
+        <h1 className="text-[13.5px] font-medium text-ink-2 truncate max-w-[60%]">{detail.data?.conversation.title || "Chat"}</h1>
       </header>
 
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {run?.active ? run.status || "Thinking…" : ""}
+      </div>
       <div ref={scroller} onScroll={onScroll} className="flex-1 overflow-y-auto">
         <div className="max-w-[760px] mx-auto px-8 pt-6 pb-10 space-y-7">
           {messages.length === 0 && !run && (
@@ -120,18 +125,24 @@ function Thread({ id }: { id: string }) {
               </div>
             </motion.div>
           )}
-          {messages.map((m, i) => (
-            <MessageView key={m.id} message={m} actions={actions} isLast={i === messages.length - 1 && !run} onChoice={(t) => send.mutate(t)} />
-          ))}
+          <div role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions" className="space-y-7">
+            {messages.map((m, i) => (
+              <MessageView key={m.id} message={m} actions={actions} isLast={i === messages.length - 1 && !run} onChoice={(t) => send.mutate(t)} />
+            ))}
+          </div>
           {run && <LiveRunView run={run} frame={frame} />}
-          {error && <div className="text-[13px] text-danger bg-danger-soft rounded-[12px] px-4 py-2.5">{error}</div>}
+          {error && (
+            <div role="alert" className="text-[13px] text-danger bg-danger-soft rounded-[12px] px-4 py-2.5">
+              {error}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="shrink-0 relative">
         {!atBottom && (
           <button
-            onClick={() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" })}
+            onClick={() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: reduceMotion ? "auto" : "smooth" })}
             className="absolute -top-12 left-1/2 -translate-x-1/2 size-8 rounded-full bg-surface border border-line-strong shadow-md flex items-center justify-center text-muted hover:text-ink"
             aria-label="Scroll to latest"
           >

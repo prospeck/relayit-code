@@ -27,7 +27,7 @@ export function Steps({ steps, live }: { steps: Step[]; live?: boolean }) {
   return (
     <div className="mb-2">
       {!live && (
-        <button onClick={() => setOpen((v) => !v)} className="group inline-flex items-center gap-1 text-[12.5px] text-muted hover:text-ink transition-colors">
+        <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="group inline-flex items-center gap-1 min-h-[24px] text-[12.5px] text-muted hover:text-ink transition-colors">
           <ChevronRight className={cx("size-3.5 transition-transform", open && "rotate-90")} />
           {steps.length === 1 ? steps[0]!.label : `${done} of ${steps.length} steps`}
         </button>

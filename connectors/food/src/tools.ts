@@ -33,7 +33,7 @@ export async function previewPlaceOrder(
   const n = cart.lines.reduce((sum, line) => sum + line.qty, 0);
   return {
     title: `Order from ${cart.restaurant.name}`,
-    summary: `${n} items delivered to ${cart.deliveryAddress.label} in about ${cart.etaMin} min. You'll pay on the next screen.`,
+    summary: `${n} item${n === 1 ? "" : "s"} delivered to ${cart.deliveryAddress.label} in about ${cart.etaMin} min. You'll pay on the next screen.`,
     service: "RelayIt Food (demo)",
     recipient: cart.restaurant.name,
     amountInr: cart.totalInr,
