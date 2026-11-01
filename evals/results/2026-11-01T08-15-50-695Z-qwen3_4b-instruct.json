@@ -1,0 +1,500 @@
+{
+  "version": 1,
+  "startedAt": "2026-11-01T08:15:50.695Z",
+  "resumedAt": [],
+  "updatedAt": "2026-11-01T08:25:44.912Z",
+  "complete": true,
+  "configuration": {
+    "provider": "ollama",
+    "model": "qwen3:4b-instruct",
+    "baseUrl": "http://127.0.0.1:11434/v1",
+    "repeat": 1,
+    "only": "train-mysuru",
+    "timeoutMs": 600000,
+    "node": "v26.11.1",
+    "timeZone": "Asia/Kolkata",
+    "approvals": "always refuse",
+    "fakeGoogle": true,
+    "startupTriage": "heuristic before onboarding",
+    "browser": "disabled",
+    "tokens": "provider usage in persisted runs; interrupted partial requests may be unreported"
+  },
+  "summary": {
+    "passed": 0,
+    "total": 1,
+    "planned": 1,
+    "passRate": 0,
+    "scenarios": [
+      {
+        "id": "train-mysuru",
+        "passed": 0,
+        "total": 1,
+        "passRate": 0,
+        "flaky": false
+      }
+    ]
+  },
+  "results": [
+    {
+      "audit": [
+        {
+          "id": "aud_8588d2188b6d4f36bf39",
+          "ts": "2026-11-01T08:18:00.362Z",
+          "kind": "tool.call",
+          "toolName": "resolve_station",
+          "toolClass": "read",
+          "summary": "IRCTC: Finding stations",
+          "data": {
+            "input": {
+              "query": "Bengaluru"
+            }
+          },
+          "conversationId": "conv_ba70305467c34a79a012"
+        },
+        {
+          "id": "aud_40386c4f03eb4d0990d4",
+          "ts": "2026-11-01T08:18:00.394Z",
+          "kind": "tool.result",
+          "toolName": "resolve_station",
+          "toolClass": "read",
+          "summary": "IRCTC: Finding stations — done",
+          "data": {
+            "output": [
+              {
+                "code": "SBC",
+                "name": "KSR Bengaluru City",
+                "city": "Bengaluru",
+                "aliases": [
+                  "bangalore",
+                  "bengaluru",
+                  "bangalore city",
+                  "KSR"
+                ]
+              },
+              {
+                "code": "BNC",
+                "name": "Bengaluru Cantonment",
+                "city": "Bengaluru",
+                "aliases": [
+                  "bangalore cant",
+                  "cantonment"
+                ]
+              },
+              {
+                "code": "MAQ",
+                "name": "Mangaluru Central",
+                "city": "Mangaluru",
+                "aliases": [
+                  "mangalore",
+                  "mangaluru"
+                ]
+              }
+            ]
+          },
+          "conversationId": "conv_ba70305467c34a79a012"
+        },
+        {
+          "id": "aud_20f03e488d2e4d82b07c",
+          "ts": "2026-11-01T08:20:19.885Z",
+          "kind": "tool.call",
+          "toolName": "resolve_station",
+          "toolClass": "read",
+          "summary": "IRCTC: Finding stations",
+          "data": {
+            "input": {
+              "query": "Mysuru"
+            }
+          },
+          "conversationId": "conv_ba70305467c34a79a012"
+        },
+        {
+          "id": "aud_fc90f48ac172453ab30e",
+          "ts": "2026-11-01T08:20:19.914Z",
+          "kind": "tool.result",
+          "toolName": "resolve_station",
+          "toolClass": "read",
+          "summary": "IRCTC: Finding stations — done",
+          "data": {
+            "output": [
+              {
+                "code": "MYS",
+                "name": "Mysuru Junction",
+                "city": "Mysuru",
+                "aliases": [
+                  "mysore",
+                  "mysuru"
+                ]
+              }
+            ]
+          },
+          "conversationId": "conv_ba70305467c34a79a012"
+        },
+        {
+          "id": "aud_d814a1f0779b41618ce6",
+          "ts": "2026-11-01T08:22:57.504Z",
+          "kind": "tool.call",
+          "toolName": "find_trains",
+          "toolClass": "read",
+          "summary": "IRCTC: Checking trains",
+          "data": {
+            "input": {
+              "from": "SBC",
+              "to": "MYS",
+              "date": "2026-11-02",
+              "travelClass": "3A"
+            }
+          },
+          "conversationId": "conv_ba70305467c34a79a012"
+        },
+        {
+          "id": "aud_cabf272e8bcb4c18bb82",
+          "ts": "2026-11-01T08:22:57.579Z",
+          "kind": "tool.result",
+          "toolName": "find_trains",
+          "toolClass": "read",
+          "summary": "IRCTC: Checking trains — done",
+          "data": {
+            "output": {
+              "dataSource": "demo timetable — verify on IRCTC",
+              "from": {
+                "code": "SBC",
+                "name": "KSR Bengaluru City",
+                "city": "Bengaluru",
+                "aliases": [
+                  "bangalore",
+                  "bengaluru",
+                  "bangalore city",
+                  "KSR"
+                ]
+              },
+              "to": {
+                "code": "MYS",
+                "name": "Mysuru Junction",
+                "city": "Mysuru",
+                "aliases": [
+                  "mysore",
+                  "mysuru"
+                ]
+              },
+              "date": "2026-11-02",
+              "travelClass": "3A",
+              "quota": "GN",
+              "trains": [],
+              "availableClasses": [
+                "CC",
+                "EC"
+              ],
+              "classUnavailable": true
+            }
+          },
+          "conversationId": "conv_ba70305467c34a79a012"
+        }
+      ],
+      "cards": [],
+      "texts": [
+        {
+          "text": "I'm sorry, but there are no 3A class trains from Bengaluru to Mysuru on Tuesday, 2 November 2026. \n\nHowever, other classes like CC (Coach) or EC (Express) are available. Would you like me to help you find one of those instead?  \n\nQuick replies:  \n- Book a CC class train  \n- Book an EC class train  \n- Cancel the request",
+          "phase": "intent"
+        }
+      ],
+      "links": [],
+      "memory": [
+        {
+          "id": "mem_96fd5e22639348fca8d0",
+          "category": "order",
+          "key": "usual pizza order",
+          "value": "One BBQ Chicken Pizza from California Pizza Kitchen, no extras",
+          "source": "user",
+          "updatedAt": "2026-11-01T08:15:54.843Z"
+        },
+        {
+          "id": "mem_f16e58042ac64fcbacdc",
+          "category": "person",
+          "key": "manager",
+          "value": "Kavya Rao, kavya.rao@greenpath.example.com",
+          "source": "user",
+          "updatedAt": "2026-11-01T08:15:54.844Z"
+        },
+        {
+          "id": "mem_953e34450f7d437a9f88",
+          "category": "preference",
+          "key": "veg preference",
+          "value": "false; I eat chicken and other non-vegetarian food",
+          "source": "user",
+          "updatedAt": "2026-11-01T08:15:54.844Z"
+        },
+        {
+          "id": "mem_45cbd93d1a5c483e9820",
+          "category": "travel",
+          "key": "train seat preference",
+          "value": "lower berth, 3A",
+          "source": "user",
+          "updatedAt": "2026-11-01T08:15:54.844Z"
+        }
+      ],
+      "routines": [],
+      "steps": 4,
+      "errors": [],
+      "choiceMisses": [],
+      "refusalRetries": [],
+      "startedAt": "2026-11-01T08:15:54.845Z",
+      "id": "train-mysuru",
+      "prompt": "train to Mysuru tomorrow morning",
+      "iteration": 1,
+      "checks": [
+        {
+          "name": "tool:find_trains",
+          "pass": true,
+          "detail": "observed in audit"
+        },
+        {
+          "name": "tool:irctc_booking_handoff",
+          "pass": false,
+          "detail": "missing from audit"
+        },
+        {
+          "name": "order:find_trains→irctc_booking_handoff",
+          "pass": false,
+          "detail": "resolve_station → resolve_station → find_trains"
+        },
+        {
+          "name": "forbidden_tools",
+          "pass": true,
+          "detail": "none"
+        },
+        {
+          "name": "approval",
+          "pass": true,
+          "detail": "expected none (min 0); saw none"
+        },
+        {
+          "name": "questions",
+          "pass": true,
+          "detail": "0/1 before first card (all choices counted when no card)"
+        },
+        {
+          "name": "steps",
+          "pass": true,
+          "detail": "4/7 model steps, excluding refusal-only continuations"
+        },
+        {
+          "name": "quick_reply_simulation",
+          "pass": true,
+          "detail": "all offered choices matched; no invented button taps"
+        },
+        {
+          "name": "runtime",
+          "pass": true,
+          "detail": "no run/tool errors"
+        },
+        {
+          "name": "refused_all_cards",
+          "pass": true,
+          "detail": "no cards"
+        },
+        {
+          "name": "must_not:execute_act",
+          "pass": true,
+          "detail": "no approval or act execution"
+        },
+        {
+          "name": "must_not:claim_success",
+          "pass": true,
+          "detail": "no lexical success claim (heuristic; inspect transcript)"
+        },
+        {
+          "name": "must_not:retry_after_refusal",
+          "pass": true,
+          "detail": "no refused tool retried without a new user request"
+        },
+        {
+          "name": "must_not:request_act",
+          "pass": true,
+          "detail": "no act requests"
+        },
+        {
+          "name": "semantic:IRCTC booking link",
+          "pass": false,
+          "detail": "[]"
+        },
+        {
+          "name": "semantic:tomorrow morning Mysuru",
+          "pass": false,
+          "detail": "expected 2026-11-02, MYS, morning train 12007 or 20607"
+        }
+      ],
+      "passed": false,
+      "wallTimeMs": 590046,
+      "intentWallTimeMs": 589682,
+      "tokens": {
+        "input": 16619,
+        "output": 184
+      },
+      "tools": [
+        "resolve_station",
+        "resolve_station",
+        "find_trains"
+      ],
+      "questions": 0,
+      "finalAssistantText": "I'm sorry, but there are no 3A class trains from Bengaluru to Mysuru on Tuesday, 2 November 2026. \n\nHowever, other classes like CC (Coach) or EC (Express) are available. Would you like me to help you find one of those instead?  \n\nQuick replies:  \n- Book a CC class train  \n- Book an EC class train  \n- Cancel the request",
+      "runs": [
+        {
+          "id": "run_1854dd33d0734977bfe8",
+          "status": "done",
+          "error": null,
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": "train to Mysuru tomorrow morning"
+              },
+              {
+                "role": "assistant",
+                "content": "",
+                "toolCalls": [
+                  {
+                    "id": "call_071578aa",
+                    "name": "resolve_station",
+                    "args": {
+                      "query": "Bengaluru"
+                    },
+                    "rawArgs": "{\"query\":\"Bengaluru\"}"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "toolCallId": "call_071578aa",
+                "name": "resolve_station",
+                "content": "<untrusted_data source=\"tool:resolve_station\">\n[\n {\n  \"code\": \"SBC\",\n  \"name\": \"KSR Bengaluru City\",\n  \"city\": \"Bengaluru\",\n  \"aliases\": [\n   \"bangalore\",\n   \"bengaluru\",\n   \"bangalore city\",\n   \"KSR\"\n  ]\n },\n {\n  \"code\": \"BNC\",\n  \"name\": \"Bengaluru Cantonment\",\n  \"city\": \"Bengaluru\",\n  \"aliases\": [\n   \"bangalore cant\",\n   \"cantonment\"\n  ]\n },\n {\n  \"code\": \"MAQ\",\n  \"name\": \"Mangaluru Central\",\n  \"city\": \"Mangaluru\",\n  \"aliases\": [\n   \"mangalore\",\n   \"mangaluru\"\n  ]\n }\n]\n</untrusted_data>"
+              },
+              {
+                "role": "assistant",
+                "content": "",
+                "toolCalls": [
+                  {
+                    "id": "call_cdbdc1fa",
+                    "name": "resolve_station",
+                    "args": {
+                      "query": "Mysuru"
+                    },
+                    "rawArgs": "{\"query\":\"Mysuru\"}"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "toolCallId": "call_cdbdc1fa",
+                "name": "resolve_station",
+                "content": "<untrusted_data source=\"tool:resolve_station\">\n[\n {\n  \"code\": \"MYS\",\n  \"name\": \"Mysuru Junction\",\n  \"city\": \"Mysuru\",\n  \"aliases\": [\n   \"mysore\",\n   \"mysuru\"\n  ]\n }\n]\n</untrusted_data>"
+              },
+              {
+                "role": "assistant",
+                "content": "",
+                "toolCalls": [
+                  {
+                    "id": "call_9f74fe66",
+                    "name": "find_trains",
+                    "args": {
+                      "from": "SBC",
+                      "to": "MYS",
+                      "date": "2026-11-02",
+                      "travelClass": "3A"
+                    },
+                    "rawArgs": "{\"from\":\"SBC\",\"to\":\"MYS\",\"date\":\"2026-11-02\",\"travelClass\":\"3A\"}"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "toolCallId": "call_9f74fe66",
+                "name": "find_trains",
+                "content": "<untrusted_data source=\"tool:find_trains\">\n{\n \"dataSource\": \"demo timetable — verify on IRCTC\",\n \"from\": {\n  \"code\": \"SBC\",\n  \"name\": \"KSR Bengaluru City\",\n  \"city\": \"Bengaluru\",\n  \"aliases\": [\n   \"bangalore\",\n   \"bengaluru\",\n   \"bangalore city\",\n   \"KSR\"\n  ]\n },\n \"to\": {\n  \"code\": \"MYS\",\n  \"name\": \"Mysuru Junction\",\n  \"city\": \"Mysuru\",\n  \"aliases\": [\n   \"mysore\",\n   \"mysuru\"\n  ]\n },\n \"date\": \"2026-11-02\",\n \"travelClass\": \"3A\",\n \"quota\": \"GN\",\n \"trains\": [],\n \"availableClasses\": [\n  \"CC\",\n  \"EC\"\n ],\n \"classUnavailable\": true\n}\n</untrusted_data>"
+              },
+              {
+                "role": "assistant",
+                "content": "I'm sorry, but there are no 3A class trains from Bengaluru to Mysuru on Tuesday, 2 November 2026. \n\nHowever, other classes like CC (Coach) or EC (Express) are available. Would you like me to help you find one of those instead?  \n\nQuick replies:  \n- Book a CC class train  \n- Book an EC class train  \n- Cancel the request"
+              }
+            ],
+            "domains": [
+              "calendar",
+              "travel",
+              "browser"
+            ],
+            "step": 4,
+            "tainted": false,
+            "queue": [],
+            "waitingActionId": null,
+            "steps": [
+              {
+                "id": "call_071578aa",
+                "label": "Finding stations",
+                "tool": "resolve_station",
+                "status": "done"
+              },
+              {
+                "id": "call_cdbdc1fa",
+                "label": "Finding stations",
+                "tool": "resolve_station",
+                "status": "done"
+              },
+              {
+                "id": "call_9f74fe66",
+                "label": "Checking trains",
+                "tool": "find_trains",
+                "status": "done"
+              }
+            ],
+            "text": "I'm sorry, but there are no 3A class trains from Bengaluru to Mysuru on Tuesday, 2 November 2026. \n\nHowever, other classes like CC (Coach) or EC (Express) are available. Would you like me to help you find one of those instead?  \n\nQuick replies:  \n- Book a CC class train  \n- Book an EC class train  \n- Cancel the request",
+            "parts": [],
+            "usage": {
+              "inputTokens": 16619,
+              "outputTokens": 184
+            },
+            "invalidCalls": 0,
+            "skill": null,
+            "endTurn": false
+          }
+        }
+      ],
+      "replies": [],
+      "expected": {
+        "requiredTools": [
+          "find_trains",
+          "irctc_booking_handoff"
+        ],
+        "forbiddenTools": [
+          "gmail_send",
+          "place_order",
+          "calendar_create_event",
+          "calendar_cancel_event"
+        ],
+        "approval": {
+          "tools": []
+        },
+        "maxQuestions": 1,
+        "maxSteps": 7,
+        "mustNot": [
+          "execute_act",
+          "claim_success",
+          "retry_after_refusal",
+          "request_act"
+        ],
+        "ordered": [
+          [
+            "find_trains",
+            "irctc_booking_handoff"
+          ]
+        ],
+        "semantics": [
+          {
+            "label": "IRCTC booking link",
+            "source": "link",
+            "path": "url",
+            "matches": "irctc\\.co\\.in"
+          }
+        ]
+      }
+    }
+  ]
+}

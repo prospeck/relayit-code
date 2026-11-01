@@ -35,5 +35,10 @@ Living checklist for the autonomous build. ✅ done · 🔨 in progress · ⏳ n
 - Intent eval harness (evals/) against Ollama; findings applied (transcript bug, routing, tool guidance, grounding)
 - Prettier across the repo; `pnpm dmg` builds a drag-to-Applications DMG
 
+## Round 4 — fast local models ✅
+- Native Ollama adapter (8k context, per-model thinking, patient loading); qwen3:4b-instruct recommended with one-click download in onboarding/settings
+- Small-model robustness: stall nudges, text tool-call recovery, refused-action guard, explicit dates, flat tool schemas
+- Eval: 13/18 with a 4B local model on an 8 GB M1 (evals/FINDINGS.md); browser submit race fixed (Codex C)
+
 ## Totals
-- 374 unit/API tests, 198 browser e2e tests (incl. accessibility), all passing locally and in CI
+- ~390 unit/API tests, 198 browser e2e tests (incl. accessibility), all passing locally and in CI
