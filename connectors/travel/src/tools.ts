@@ -70,7 +70,7 @@ export function registerTools(server: McpServer, provider: TravelProvider) {
     "find_trains",
     {
       description:
-        "Demo timetable, fares and availability; verify on IRCTC. City names include local terminals. Defaults to 3A, GN.",
+        "Find trains (demo timetable, fares and availability — verify on IRCTC). City names include local terminals. Defaults to 3A, GN. A remembered class is a preference: if classUnavailable is true, offer the returned availableClasses as one quick-reply question and search again with the chosen class. Then hand off with irctc_booking_handoff.",
       inputSchema: trainSchema,
       _meta: meta("IRCTC", "Checking trains"),
     },

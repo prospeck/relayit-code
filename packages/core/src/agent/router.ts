@@ -3,7 +3,7 @@ import { complete } from "../models/types.ts";
 
 const KEYWORDS: Record<string, RegExp> = {
   email: /\b(e-?mail|mail|inbox|gmail|reply|replies|unread|newsletter|thread|send .* to)\b/i,
-  calendar: /\b(calendar|meeting|meetings|event|schedule|reschedule|free time|busy|today|tomorrow|week|standup|appointment|invite)\b/i,
+  calendar: /\b(calendar|meeting|meetings|events?|schedule|reschedule|free time|busy|today|tomorrow|week|standup|appointment|invite)\b/i,
   food: /\b(order|food|eat|hungry|pizza|biryani|dosa|burger|restaurant|swiggy|zomato|dinner|lunch|breakfast|snack|coffee|dessert|cart)\b/i,
   grocery: /\b(grocer(y|ies)|zepto|blinkit|instamart|milk|eggs|vegetables|swish|bigbasket)\b/i,
   travel: /\b(train|irctc|ticket|metro|namma metro|cab|uber|ola|rapido|auto|ride|travel|trip|flight|bus|station|pnr)\b/i,
@@ -50,6 +50,9 @@ export async function routeDomains(opts: {
     }
   }
   const picked = Object.entries(KEYWORDS).filter(([, re]) => re.test(text)).map(([d]) => d);
+  // Whole intents that keywords miss.
+  if (/\b(what needs me|needs (?:my|me)|my attention|morning brief|triage|what'?s (?:on|up) today)\b/i.test(text)) picked.push("email", "calendar");
+  if (/\btell (?:my )?(?:manager|boss|team|him|her|them)\b|\blet (?:\w+ )?know\b/i.test(text)) picked.push("email");
   const merged = withCompanions([...picked, ...(opts.recentDomains ?? [])], available);
   return merged.length ? merged : "all";
 }

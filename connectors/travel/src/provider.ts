@@ -34,6 +34,10 @@ export type TrainSearch = {
   travelClass: TravelClass;
   quota: Quota;
   trains: TrainResult[];
+  /** Classes running on this route and day, whatever was requested. */
+  availableClasses: TravelClass[];
+  /** True when trains run on this route but none in the requested class. */
+  classUnavailable: boolean;
 };
 export type MetroRoute = {
   dataSource: string;

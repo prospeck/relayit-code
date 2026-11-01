@@ -302,3 +302,23 @@ describe("agent loop", () => {
     expect(await assistantText(f.app, f.conversation.id)).toContain("Stopped");
   });
 });
+
+describe("transcript integrity", () => {
+  it("keeps every assistant tool call in the next request, including across an approval pause", async () => {
+    const f = await setup([[call("test_read", input, "c1"), call("test_prepare", input, "c2")], [call("test_act", input, "c3")], text("All done")]);
+    const { runId } = await f.send();
+    await until(() => f.app.actions.list({ status: "pending" }), (a) => a.length === 1);
+    // Second request: the assistant message must still declare both calls answered by the tool results.
+    const second = f.model.requests[1]!.messages;
+    const assistant = second.find((m) => m.role === "assistant");
+    expect(assistant && "toolCalls" in assistant ? assistant.toolCalls?.map((c) => c.id) : []).toEqual(["c1", "c2"]);
+    expect(toolResults(second).map((m) => (m as { toolCallId: string }).toolCallId)).toEqual(["c1", "c2"]);
+    await f.app.approve((await f.pending()).id, "once");
+    expect((await settled(f.app, f.conversation.id, runId)).status).toBe("done");
+    const third = f.model.requests[2]!.messages;
+    const declared = third.flatMap((m) => (m.role === "assistant" ? (m.toolCalls ?? []).map((c) => c.id) : []));
+    const answered = toolResults(third).map((m) => (m as { toolCallId: string }).toolCallId);
+    expect(declared).toEqual(["c1", "c2", "c3"]);
+    expect(answered).toEqual(["c1", "c2", "c3"]);
+  });
+});

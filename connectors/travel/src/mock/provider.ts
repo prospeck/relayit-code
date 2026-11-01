@@ -109,14 +109,13 @@ export class MockTravelProvider implements TravelProvider {
     const to = await this.endpoints(input.to);
     const travelClass = input.travelClass ?? "3A";
     const quota = input.quota ?? "GN";
-    const results = trains
-      .filter(
-        (t) =>
-          from.codes.includes(t.from) &&
-          to.codes.includes(t.to) &&
-          t.runningDays.includes(day) &&
-          t.classes[travelClass] !== undefined,
-      )
+    const routeTrains = trains.filter(
+      (t) => from.codes.includes(t.from) && to.codes.includes(t.to) && t.runningDays.includes(day),
+    );
+    // A preferred class is a preference: say which classes exist instead of returning a bare empty list.
+    const availableClasses = [...new Set(routeTrains.flatMap((t) => Object.keys(t.classes) as TravelClass[]))];
+    const results = routeTrains
+      .filter((t) => t.classes[travelClass] !== undefined)
       .map((t) => ({
         ...structuredClone(t),
         availability: Object.fromEntries(
@@ -142,6 +141,8 @@ export class MockTravelProvider implements TravelProvider {
       travelClass,
       quota,
       trains: results.sort((a, b) => a.departure.localeCompare(b.departure)),
+      availableClasses,
+      classUnavailable: results.length === 0 && availableClasses.length > 0,
     };
   }
   async irctcBookingHandoff(input: HandoffInput): Promise<BookingHandoff> {

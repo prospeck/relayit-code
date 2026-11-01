@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - connectors/*
+  - evals
   - e2e
 minimumReleaseAgeExclude:
   - ws@8.22.1

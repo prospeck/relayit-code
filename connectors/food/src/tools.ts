@@ -88,7 +88,7 @@ export function registerTools(server: McpServer, provider: FoodProvider) {
   server.registerTool(
     "search_restaurants",
     {
-      description: "Search the demo Bangalore catalogue by restaurant, alias, cuisine or dish.",
+      description: "First step for any food order: find restaurants by name, alias, cuisine or dish (demo Bengaluru catalogue). Copy the returned id into get_menu; never invent a restaurantId. Leave area empty unless the user named a neighbourhood.",
       inputSchema: searchSchema,
       _meta: meta("read", "Searching restaurants"),
     },
@@ -97,7 +97,7 @@ export function registerTools(server: McpServer, provider: FoodProvider) {
   server.registerTool(
     "get_menu",
     {
-      description: "Read a restaurant menu grouped by category.",
+      description: "Read the chosen restaurant's menu before building a cart. Copy exact item ids from this result; dish names or guessed ids are not valid itemId values.",
       inputSchema: restaurantSchema,
       _meta: meta("read", "Reading the menu"),
     },
@@ -106,7 +106,7 @@ export function registerTools(server: McpServer, provider: FoodProvider) {
   server.registerTool(
     "prepare_order",
     {
-      description: "Build a demo cart, including fees and GST. Valid for 30 minutes.",
+      description: "Build a cart only after search_restaurants and get_menu, using their exact restaurantId and itemId values and a saved delivery address. Returns cartId and the total (fees + GST included, valid 30 min). Next call place_order with that cartId — that shows the approval card.",
       inputSchema: cartSchema,
       _meta: meta("prepare", "Building your cart"),
     },
@@ -124,7 +124,7 @@ export function registerTools(server: McpServer, provider: FoodProvider) {
   server.registerTool(
     "place_order",
     {
-      description: "Place a demo order awaiting payment. Use the same idempotency key for retries.",
+      description: "Place the order for a prepared cart (pass its cartId). Calling this shows the user an approval card with the total; payment then happens in their own UPI app.",
       inputSchema: placeSchema,
       _meta: {
         ...meta("act", "Placing your order"),

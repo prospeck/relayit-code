@@ -85,7 +85,12 @@ export class Agent {
   /** Starts a new turn. Resolves when the run finishes or pauses for approval. */
   async send(conversationId: string, text: string, opts: { skill?: string | null; hidden?: boolean } = {}): Promise<{ runId: string; userMessage: Message | null }> {
     if (this.active.has(conversationId)) throw new BusyError();
-    const history = await this.history(conversationId);
+    // If the last turn ended by offering choices, continue that task with its full tool context
+    // (exact IDs, domains, taint) instead of rebuilding history from display text.
+    const previous = await this.d.db.selectFrom("agent_runs").select(["state", "status"]).where("conversation_id", "=", conversationId).orderBy("created_at", "desc").executeTakeFirst();
+    const prior = previous?.status === "done" ? parse<RunState | null>(previous.state, null) : null;
+    const continuing = !!prior?.endTurn && prior.messages.length < 80;
+    const history = continuing ? prior!.messages : await this.history(conversationId);
     const userMessage = opts.hidden
       ? null
       : await this.d.chat.addMessage({ conversationId, role: "user", parts: [{ type: "text", text }] });
@@ -94,7 +99,7 @@ export class Agent {
     const runId = newId("run");
     const state: RunState = {
       messages: [...history, { role: "user", content: text }],
-      domains: "all", step: 0, tainted: false, queue: [], waitingActionId: null, steps: [],
+      domains: continuing ? prior!.domains : "all", step: 0, tainted: continuing ? prior!.tainted : false, queue: [], waitingActionId: null, steps: [],
       text: "", parts: [], usage: { inputTokens: 0, outputTokens: 0 }, invalidCalls: 0,
       skill: opts.skill ?? null, endTurn: false,
     };
@@ -177,6 +182,7 @@ export class Agent {
             totalTools: this.d.registry.forDomains("all").length,
             provider: model.routerModel ? model.provider : null,
             routerModel: model.routerModel,
+            recentDomains: state.domains === "all" ? [] : state.domains,
           });
       }
 
@@ -188,7 +194,8 @@ export class Agent {
 
       while (!state.endTurn && state.step < this.limits.maxSteps) {
         state.step++;
-        const tools = this.d.registry.forDomains(state.domains);
+        const browserOn = (await this.d.getSettings()).browserAgentEnabled;
+        const tools = this.d.registry.forDomains(state.domains).filter((t) => browserOn || t.def.domain !== "browser");
         const skill = state.skill ? await this.d.skills.getBySlug(state.skill) : null;
         const system = buildSystemPrompt({
           profile: await this.d.getProfile(),
@@ -232,7 +239,8 @@ export class Agent {
         state.messages.push({ role: "assistant", content: text, ...(calls.length ? { toolCalls: calls } : {}) });
 
         if (!calls.length) break;
-        state.queue = calls;
+        // Copy: the queue is consumed, but the assistant message must keep its tool calls.
+        state.queue = [...calls];
         const paused = await this.processCalls(runId, conversationId, state, ctrl.signal);
         if (paused) return;
         await this.save(runId, "running", state);

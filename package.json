@@ -20,7 +20,8 @@
     "test:e2e": "vitest run --project e2e",
     "fake-google": "pnpm --filter @relayit/connector-google fake",
     "test:ui": "pnpm --filter @relayit/e2e test",
-    "dmg": "node scripts/make-dmg.mjs"
+    "dmg": "node scripts/make-dmg.mjs",
+    "evals": "pnpm --filter @relayit/evals run eval"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

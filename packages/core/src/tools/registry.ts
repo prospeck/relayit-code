@@ -59,6 +59,9 @@ export class ToolRegistry {
 export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
   const js = z.toJSONSchema(schema, { target: "draft-7", unrepresentable: "any" }) as Record<string, unknown>;
   delete js.$schema;
+  // Unions of object shapes (e.g. "draftId" or a full message) keep their branches for the model.
+  const branches = (js.anyOf ?? js.oneOf) as Record<string, unknown>[] | undefined;
+  if (js.type !== "object" && Array.isArray(branches) && branches.every((b) => b && typeof b === "object" && b.type === "object")) return { type: "object", ...js };
   if (js.type !== "object") return { type: "object", properties: {}, additionalProperties: true };
   return js;
 }
