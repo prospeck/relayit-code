@@ -88,8 +88,22 @@ export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
     js.type !== "object" &&
     Array.isArray(branches) &&
     branches.every((b) => b && typeof b === "object" && b.type === "object")
-  )
-    return { type: "object", ...js };
+  ) {
+    // Flatten "one of these object shapes" into a single object: some providers (e.g. Ollama) reject
+    // root-level anyOf. Runtime validation still uses the strict Zod union.
+    const properties: Record<string, unknown> = {};
+    for (const b of branches)
+      Object.assign(properties, (b.properties as Record<string, unknown>) ?? {});
+    const shapes = branches
+      .map((b) => `{${Object.keys((b.properties as object) ?? {}).join(", ")}}`)
+      .join(" OR ");
+    return {
+      type: "object",
+      properties,
+      description: `Provide one of: ${shapes}`,
+      additionalProperties: false,
+    };
+  }
   if (js.type !== "object") return { type: "object", properties: {}, additionalProperties: true };
   return js;
 }

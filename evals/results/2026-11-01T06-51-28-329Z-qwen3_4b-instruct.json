@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "startedAt": "2026-11-01T06:51:28.329Z",
+  "resumedAt": [],
+  "updatedAt": "2026-11-01T06:51:28.486Z",
+  "complete": false,
+  "configuration": {
+    "provider": "ollama",
+    "model": "qwen3:4b-instruct",
+    "baseUrl": "http://127.0.0.1:11434/v1",
+    "repeat": 1,
+    "only": "email-vague",
+    "timeoutMs": 600000,
+    "node": "v26.11.1",
+    "timeZone": "Asia/Kolkata",
+    "approvals": "always refuse",
+    "fakeGoogle": true,
+    "startupTriage": "heuristic before onboarding",
+    "browser": "disabled",
+    "tokens": "provider usage in persisted runs; interrupted partial requests may be unreported"
+  },
+  "summary": {
+    "passed": 0,
+    "total": 0,
+    "planned": 1,
+    "passRate": 0,
+    "scenarios": [
+      {
+        "id": "email-vague",
+        "passed": 0,
+        "total": 0,
+        "passRate": null,
+        "flaky": false
+      }
+    ]
+  },
+  "results": []
+}

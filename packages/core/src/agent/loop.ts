@@ -59,6 +59,8 @@ export type RunState = {
   endTurn: boolean;
   /** Hidden "carry on" prompts used this turn (small models often announce a step instead of taking it). */
   nudges?: number;
+  /** Act tools the user refused in this run; calling them again is blocked until the next message. */
+  refused?: string[];
 };
 
 export type ToolHook = {
@@ -214,6 +216,7 @@ export class Agent {
       content = "The approval request expired before the user responded. Nothing was done.";
     } else {
       content = "The user refused this action. Nothing was done. Do not retry unless they ask.";
+      state.refused = [...new Set([...(state.refused ?? []), action.toolName])];
     }
     state.messages.push({
       role: "tool",
@@ -471,6 +474,14 @@ export class Agent {
       state.steps.push(step);
       this.d.bus.emit({ type: "run.step", runId, conversationId, step });
 
+      if (tool.toolClass === "act" && state.refused?.includes(tool.name)) {
+        this.toolError(
+          state,
+          call,
+          "The user refused this action a moment ago. Don't call it again; tell them briefly what you'd do differently, or stop.",
+        );
+        continue;
+      }
       if (tool.toolClass === "act") {
         const outcome = await this.requestApproval(runId, conversationId, state, reg, call, input);
         if (outcome.paused) {
