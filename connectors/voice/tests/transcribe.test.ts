@@ -170,6 +170,9 @@ describe("local whisper.cpp", () => {
   it("detects Windows .exe files through a mixed-case Path and LOCALAPPDATA's WinGet links", async () => {
     const links = join(directory, "Microsoft", "WinGet", "Links");
     await mkdir(links, { recursive: true });
+    // The shared fixture puts ffmpeg on Path; remove it so only the WinGet link can satisfy detection.
+    await rm(join(directory, "ffmpeg.exe"), { force: true });
+    await rm(join(directory, "ffmpeg"), { force: true });
     const whisper = join(directory, "whisper-cli.exe");
     const ffmpeg = join(links, "ffmpeg.exe");
     await writeFile(whisper, "fixture");
