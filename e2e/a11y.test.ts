@@ -143,6 +143,9 @@ describe("RelayIt accessibility and interaction audit", () => {
           await expect.poll(() => ui.page.locator("main h1").textContent()).toMatch(expected[screen]!);
           // Wait for the entry fade so axe does not silently put animated text into incomplete.
           await expect.poll(() => ui.page.locator("main > div.relative").evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+          // Enter animations (messages, cards) fade in with inline opacity; slow CI runners can scan mid-fade.
+          await expect.poll(() => ui.page.locator("main").evaluate((main) =>
+            [...main.querySelectorAll<HTMLElement>("[style*='opacity']")].every((el) => { const o = getComputedStyle(el).opacity; return o === "1" || o === "0"; })), { timeout: 10_000 }).toBe(true);
           await ui.page.addScriptTag({ content: axe.source });
           scan = await ui.page.evaluate(async () => (window as unknown as { axe: typeof axe }).axe.run(document, {
             runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },

@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -178,7 +179,9 @@ describe("local whisper.cpp", () => {
     // Windows paths are case-insensitive; resolve() and join() may preserve different drive casing.
     for (const [actual, expected] of [[detected.binaryPath, whisper], [detected.modelPath, modelPath], [detected.ffmpegPath, ffmpeg]]) {
       expect(actual).not.toBeNull();
-      expect(win32.normalize(actual!).toLowerCase()).toBe(win32.normalize(expected!).toLowerCase());
+      // realpath expands 8.3 short names (e.g. RUNNER~1) that temp dirs use on Windows runners.
+      const canon = (p: string) => win32.normalize(realpathSync.native(p)).toLowerCase();
+      expect(canon(actual!)).toBe(canon(expected!));
     }
   });
 });
