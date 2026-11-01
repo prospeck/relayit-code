@@ -3,14 +3,14 @@ import type { Frame, Page, Request } from "playwright-core";
 /** Load states can belong to the old document. Observe this action's activity before clicking. */
 export async function settleAfterAction(page: Page, action: () => Promise<unknown>): Promise<void> {
   const requests = new Set<Request>();
+  const origin = new URL(page.url()).origin;
+  const deadlineAt = Date.now() + 12_000;
   let actionDone = false;
   let closed = false;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let resolve!: () => void;
-  let reject!: (error: Error) => void;
-  const settled = new Promise<void>((onResolve, onReject) => {
+  const settled = new Promise<void>((onResolve) => {
     resolve = onResolve;
-    reject = onReject;
   });
   const activity = () => {
     if (closed) return;
@@ -18,8 +18,24 @@ export async function settleAfterAction(page: Page, action: () => Promise<unknow
     if (actionDone && requests.size === 0) idleTimer = setTimeout(resolve, 500);
   };
   const onRequest = (request: Request) => {
+    const url = new URL(request.url());
+    if (!["http:", "https:"].includes(url.protocol) || request.serviceWorker()) return;
+    // Edge background traffic and subresources (including favicons) need not ever finish.
+    // Keep same-origin fetch/XHR: a submit can navigate only after its response arrives.
+    try {
+      if (request.frame() !== page.mainFrame()) return;
+    } catch {
+      // A browser-owned request can arrive before Playwright has a frame for it.
+      return;
+    }
+    const navigation = request.isNavigationRequest() && request.resourceType() === "document";
+    if (
+      !navigation &&
+      (url.origin !== origin || !["fetch", "xhr"].includes(request.resourceType()))
+    )
+      return;
     // A replacement document abandons old fetches, which may never emit requestfinished.
-    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) requests.clear();
+    if (navigation) requests.clear();
     requests.add(request);
     activity();
   };
@@ -33,19 +49,27 @@ export async function settleAfterAction(page: Page, action: () => Promise<unknow
   page.on("requestfinished", onFinished);
   page.on("requestfailed", onFinished);
   page.on("framenavigated", onNavigation);
-  const timeout = setTimeout(
-    () => reject(new Error("Browser action did not settle within 12 seconds")),
-    12_000,
-  );
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, onReject) => {
+    timeout = setTimeout(
+      () => onReject(new Error("Browser action did not settle within 12 seconds")),
+      12_000,
+    );
+  });
   try {
-    await Promise.all([
-      settled,
-      action().then(() => {
+    await Promise.race([
+      deadline,
+      (async () => {
+        await action();
+        if (closed) return;
         actionDone = true;
         activity();
-      }),
+        await settled;
+        await page.waitForLoadState("domcontentloaded", {
+          timeout: Math.max(1, deadlineAt - Date.now()),
+        });
+      })(),
     ]);
-    await page.waitForLoadState("domcontentloaded", { timeout: 12_000 });
   } finally {
     closed = true;
     clearTimeout(timeout);

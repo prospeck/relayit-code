@@ -4,6 +4,7 @@ import { once } from "node:events";
 /** Synthetic, offline shop. No real accounts, payments or site requests. */
 export async function startShop() {
   let clicks = 0;
+  let hanging = 0;
   const pages: Record<string, string> = {
     "/": `<h1>Restaurants</h1><form action="/search"><input type="search" aria-label="Search for restaurants"><button>Search</button></form>
       <a href="/menu">Test Kitchen</a><a href="/login">Login</a><a hidden href="/hidden">Invisible</a>
@@ -25,6 +26,11 @@ export async function startShop() {
   };
   const server = createServer((request, response) => {
     const path = new URL(request.url ?? "/", "http://localhost").pathname;
+    if (path === "/hang" || path === "/favicon.ico") {
+      hanging++;
+      response.on("close", () => hanging--);
+      return;
+    }
     if (path === "/commit") {
       clicks++;
       response.end("OK");
@@ -42,9 +48,11 @@ export async function startShop() {
   return {
     url: `http://127.0.0.1:${address.port}`,
     clicks: () => clicks,
+    hanging: () => hanging,
     close: () =>
-      new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
-      ),
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+        server.closeAllConnections();
+      }),
   };
 }

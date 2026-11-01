@@ -13,6 +13,7 @@ function pageResource() {
   const page = Object.assign(events, {
     waitForLoadState,
     mainFrame: () => frame,
+    url: () => "https://shop.test/cart",
   }) as unknown as Page;
   const failDuringNavigation = async () => {
     events.emit("framenavigated", frame);
@@ -21,13 +22,24 @@ function pageResource() {
   return { page, events, frame, waitForLoadState, failDuringNavigation };
 }
 
+function requestResource(frame: unknown, overrides = {}) {
+  return {
+    url: () => "https://shop.test/commit",
+    frame: () => frame,
+    serviceWorker: () => null,
+    resourceType: () => "fetch",
+    isNavigationRequest: () => false,
+    ...overrides,
+  };
+}
+
 describe("settling an action", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it("waits for action requests even when the old document is already loaded", async () => {
     const { page, events, frame, waitForLoadState } = pageResource();
-    const request = { isNavigationRequest: () => false };
+    const request = requestResource(frame);
     let done = false;
     const result = settleAfterAction(page, async () => {
       events.emit("request", request);
@@ -39,13 +51,13 @@ describe("settling an action", () => {
     events.emit("framenavigated", frame);
     await vi.advanceTimersByTimeAsync(500);
     await result;
-    expect(waitForLoadState).toHaveBeenCalledWith("domcontentloaded", { timeout: 12_000 });
+    expect(waitForLoadState).toHaveBeenCalledWith("domcontentloaded", { timeout: 10_500 });
     expect(events.eventNames()).toEqual([]);
   });
 
   it("waits for follow-up requests and handles failed requests", async () => {
-    const { page, events } = pageResource();
-    const request = { isNavigationRequest: () => false };
+    const { page, events, frame } = pageResource();
+    const request = requestResource(frame);
     let done = false;
     const result = settleAfterAction(page, async () => {}).then(() => (done = true));
     await vi.advanceTimersByTimeAsync(400);
@@ -60,8 +72,12 @@ describe("settling an action", () => {
 
   it("drops abandoned fetches when a replacement document starts loading", async () => {
     const { page, events, frame } = pageResource();
-    const fetch = { isNavigationRequest: () => false };
-    const navigation = { isNavigationRequest: () => true, frame: () => frame };
+    const fetch = requestResource(frame);
+    const navigation = requestResource(frame, {
+      isNavigationRequest: () => true,
+      resourceType: () => "document",
+      url: () => "https://payment.test/checkout",
+    });
     let done = false;
     const result = settleAfterAction(page, async () => {
       events.emit("request", fetch);
@@ -77,9 +93,9 @@ describe("settling an action", () => {
   });
 
   it("bounds an unsettled action without repeating it or leaking listeners", async () => {
-    const { page, events } = pageResource();
+    const { page, events, frame } = pageResource();
     const action = vi.fn(async () => {
-      events.emit("request", { isNavigationRequest: () => false });
+      events.emit("request", requestResource(frame));
     });
     const result = expect(settleAfterAction(page, action)).rejects.toThrow(
       "Browser action did not settle within 12 seconds",
@@ -87,6 +103,66 @@ describe("settling an action", () => {
     await vi.advanceTimersByTimeAsync(12_000);
     await result;
     expect(action).toHaveBeenCalledTimes(1);
+    expect(events.eventNames()).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("ignores unfinished background, worker, iframe and favicon requests", async () => {
+    const { page, events, frame, waitForLoadState } = pageResource();
+    const result = settleAfterAction(page, async () => {
+      for (const overrides of [
+        { url: () => "edge://newtab/" },
+        { url: () => "data:text/plain,background" },
+        { url: () => "https://telemetry.test/hang" },
+        { url: () => "https://shop.test/favicon.ico", resourceType: () => "other" },
+        { resourceType: () => "image" },
+        { frame: () => ({}) },
+        {
+          frame: () => {
+            throw new Error("Frame is not available for this request");
+          },
+        },
+        {
+          serviceWorker: () => ({}),
+          frame: () => {
+            throw new Error("Service worker requests have no frame");
+          },
+        },
+      ]) {
+        events.emit("request", requestResource(frame, overrides));
+      }
+    });
+    await vi.advanceTimersByTimeAsync(500);
+    await result;
+    expect(waitForLoadState).toHaveBeenCalledTimes(1);
+    expect(events.eventNames()).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("uses one deadline including DOMContentLoaded and removes observers on expiry", async () => {
+    const { page, events, waitForLoadState } = pageResource();
+    waitForLoadState.mockImplementation(() => new Promise(() => {}));
+    const result = expect(settleAfterAction(page, async () => {})).rejects.toThrow(
+      "Browser action did not settle within 12 seconds",
+    );
+    await vi.advanceTimersByTimeAsync(12_000);
+    await result;
+    expect(waitForLoadState).toHaveBeenCalledTimes(1);
+    expect(events.eventNames()).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("detaches when the action itself never returns, even if it completes late", async () => {
+    const { page, events, waitForLoadState } = pageResource();
+    let finish!: () => void;
+    const result = expect(
+      settleAfterAction(page, () => new Promise<void>((resolve) => (finish = resolve))),
+    ).rejects.toThrow("Browser action did not settle within 12 seconds");
+    await vi.advanceTimersByTimeAsync(12_000);
+    await result;
+    finish();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(waitForLoadState).not.toHaveBeenCalled();
     expect(events.eventNames()).toEqual([]);
     expect(vi.getTimerCount()).toBe(0);
   });

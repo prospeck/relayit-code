@@ -1,4 +1,5 @@
 import { mkdtemp, rm } from "node:fs/promises";
+import type { EventEmitter } from "node:events";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright-core";
@@ -171,6 +172,50 @@ describe("offline browser connector", () => {
       await run("browser_snapshot");
       await expect(run("browser_click", { ref: oldRef })).rejects.toThrow();
       expect(await (await session.getPage()).locator("button").innerText()).toBe("ADD");
+    },
+  );
+  it.skipIf(!browserAvailable)(
+    "settles actions and later navigation while background requests and favicons never finish",
+    async () => {
+      const background = await startShop();
+      try {
+        await open("/menu");
+        const page = await session.getPage();
+        await page.locator("button").evaluate((button, backgroundUrl) => {
+          button.onclick = () => {
+            void fetch(backgroundUrl + "/hang", { mode: "no-cors" });
+            const icon = document.createElement("link");
+            icon.rel = "icon";
+            icon.href = "/favicon.ico";
+            document.head.append(icon);
+            const image = new Image();
+            image.src = "/hang";
+            document.body.append(image);
+            button.textContent = "Added";
+          };
+        }, background.url);
+        const listeners = [
+          "request",
+          "requestfinished",
+          "requestfailed",
+          "framenavigated",
+        ] as const;
+        const events = page as unknown as EventEmitter;
+        const before = listeners.map((event) => events.listenerCount(event));
+        const [result] = await Promise.all([
+          run("browser_submit", { ref: await ref("button") }),
+          page.waitForRequest(background.url + "/hang"),
+          page.waitForRequest(shop.url + "/hang"),
+        ]);
+        expect(result).toMatchObject({ submitted: true, text: expect.stringContaining("Added") });
+        expect(background.hanging()).toBeGreaterThan(0);
+        expect(shop.hanging()).toBeGreaterThan(0);
+        expect(listeners.map((event) => events.listenerCount(event))).toEqual(before);
+        expect(await open("/login")).toMatchObject({ url: shop.url + "/login" });
+        expect(await open("/menu")).toMatchObject({ url: shop.url + "/menu" });
+      } finally {
+        await background.close();
+      }
     },
   );
   it.skipIf(!browserAvailable)(
