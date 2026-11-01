@@ -28,11 +28,12 @@ Living checklist for the autonomous build. ✅ done · 🔨 in progress · ⏳ n
 - README, .env.example, UI e2e (11 tests), core tests (78), connectors (~270)
 - Verified with a real local model (qwen3:4b via Ollama): pizza order reaches the approval card
 
-## In flight (Codex round 3)
-- codex_c: GitHub Actions CI + Windows compatibility fixes
-- codex_a: accessibility audit + axe tests (I apply fixes)
-- codex_b: intent eval harness against Ollama + FINDINGS.md (I apply prompt/tool fixes)
-- DMG bundle build
+## Round 3 ✅
+- CI on GitHub Actions: macOS + Windows checks (typecheck, lint, format, tests), UI e2e on macOS, app/NSIS bundles uploaded as artifacts — all green
+- Windows compatibility fixes (env for child processes, shutdown via stdin, paths, voice binaries, Edge)
+- Accessibility pass (WCAG 2.1 AA): docs/a11y-audit.md findings applied; e2e/a11y.test.ts (172 checks) green
+- Intent eval harness (evals/) against Ollama; findings applied (transcript bug, routing, tool guidance, grounding)
+- Prettier across the repo; `pnpm dmg` builds a drag-to-Applications DMG
 
-## After round 3
-- apply a11y + eval findings, run Prettier over the repo, final full verification, delete autopilot schedule
+## Totals
+- 374 unit/API tests, 198 browser e2e tests (incl. accessibility), all passing locally and in CI
