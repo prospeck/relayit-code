@@ -1,12 +1,14 @@
 import type { Page } from "playwright-core";
-import { SENSITIVE_PATTERN } from "./policy.ts";
+import { isPaymentStep, SENSITIVE_PATTERN } from "./policy.ts";
 import { readAfterNavigation } from "./navigation.ts";
 
 export type PageSnapshot = { title: string; url: string; text: string };
 const nextRefs = new WeakMap<Page, number>();
 
-/** New snapshots invalidate old refs so stale actions fail instead of hitting a new control. */
-export async function snapshot(page: Page): Promise<PageSnapshot> {
+/** Read payment evidence and snapshot together so navigation cannot mix documents. */
+export async function snapshotWithPayment(
+  page: Page,
+): Promise<{ snapshot: PageSnapshot; payment: boolean }> {
   const result = await readAfterNavigation(page, () =>
     page.evaluate(
       ({ start, sensitivePattern }) => {
@@ -133,6 +135,20 @@ export async function snapshot(page: Page): Promise<PageSnapshot> {
           lines,
           blocks,
           next,
+          paymentText:
+            document.body.innerText +
+            "\n" +
+            Array.from(document.querySelectorAll("input"))
+              .map((input) =>
+                [
+                  input.name,
+                  input.id,
+                  input.autocomplete,
+                  input.placeholder,
+                  input.getAttribute("aria-label"),
+                ].join(" "),
+              )
+              .join("\n"),
         };
       },
       { start: nextRefs.get(page) ?? 1, sensitivePattern: SENSITIVE_PATTERN },
@@ -140,10 +156,18 @@ export async function snapshot(page: Page): Promise<PageSnapshot> {
   );
   nextRefs.set(page, result.next);
   return {
-    title: result.title,
-    url: result.url,
-    text: [`Title: ${result.title}`, `URL: ${result.url}`, ...result.lines, ...result.blocks]
-      .join("\n")
-      .slice(0, 6000),
+    snapshot: {
+      title: result.title,
+      url: result.url,
+      text: [`Title: ${result.title}`, `URL: ${result.url}`, ...result.lines, ...result.blocks]
+        .join("\n")
+        .slice(0, 6000),
+    },
+    payment: isPaymentStep(result.url, result.paymentText),
   };
+}
+
+/** New snapshots invalidate old refs so stale actions fail instead of hitting a new control. */
+export async function snapshot(page: Page): Promise<PageSnapshot> {
+  return (await snapshotWithPayment(page)).snapshot;
 }

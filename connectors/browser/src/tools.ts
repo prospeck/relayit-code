@@ -3,8 +3,8 @@ import { defineTool } from "@relayit/shared";
 import type { ActPreview, KvAccess, ToolContext, ToolDef } from "@relayit/shared";
 import type { Locator, Page } from "playwright-core";
 import type { BrowserSession } from "./session.ts";
-import { snapshot } from "./snapshot.ts";
-import { readAfterNavigation } from "./navigation.ts";
+import { snapshotWithPayment } from "./snapshot.ts";
+import { readAfterNavigation, settleAfterAction } from "./navigation.ts";
 import {
   isCommit,
   isPaymentStep,
@@ -28,6 +28,8 @@ const paymentHandoff = {
   handoff: true,
   message: "Payment step reached — hand off to the user",
 } as const;
+// Factories sharing KV must also share an in-flight submit, before reading its pending marker.
+const pending = new WeakMap<KvAccess, Map<string, Promise<unknown>>>();
 
 function target(page: Page, ref: string): Locator {
   return page.locator(`[data-relayit-ref="${refSchema.parse(ref)}"]`);
@@ -133,7 +135,6 @@ export function createBrowserTools(options: {
   isEnabled: () => Promise<boolean>;
 }): ToolDef[] {
   let activeService = "Browser";
-  const pending = new WeakMap<KvAccess, Map<string, Promise<unknown>>>();
   const moneyHints = new WeakMap<object, boolean>();
   async function sessionFor(ctx: ToolContext) {
     ctx.signal.throwIfAborted();
@@ -145,18 +146,25 @@ export function createBrowserTools(options: {
     activeService = serviceFor(page.url());
     return { session, page };
   }
-  async function result(session: BrowserSession) {
+  async function result(session: BrowserSession, submitted = false) {
     const page = await session.getPage();
-    await settle(page);
+    if (!submitted) await settle(page);
     await session.afterAction();
-    activeService = serviceFor(page.url());
-    return { ...(await snapshot(page)), service: activeService };
+    const state = await snapshotWithPayment(page);
+    activeService = serviceFor(state.snapshot.url);
+    if (submitted && state.payment) await session.bringToFront();
+    return {
+      ...state.snapshot,
+      service: activeService,
+      ...(submitted ? { submitted: true, ...(state.payment ? paymentHandoff : {}) } : {}),
+    };
   }
   async function payment(session: BrowserSession, page: Page) {
     // Detection is independent of the extraction cap and includes sensitive card inputs.
-    const text = await readAfterNavigation(page, () =>
-      page.locator("body").evaluate(
-        (body) =>
+    const state = await readAfterNavigation(page, () =>
+      page.locator("body").evaluate((body) => ({
+        url: location.href,
+        text:
           (body as HTMLElement).innerText +
           "\n" +
           Array.from(body.querySelectorAll("input"))
@@ -170,9 +178,9 @@ export function createBrowserTools(options: {
               ].join(" "),
             )
             .join("\n"),
-      ),
+      })),
     );
-    if (!isPaymentStep(page.url(), text)) return false;
+    if (!isPaymentStep(state.url, state.text)) return false;
     await session.bringToFront();
     await session.afterAction();
     return true;
@@ -418,11 +426,8 @@ export function createBrowserTools(options: {
           }
           if (info.href) validateUrl(new URL(info.href, page.url()).href);
           ctx.signal.throwIfAborted();
-          await locator.click();
-          const output = await result(session);
-          if (await payment(session, await session.getPage()))
-            return { ...output, submitted: true, ...paymentHandoff };
-          return { ...output, submitted: true };
+          await settleAfterAction(page, () => locator.click());
+          return result(session, true);
         }),
     }),
     defineTool({

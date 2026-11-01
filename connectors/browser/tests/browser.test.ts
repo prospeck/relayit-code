@@ -44,6 +44,11 @@ describe("offline browser connector", () => {
   });
   beforeEach(async () => {
     if (!browserAvailable) return;
+    // CPU stress can delay Chrome's launch handshake beyond the production 10-second budget.
+    const launch = chromium.launchPersistentContext.bind(chromium);
+    vi.spyOn(chromium, "launchPersistentContext").mockImplementation((directory, options) =>
+      launch(directory, { ...options, timeout: 30_000 }),
+    );
     profile = await mkdtemp(join(tmpdir(), "relayit-browser-test-"));
     session = new BrowserSession({
       profileDir: profile,
@@ -222,27 +227,73 @@ describe("offline browser connector", () => {
       const input = { ref: await ref("button") };
       const before = shop.clicks();
       const page = await session.getPage();
-      const evaluate = page.evaluate.bind(page);
-      // Force a real document replacement during the first snapshot, after the approved click.
-      vi.spyOn(page, "evaluate").mockImplementationOnce(() =>
-        evaluate(
-          () =>
-            new Promise<never>(() => {
-              location.reload();
-            }),
-        ),
-      );
-      const [first, concurrent] = await Promise.all([
-        run("browser_submit", input),
-        run("browser_submit", input),
+      let release!: () => void;
+      let started!: () => void;
+      const response = new Promise<void>((resolve) => (release = resolve));
+      const request = new Promise<void>((resolve) => (started = resolve));
+      await page.route("**/commit", async (route) => {
+        started();
+        await response;
+        await route.continue();
+      });
+      const initial = run("browser_submit", input);
+      await request;
+      const duplicate = run("browser_submit", input);
+      tools = createBrowserTools({ getSession: async () => session, isEnabled: async () => true });
+      const otherFactory = run("browser_submit", input);
+      release();
+      const [first, concurrent, acrossFactories] = await Promise.all([
+        initial,
+        duplicate,
+        otherFactory,
       ]);
       expect(first).toMatchObject({ submitted: true, handoff: true, url: shop.url + "/payment" });
       expect(concurrent).toEqual(first);
+      expect(acrossFactories).toEqual(first);
+      expect(await ctx.kv.get(`browser.submit.${ctx.idempotencyKey}`)).toEqual({
+        state: "done",
+        result: first,
+      });
       tools = createBrowserTools({ getSession: async () => session, isEnabled: async () => true });
       expect(await run("browser_submit", input)).toEqual(first);
       expect(shop.clicks()).toBe(before + 1);
     },
   );
+  it.skipIf(!browserAvailable)(
+    "keeps an unsettled submit uncertain instead of caching an old page as success",
+    async () => {
+      await open("/cart");
+      const input = { ref: await ref("button") };
+      const page = await session.getPage();
+      const before = shop.clicks();
+      const error = new Error("submit navigation has not settled");
+      vi.spyOn(page, "waitForLoadState").mockRejectedValue(error);
+      await expect(run("browser_submit", input)).rejects.toBe(error);
+      expect(await ctx.kv.get(`browser.submit.${ctx.idempotencyKey}`)).toEqual({
+        state: "pending",
+      });
+      expect(await run("browser_submit", input)).toMatchObject({ handoff: true });
+      await page.waitForURL(shop.url + "/payment");
+      expect(shop.clicks()).toBe(before + 1);
+    },
+  );
+  it.skipIf(!browserAvailable)("recovers a snapshot across a document replacement", async () => {
+    await open("/payment");
+    const page = await session.getPage();
+    const evaluate = page.evaluate.bind(page);
+    vi.spyOn(page, "evaluate").mockImplementationOnce(() =>
+      evaluate(
+        () =>
+          new Promise<never>(() => {
+            location.reload();
+          }),
+      ),
+    );
+    expect(await run("browser_snapshot")).toMatchObject({
+      url: shop.url + "/payment",
+      text: expect.stringContaining("Heading: Payment"),
+    });
+  });
   it.skipIf(!browserAvailable)(
     "supports navigation, preparation, extraction, back, and throttled JPEG frames",
     async () => {

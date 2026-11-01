@@ -15,7 +15,12 @@ async function profileDir() {
 }
 function contextResource() {
   let closed = false;
-  const page = { isClosed: () => closed } as Page;
+  const frame = {};
+  const page = Object.assign(new EventEmitter(), {
+    isClosed: () => closed,
+    mainFrame: () => frame,
+    viewportSize: () => ({ width: 1280, height: 860 }),
+  }) as unknown as Page;
   const events = new EventEmitter();
   const context = Object.assign(events, {
     pages: () => [page],
@@ -75,5 +80,36 @@ describe("session lifecycle without a browser binary", () => {
       "Install Google Chrome to use the browser agent",
     );
     await session.close();
+  });
+  it("cancels a screenshot abandoned by navigation so afterAction and close can finish", async () => {
+    const resource = contextResource();
+    let rejectCapture!: (error: Error) => void;
+    let started!: () => void;
+    const capturing = new Promise<void>((resolve) => (started = resolve));
+    const capture = new Promise<never>((_resolve, reject) => (rejectCapture = reject));
+    const cdp = {
+      send: vi.fn(() => {
+        started();
+        return capture;
+      }),
+      detach: vi.fn(async () => rejectCapture(new Error("Session detached"))),
+    };
+    Object.assign(resource.page, { context: () => resource.context });
+    Object.assign(resource.context, { newCDPSession: async () => cdp });
+    vi.spyOn(chromium, "launchPersistentContext").mockResolvedValue(resource.context);
+    const session = new BrowserSession({ profileDir: await profileDir(), headless: true });
+    await session.getPage();
+    const frames = vi.fn();
+    session.onFrame(frames);
+    const action = session.afterAction();
+    await capturing;
+    expect(cdp.send).toHaveBeenCalledTimes(1);
+    (resource.page as unknown as EventEmitter).emit("framenavigated", resource.page.mainFrame());
+    await action;
+    expect(cdp.detach).toHaveBeenCalledTimes(1);
+    expect(frames).not.toHaveBeenCalled();
+    expect((resource.page as unknown as EventEmitter).listenerCount("framenavigated")).toBe(0);
+    await session.close();
+    expect(resource.closed()).toBe(true);
   });
 });
