@@ -163,7 +163,7 @@
       "settings.diagnostics.export": "296c9e86644782d481f6c80ee3cdf83c379002e8fa420182d97d1a5a6ca0e1c6",
       "settings.diagnostics.exporting": "a2dd9cbb7013bb70fc7a4e5f3df1335bc1dd3e221592c9fef817d367341c39f4",
       "settings.diagnostics.saved": "7b33723c06fb369a05652c52ee33ad1dbc11dbd5e117443a8c3104c1c8fea29d",
-      "settings.diagnostics.elsewhere": "44066a3ce35225017d6ec480a31e5e9e3b01b760a101f4c81de744359f6e164d",
+      "settings.diagnostics.elsewhere": "0ef90b576149b365294882c45a7beb9c82540be94d3103e22d4e7048b4252498",
       "common.save": "1509f561f2416598629b886ad7d3c05a7e221e4e0675c84bbff4ee6d9e03913d",
       "common.cancel": "19766ed6ccb2f4a32778eed80d1928d2c87a18d7c275ccb163ec6709d3eb2e27",
       "presetShare.never": "a9d11f4628324f728118dd118e16246ad6516a2ac0d655a344f63fc3e5072d2a",
@@ -1408,7 +1408,7 @@
       "mcp.editAria": "2313fe21ea84567f451e913cae39bd4ef9775a83458b23f3f440c2108e5363a1",
       "mcp.removeAria": "e6a3c4a1250a6ad3f10faa22333e5e50a6ba78e5b28a3b26f5743d9f8c7ede93",
       "engineSetup.device.description": "0f1ec8f0f576411af1f3551da5351f12ced556e9d887198322dff3719c7b7c7f",
-      "engineSetup.chatgpt.welcomeBody": "194c98400c148953d7e7f35715f161e81f1f49b020df104f1363e2c3131d10f0",
+      "engineSetup.chatgpt.welcomeBody": "c9c921a7a456c17edf3d73317a4173a0630f2be401e43086820a3c20a3458dd0",
       "engineSetup.device.security": "44df4e27a78590b23e7ca39481730ba8f6d80192b6481f3f959a3631833a27ec",
       "engineSetup.device.enableHint": "5516c14d1fa3fb48e575a01ce81489c5475a73d5a1bfcb02ee6bbe9775b9e3b1",
       "engineSetup.device.connectedAccount": "d7fa418b955fff2847192d41909e89093503896dd11afa224ec65f4c99d397e1",
@@ -1509,7 +1509,7 @@
       "place.view.ccAtOnce.lineMany": "777697748d3f7c2f9ef1e801ab6446d0c56ba1b3097cea12487142b7450f5460",
       "place.view.ccAtOnce.lineUnknown": "5a9732cd1376903bf31459bec78961fa6120c8620f74ec2a2ed78bb12d04605b",
       "place.view.ccUnavailable.line": "8b1c55b25a79d8a94ab5f743850cd38be4514c95f1c2bd07bb1aaa340a94a75a",
-      "place.view.ccEnded.line": "f30ecee9fd40ba714bec3627c9a2566f5d3dd4abd926ef1c70f26f4ae14fa06a",
+      "place.view.ccEnded.line": "c495b7733c4475fdb675542c94cddc936c200c54b27d645b714073f89144155b",
       "place.view.ccNoStart.line": "5b5e6c7e7ed8a8b1025c0b39130a2fe3481c8dc28cf1e9e9f44ccca0e4d0cfdb",
       "place.view.ccClearing.line": "1d41ea0f78bdb3c03df8dc6e1ad825d887f9babb61d783f996f80cc7385712a6",
       "place.view.ccProvider.line": "8665467930a4ceab34b10f5e0e594ac14bacdfcf96032cab35a19b2de1e7ffb5",
@@ -1918,7 +1918,7 @@
       "rail.waiting": "73a924cd74cae9f3397661c1adbc7d3b90ae1d16728f0dd3f50d69da332d2273",
       "rail.attention": "ebe001c6e164526c3672393c5f8038cd61391f12f341c319a3648b3ad4ada9f1",
       "rail.more": "a6c3860c56d7523fe43cfc166f3034d023eeac5491f722aba74922d03dca769d",
-      "rail.search": "9e09f25dc011de6093913f011384f2a07f2e87930e7a254235549ae05ae8a98b",
+      "rail.search": "706140205767ece5eee67b2b5d3f40ff8bd3e89bc6b7d7b3a3af167058be3334",
       "rail.noMatch": "32ab4da69c2b250a37c9b0791ba1457265caab3b493bf4a68e5b4f951e0aef34",
       "rail.own": "33f3b19e0eff883de433166ef72463c78d0644e9f9e814f01751a70f4995ef1f",
       "rail.ownSub": "bfc369992c249cc64c4cf6113482f2a48ddb8fc5923fc732f814025958227c70",
@@ -1935,8 +1935,8 @@
       "placeLook.sub": "1a7051d17a2e0a94563f2c6e4124f2e49bf4ec8c604b7df4bb3e8e0d838ec759",
       "placeLook.aria": "7d82dac0bffa717806d9cb1621b332b4d35d15042827a25ba216ce186bd75756",
       "placeLook.member": "9be12c6aa25120158827a651a8c4e675ab1fa237ab10e9d9a345e8078e43da05",
-      "placeLook.signedOut": "aae75fe60d806476b04ceb5cb2d485f45534a1766e71c2f1d3a908fa2ec989da",
-      "placeLook.unsupported": "1b93917237873856b67b760397226bf9737add955f5dfd2b2531b5e22016ffe9",
+      "placeLook.signedOut": "9e699c3b68a6d838a15d3227dc42d0f469d23af611a58990714b4c7496cbf034",
+      "placeLook.unsupported": "65a599107fac0a555e521878b6c61010243748655ad5221726e0d8517adcaee1",
       "placeLook.failed": "2fc8752982ad366b9e2a028d69775254a8e58aa9f31358d64aa760360e3425bf",
       "placeLook.pictureSub": "e11058639849360c6e174fec0c44f0471a8fbaeea235c069d36bcb1cf9d368a6",
       "placeLook.useImage": "5710f8737986aeb034906c4c506afb79dcc6f79b0989a6f93ead28bb79d6c63f",
@@ -2364,7 +2364,9 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "es": {
       "highlevel.title": "abfc6272b5ad06927cfe2eebc1717892428919e15ed940abb0a5e14b2ac4189f",
@@ -7324,7 +7326,16 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "fr": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -9636,7 +9647,9 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "hi": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -11948,7 +11961,9 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "ja": {
       "highlevel.title": "abfc6272b5ad06927cfe2eebc1717892428919e15ed940abb0a5e14b2ac4189f",
@@ -17794,7 +17809,16 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "pt-br": {
       "highlevel.title": "abfc6272b5ad06927cfe2eebc1717892428919e15ed940abb0a5e14b2ac4189f",
@@ -23435,7 +23459,16 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "zh": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -29936,7 +29969,17 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "noEngines.apiKeyHint": "b9036a60c017d04d97e88f1713d17616f74506836f6b9450c770930137794591",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "zh-tw": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -34028,7 +34071,10 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "uk": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -36783,7 +36829,9 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "vi": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -41426,7 +41474,10 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "tr": {
       "highlevel.unavailable": "87b8ac7f7610e6dd69f520bc59058fd92f307b9f4bcf804075f25d08bcaa7533",
@@ -46069,7 +46120,10 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b"
     },
     "pl": {
       "highlevel.title": "abfc6272b5ad06927cfe2eebc1717892428919e15ed940abb0a5e14b2ac4189f",
@@ -51815,7 +51869,16 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "ru": {
       "highlevel.title": "abfc6272b5ad06927cfe2eebc1717892428919e15ed940abb0a5e14b2ac4189f",
@@ -57639,7 +57702,16 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "it": {
       "highlevel.description": "e35a43c1cd65e769d7df9e9c17ad70acae2a653f9013570679ddbc30e54c1407",
@@ -63282,7 +63354,16 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     },
     "ko": {
       "connectedWorkspaces.localTitle": "7d6deafeab011d734c3fdd1bfd6f69544fbb746a004019269bdb48544b01164b",
@@ -69611,7 +69692,17 @@
       "botAccess.overview.botCount.other": "fc1da572d3f0b2c7e2cdfa7f85a2c1f6b2aceb1969b9cac6ec4391422887a64b",
       "botAccess.overview.noBotsForPerson": "cc4af4309f397df0ddf1e4f33040d9ef1035a14ecd1e63b38f4d929c57550556",
       "botAccess.overview.allPeople": "7e3e7ca9ed866b1ad11f9e5aadc0aa053c87306eb1b321076a5e49f0a35f6e4f",
-      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8"
+      "botAccess.overview.toastRemoved": "aa0a68dbd73099db4ae1d856ecfad7d842144ee7744e4df54a60717476bdb7e8",
+      "placeLook.color.blue": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "placeLook.color.teal": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d",
+      "placeLook.color.purple": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de",
+      "placeLook.color.orange": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4",
+      "placeLook.color.red": "ba19e9c3d5f49882ddaafed4f286a8a81491150426d321179270e27e74a89097",
+      "placeLook.color.yellow": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d",
+      "placeLook.color.slate": "10ad4c3873636fa8bcd943493cc5b4b17e164a7f57e306b124ff6f1a9f3cd26b",
+      "noEngines.apiKey": "d0490d0465c688f0d168947e99812774e7852be31538e1cdbc9e567931d3f266",
+      "noEngines.apiKeyHint": "b9036a60c017d04d97e88f1713d17616f74506836f6b9450c770930137794591",
+      "backup.restarting": "75d0f1469d166c8cc906cae019a298ae25df9a5198a099a0f2b54ff2c925d716"
     }
   }
 }
