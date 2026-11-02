@@ -37,7 +37,7 @@ export function agentsToolBridgeEnabled(cfg: BridgeConfig, env: NodeJS.ProcessEn
 
 /** A model on this machine or network reads the whole list on every turn, out of a small window and at laptop speed:
  * about 15,000 tokens before the person has said anything. OMB_AGENTS_TOOL_BRIDGE=0 still wins. */
-function runsLocalModel(bot: { modelSelection?: { model?: unknown } } | null | undefined, engine: BridgeEngine | null | undefined): boolean {
+export function runsLocalModel(bot: { modelSelection?: { model?: unknown } } | null | undefined, engine: BridgeEngine | null | undefined): boolean {
   const model = bot?.modelSelection?.model;
   if (typeof model === "string" && decodeInjectId(model)) return true;
   const url = (engine?.config as { url?: unknown } | undefined)?.url;

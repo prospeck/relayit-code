@@ -2,7 +2,7 @@
 // harness sets for it (see agents-proxy.ts): the stdio proxy an engine starts and the HTTP endpoint an engine reaches
 // both answer through it.
 import { resolveAgentsCall } from "../../shared/agents-tool-names.ts";
-import { TOOL_BRIDGE_ENV, createToolBridge } from "./agents-bridge.ts";
+import { TOOL_BRIDGE_ENV, TOOL_BRIDGE_LEAN_ENV, createToolBridge } from "./agents-bridge.ts";
 import { availableTools, catalogProfileFromEnv } from "./agents-catalog.ts";
 import { callTool, capResult, toolCallContextFromEnv } from "./agents-call.ts";
 import { sendToolReceipt } from "./agents-timing.ts";
@@ -12,7 +12,7 @@ import { capToolListResult, toolLimitFromEnv } from "../tool-count-limit.ts";
 /** What the agents server lists for `env`, before any tool limit. */
 export function agentsToolList(env: NodeJS.ProcessEnv) {
   const available = availableTools(catalogProfileFromEnv(env));
-  const bridge = env[TOOL_BRIDGE_ENV] === "1" ? createToolBridge(available) : undefined;
+  const bridge = env[TOOL_BRIDGE_ENV] === "1" ? createToolBridge(available, { lean: env[TOOL_BRIDGE_LEAN_ENV] === "1" }) : undefined;
   return { available, bridge, listed: bridge ? bridge.listed : available };
 }
 

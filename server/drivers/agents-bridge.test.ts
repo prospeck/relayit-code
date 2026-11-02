@@ -518,4 +518,15 @@ describe("seeing through a bridged call", () => {
     expect(unbridgedServer(other)).toBe(other);
     expect(unbridgedServer(bare)).toBe(bare);
   });
+
+  it("lists only the essentials on a small window, and no tool that sends goes behind it", () => {
+    const named = (name: string) => ({ name, description: name, inputSchema: { type: "object" as const, properties: {} } });
+    const tools = ["memory_update", "request_sign_in", "coordinate_bots", "list_bots", "select_computer", "post_to_room"].map(named);
+    const lean = createToolBridge(tools, { lean: true });
+    const listed = lean.listed.map((tool) => tool.name);
+    expect(listed).toEqual(expect.arrayContaining(["memory_update", "request_sign_in", "post_to_room", "find_tool", "use_tool"]));
+    expect(listed).not.toContain("coordinate_bots");
+    expect(listed).not.toContain("select_computer");
+    expect(createToolBridge(tools).listed.map((tool) => tool.name)).toContain("coordinate_bots");
+  });
 });

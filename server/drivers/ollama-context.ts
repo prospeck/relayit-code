@@ -1,7 +1,16 @@
 // Ollama's /v1 endpoint ignores a requested context size, and its default of 4,096 tokens is smaller than a bot's
 // prompt, so the prompt is silently cut and the model can't see its tools. A context size set on the model itself is
 // honoured, so RelayIt keeps a small copy of the model with a larger window. The copy shares the original's weights.
-const CONTEXT_TOKENS = 8192;
+import { totalmem } from "node:os";
+
+const GIB = 1024 ** 3;
+
+/** The window this machine can hold alongside everything else it runs. A little under the label, as RAM reports. */
+export function contextTokensFor(memoryBytes: number = totalmem()): number {
+  if (memoryBytes <= 8.5 * GIB) return 8192;
+  if (memoryBytes <= 16.5 * GIB) return 16_384;
+  return 32_768;
+}
 const SETUP_MS = 30_000;
 const VERSION_MS = 2_000;
 const RETRY_AFTER_MS = 60_000;
@@ -12,10 +21,10 @@ const notOllama = new Set<string>();
 /** When setup may next be tried for a model it failed on. A turn makes many requests, and each mustn't wait out the failure again. */
 const retryAt = new Map<string, number>();
 
-const copyName = (model: string) => `relayit-${model.replace(/[^\w.-]+/g, "-")}:8k`;
+const copyName = (model: string, tokens: number) => `relayit-${model.replace(/[^\w.-]+/g, "-")}:${tokens / 1024}k`;
 
 /** Our own copies stay out of the model picker: the person picked the original. */
-export const isOllamaContextCopy = (model: string) => /^relayit-.*:8k$/.test(model);
+export const isOllamaContextCopy = (model: string) => /^relayit-.*:\d+k$/.test(model);
 
 function ollamaOrigin(baseUrl: string): string | null {
   try {
@@ -48,7 +57,7 @@ async function isOllama(origin: string, fetcher: typeof fetch, signal?: AbortSig
 }
 
 /** The name to send for `model`: its larger-window copy on Ollama, and `model` itself anywhere else or on any failure. */
-export async function ollamaModelFor(baseUrl: string, model: string, fetcher: typeof fetch = fetch, signal?: AbortSignal): Promise<string> {
+export async function ollamaModelFor(baseUrl: string, model: string, fetcher: typeof fetch = fetch, signal?: AbortSignal, tokens: number = contextTokensFor()): Promise<string> {
   const origin = ollamaOrigin(baseUrl);
   if (!origin || isOllamaContextCopy(model) || notOllama.has(origin)) return model;
   const key = `${origin} ${model}`;
@@ -68,12 +77,12 @@ export async function ollamaModelFor(baseUrl: string, model: string, fetcher: ty
     if (!shown.ok) return failed();
     const { parameters } = (await shown.json()) as { parameters?: unknown };
     const own = typeof parameters === "string" ? /^num_ctx\s+(\d+)/m.exec(parameters)?.[1] : undefined;
-    if (own && Number(own) >= CONTEXT_TOKENS) {
+    if (own && Number(own) >= tokens) {
       prepared.set(key, model);
       return model;
     }
-    const name = copyName(model);
-    const created = await post(`${origin}/api/create`, { model: name, from: model, parameters: { num_ctx: CONTEXT_TOKENS }, stream: false }, fetcher, signal);
+    const name = copyName(model, tokens);
+    const created = await post(`${origin}/api/create`, { model: name, from: model, parameters: { num_ctx: tokens }, stream: false }, fetcher, signal);
     if (!created.ok) return failed();
     prepared.set(key, name);
     retryAt.delete(key);

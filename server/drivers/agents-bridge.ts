@@ -49,6 +49,11 @@ export const BRIDGE_HOT_TOOL_NAMES: ReadonlySet<string> = new Set([
   "memory_update",
 ]);
 
+/** Set on a turn whose model has a small window: only these stay listed, plus every outbound tool, and the rest are
+ * a find_tool away. Calling a tool through use_tool is judged exactly as calling it by name. */
+export const TOOL_BRIDGE_LEAN_ENV = "OMB_AGENTS_TOOL_BRIDGE_LEAN";
+const LEAN_HOT_TOOL_NAMES: ReadonlySet<string> = new Set(["tool_result_read", "request_sign_in", "memory_update"]);
+
 /** Matches per search; each carries its full input schema. */
 export const FIND_MATCHES_MAX = 3;
 /** Under the proxy's 24,000-character result cut, so no schema is cut in half; the first match is always whole. */
@@ -143,9 +148,10 @@ export interface ToolBridge {
 }
 
 /** The bridge over one turn's profile: `tools` is the whole of what the turn may call. */
-export function createToolBridge(tools: readonly BridgeTool[]): ToolBridge {
+export function createToolBridge(tools: readonly BridgeTool[], { lean = false }: { lean?: boolean } = {}): ToolBridge {
   const profile = new Set(tools.map((tool) => tool.name));
-  const hot = tools.filter((tool) => BRIDGE_HOT_TOOL_NAMES.has(tool.name) || calledByItsOwnName(tool.name));
+  const keptNames = lean ? LEAN_HOT_TOOL_NAMES : BRIDGE_HOT_TOOL_NAMES;
+  const hot = tools.filter((tool) => keptNames.has(tool.name) || calledByItsOwnName(tool.name));
   const hotNames = new Set(hot.map((tool) => tool.name));
   const hidden = tools.filter((tool) => !hotNames.has(tool.name));
 

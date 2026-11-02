@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { probeLocalInjects } from "./local-inject.ts";
-import { forgetOllamaCopies, isOllamaContextCopy, ollamaModelFor } from "./ollama-context.ts";
+import { contextTokensFor, forgetOllamaCopies, isOllamaContextCopy, ollamaModelFor as modelFor } from "./ollama-context.ts";
 
 type Reply = { status?: number; body?: unknown } | Error;
+
+/** Tests pin the window, so they read the same on any machine. */
+const ollamaModelFor = (url: string, model: string, fetcher?: typeof fetch, signal?: AbortSignal) => modelFor(url, model, fetcher, signal, 8192);
 
 function server(replies: Record<string, Reply>) {
   const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
@@ -16,6 +19,22 @@ function server(replies: Record<string, Reply>) {
   }) as typeof fetch;
   return { calls, fetcher };
 }
+
+describe("contextTokensFor", () => {
+  const GIB = 1024 ** 3;
+  it("sizes the window to the machine", () => {
+    expect(contextTokensFor(8 * GIB)).toBe(8192);
+    expect(contextTokensFor(16 * GIB)).toBe(16_384);
+    expect(contextTokensFor(32 * GIB)).toBe(32_768);
+  });
+  it("names a bigger window's copy for what it holds", async () => {
+    forgetOllamaCopies();
+    const { fetcher, calls } = server({ "/api/show": { body: {} }, "/api/create": {} });
+    expect(await modelFor("http://127.0.0.1:11434/v1", "m", fetcher, undefined, 32_768)).toBe("relayit-m:32k");
+    expect(calls[1]!.body.parameters).toEqual({ num_ctx: 32_768 });
+    expect(isOllamaContextCopy("relayit-m:32k")).toBe(true);
+  });
+});
 
 describe("ollamaModelFor", () => {
   beforeEach(forgetOllamaCopies);
