@@ -5,7 +5,6 @@
 # nothing to do with drift. Pin them to LF on every platform.
 shared/mascot-bodies.ts text eol=lf
 # git runs hooks through sh; a CRLF shebang line is "/bin/sh^M: bad interpreter" on every platform.
-scripts/git-hooks/* text eol=lf
 deploy/podman/*.sh text eol=lf
 # install.sh is piped to sh on a customer's server, and the AppArmor profile is loaded as it is.
 connector/**/*.sh text eol=lf

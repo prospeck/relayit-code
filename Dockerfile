@@ -44,7 +44,6 @@ COPY cloudflare/control-plane/package.json ./cloudflare/control-plane/package.js
 # no-op without a .git (it exits 0 here), but node still has to be able to LOAD
 # it, and .dockerignore keeps .git out — so copy it in before install or the
 # whole build dies on MODULE_NOT_FOUND.
-COPY scripts/install-git-hooks.mjs ./scripts/install-git-hooks.mjs
 RUN pnpm install --frozen-lockfile
 COPY . .
 # The Cloud home runs these as root, so nobody else may write them.
