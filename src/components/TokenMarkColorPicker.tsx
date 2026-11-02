@@ -4,7 +4,7 @@ import { MASCOT_FACE_COLORS } from "../../shared/bot-avatar";
 import type { AvatarPatch } from "./avatar-editing";
 import { Segmented } from "./bot-panel/rows";
 
-export function MascotFaceColorPicker({ bot, disabled, onPatch }: {
+export function TokenMarkColorPicker({ bot, disabled, onPatch }: {
   bot: Bot;
   disabled: boolean;
   onPatch: (patch: AvatarPatch) => void;

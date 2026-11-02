@@ -1,15 +1,13 @@
-import { CURSOR_STATES, type CursorState } from "@/components/CursorAvatar";
+import type { TokenState } from "./token-state";
 import { botShowsUnread } from "./bot-unread";
 import { lastNonReceipt } from "./receipts";
-import type { MausColor } from "../../shared/wire";
+import type { BotActivity, MausColor } from "../../shared/wire";
 import type { LocaleKey } from "@/locales";
 
 export { MAUS_COLOR_NAMES, type MausColor } from "../../shared/wire";
 
-export type MausState = CursorState;
-export const MAUS_STATES = CURSOR_STATES;
+export type MausState = TokenState;
 
-/** CursorAvatar ships French group labels; these mirror its STATE_GROUPS memberships exactly. */
 export const STATE_GROUPS = {
   Lifecycle: ["sleeping", "waking", "idle", "listening", "thinking", "searching", "working"],
   Reactions: [
@@ -48,6 +46,8 @@ export const STATE_GROUPS = {
   ],
 } satisfies Record<string, MausState[]>;
 
+export const MAUS_STATES: TokenState[] = Object.values(STATE_GROUPS).flat();
+
 export const MAUS_COLORS = {
   green: "#009957",
   blue: "#377FE6",
@@ -71,7 +71,6 @@ export const MAUS_COLOR_LABEL = {
 } as const satisfies Record<MausColor, LocaleKey>;
 
 export const CHROME_GRADIENT: [string, string, string] = ["#F1F4F7", "#AEB8C3", "#66717E"];
-export const CHROME_EYES = "#1E2833";
 
 export function colorSwatch(color: MausColor): string {
   if (color !== "chrome") return MAUS_COLORS[color];
@@ -121,18 +120,7 @@ export function normalizeState(value: string | null | undefined): MausState | nu
   return LEGACY_STATES[value] ?? null;
 }
 
-export const PICKABLE_STATES: MausState[] = [
-  "idle",
-  "happy",
-  "curious",
-  "drowsy",
-  "working",
-  "thinking",
-  "listening",
-  "sleeping",
-  "suspicious",
-  "proud",
-];
+export const PICKABLE_STATES: MausState[] = ["idle", "working", "listening", "alerting", "happy"];
 
 type MascotMessage = {
   kind: string;
@@ -145,52 +133,24 @@ export type MascotBotProfile = {
   description?: string;
   mascotExpression?: string | null;
   busy?: boolean;
+  activity?: BotActivity;
+  waitingForTeammates?: boolean;
   unread?: boolean;
   tasks?: Array<{ unread?: boolean; routineRunId?: string }> | null;
   messages?: MascotMessage[];
 };
 
 export function stateForBot(bot: MascotBotProfile): MausState {
+  if (bot.activity === "waiting-on-you" || bot.activity === "parked.computer" || bot.waitingForTeammates) return "listening";
+  if (bot.busy) return "working";
   const pinned = normalizeState(bot.mascotExpression);
   if (pinned) return pinned;
 
   const last = lastNonReceipt(bot.messages);
 
   if (last?.kind === "activity" && last.tool?.ok === false) return "alerting";
-  if (bot.busy) return "working";
   if (botShowsUnread(bot)) return "notifying";
   if (last?.kind === "options") return "curious";
-
-  const profile = `${bot.name} ${bot.title ?? ""} ${bot.description ?? ""}`.toLowerCase();
-  const matches = (words: RegExp) => words.test(profile);
-
-  if (matches(/\b(code|coding|developer|development|engineer|engineering|build|debug|program|software)\b/)) {
-    return "working";
-  }
-  if (matches(/\b(research|researcher|search|investigate|strategy|strategist|study|learn|knowledge)\b/)) {
-    return "searching";
-  }
-  if (matches(/\b(marketing|growth|launch|campaign|social|sales|outreach|brand)\b/)) {
-    return "excited";
-  }
-  if (matches(/\b(overnight|night|background|async|queue|batch|long-running)\b/)) {
-    return "drowsy";
-  }
-  if (matches(/\b(monitor|monitoring|incident|alert|watch|status|uptime)\b/)) {
-    return "radar";
-  }
-  if (matches(/\b(review|reviewer|audit|critic|critique|quality|qa|test|legal)\b/)) {
-    return "suspicious";
-  }
-  if (matches(/\b(security|secure|compliance|risk|privacy|finance|financial)\b/)) {
-    return "scared";
-  }
-  if (matches(/\b(design|designer|creative|brainstorm|art|illustration|music|story)\b/)) {
-    return "playful";
-  }
-  if (matches(/\b(support|help|success|onboarding|coach|teacher|guide|welcome)\b/)) {
-    return "happy";
-  }
 
   return "idle";
 }

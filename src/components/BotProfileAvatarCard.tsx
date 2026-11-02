@@ -11,14 +11,15 @@ import {
   type MausState,
 } from "@/lib/mascot";
 import { BOT_AVATAR_CROPS } from "../../shared/bot-avatar";
-import { MASCOT_BODIES, MASCOT_BODY_IDS } from "../../shared/mascot-bodies";
-import { HALLOWEEN_BODIES, HALLOWEEN_BODY_IDS } from "../../shared/halloween-bodies";
+import { MASCOT_BODIES, MASCOT_BODY_IDS } from "../../shared/relay-tokens";
+import { HALLOWEEN_BODIES, HALLOWEEN_BODY_IDS } from "../../shared/seasonal-tokens";
 import type { BotBodyId } from "../../shared/bot-body";
 import { BotAvatar, MausAvatar } from "./Avatar";
 import { AvatarImageGenerator } from "./AvatarImageGenerator";
 import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "./avatar-editing";
 import { t } from "@/lib/i18n";
-import { MascotFaceColorPicker } from "./MascotFaceColorPicker";
+import { tokenActivity } from "@/lib/token-state";
+import { TokenMarkColorPicker } from "./TokenMarkColorPicker";
 
 export function BotProfileAvatarCard({
   bot,
@@ -118,7 +119,7 @@ export function BotProfileAvatarCard({
 
         {crop === "mascot" && (
           <>
-            <MascotFaceColorPicker bot={bot} disabled={busy} onPatch={onPatch} />
+            <TokenMarkColorPicker bot={bot} disabled={busy} onPatch={onPatch} />
             <div className="mb-2 mt-4 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-secondary">
               {t("botIdentity.expression")}
             </div>
@@ -135,7 +136,7 @@ export function BotProfileAvatarCard({
                     activeState === expression && "ring-2 ring-accent-border",
                   )}
                   title={expression}
-                  aria-label={`Use ${expression} expression`}
+                  aria-label={t(`relayToken.state.${tokenActivity(expression)}`)}
                 >
                   <MausAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={bot.mascotBody ?? undefined} state={expression} size={42} animated={false} />
                 </button>
@@ -159,7 +160,7 @@ export function BotProfileAvatarCard({
                   )}
                   style={{ background: colorSwatch(color) }}
                   title={t(MAUS_COLOR_LABEL[color])}
-                  aria-label={`Use ${color} mascot color`}
+                  aria-label={t(MAUS_COLOR_LABEL[color])}
                 />
               ))}
             </div>
@@ -210,7 +211,7 @@ function BodyButton({ id, name, bot, busy, onPatch }: {
       type="button"
       disabled={busy}
       aria-pressed={selected}
-      aria-label={`Use the ${name} body`}
+      aria-label={t("relayToken.useShape", { name })}
       onClick={() => onPatch({ mascotBody: id })}
       className={cn(
         "flex items-center justify-center rounded-lg py-1.5 disabled:opacity-50",

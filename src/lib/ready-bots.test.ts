@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { MAUS_COLORS } from "./mascot";
 import { CLASSIC_ROLE_IDS, READY_BOT_CATEGORIES, READY_BOTS, matchesReadyBot, readyBot, readyBotTemplate } from "./ready-bots";
-import { MASCOT_BODY_IDS } from "../../shared/mascot-bodies";
+import { MASCOT_BODY_IDS } from "../../shared/relay-tokens";
 import type { NewBotDefaults } from "../../shared/new-bot-defaults";
 
 const defaults = (): NewBotDefaults => ({

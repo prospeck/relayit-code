@@ -6,15 +6,15 @@ import { t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 import { colorSwatch, MAUS_COLOR_LABEL, MAUS_COLOR_NAMES, PICKABLE_STATES, type MausState } from "@/lib/mascot";
 import type { Bot } from "@/state/store";
-import { MASCOT_BODIES, MASCOT_BODY_IDS } from "../../../shared/mascot-bodies";
-import { HALLOWEEN_BODIES, HALLOWEEN_BODY_IDS } from "../../../shared/halloween-bodies";
+import { MASCOT_BODIES, MASCOT_BODY_IDS } from "../../../shared/relay-tokens";
+import { HALLOWEEN_BODIES, HALLOWEEN_BODY_IDS } from "../../../shared/seasonal-tokens";
 import { isHalloweenBody, type BotBodyId } from "../../../shared/bot-body";
 import { useHalloweenDressed, wornBody } from "@/lib/halloween-dress";
 import { MausAvatar } from "../Avatar";
 import { AvatarImageGenerator } from "../AvatarImageGenerator";
 import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "../avatar-editing";
 import { Segmented } from "./rows";
-import { MascotFaceColorPicker } from "../MascotFaceColorPicker";
+import { TokenMarkColorPicker } from "../TokenMarkColorPicker";
 
 export type AvatarEditorTab = "bot" | "generate" | "upload";
 
@@ -32,6 +32,7 @@ const CROP_KEY: Record<(typeof IMAGE_CROPS)[number], LocaleKey> = {
 };
 
 const FACE_KEY: Partial<Record<MausState, LocaleKey>> = {
+  alerting: "relayToken.state.attention",
   idle: "botPanel.face.idle",
   happy: "botPanel.face.happy",
   curious: "botPanel.face.curious",
@@ -76,7 +77,7 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
       type="button"
       disabled={busy}
       aria-pressed={!showsImage && body === id}
-      aria-label={`Use the ${name} body`}
+      aria-label={t("relayToken.useShape", { name })}
       title={name}
       onClick={() => pickMascot({ mascotBody: id })}
       className={cn(
@@ -144,7 +145,7 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
                   type="button"
                   disabled={busy}
                   aria-pressed={bot.color === color}
-                  aria-label={`Use ${color} mascot color`}
+                  aria-label={t(MAUS_COLOR_LABEL[color])}
                   title={t(MAUS_COLOR_LABEL[color])}
                   onClick={() => pickMascot({ color })}
                   className={cn(
@@ -155,7 +156,7 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
                 />
               ))}
             </div>
-            <MascotFaceColorPicker bot={bot} disabled={busy} onPatch={pickMascot} />
+            <TokenMarkColorPicker bot={bot} disabled={busy} onPatch={pickMascot} />
             <button
               type="button"
               data-avatar-more

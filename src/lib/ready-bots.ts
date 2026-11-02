@@ -1,5 +1,5 @@
 import type { BotRoutineTemplate, NewBotDefaults } from "../../shared/new-bot-defaults";
-import type { MascotBodyId } from "../../shared/mascot-bodies";
+import type { MascotBodyId } from "../../shared/relay-tokens";
 import type { MausColor } from "../../shared/wire";
 
 export type ReadyBotCategory = "everyday" | "work" | "writing" | "design" | "sales" | "personal";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_MASCOT_BODY } from "../shared/mascot-bodies.ts";
+import { DEFAULT_MASCOT_BODY } from "../shared/relay-tokens.ts";
 import { freshLook, STARTER_COLORS } from "./bot-look.ts";
 
 describe("a new bot's first look", () => {

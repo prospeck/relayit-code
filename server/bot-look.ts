@@ -1,4 +1,4 @@
-import { DEFAULT_MASCOT_BODY, type MascotBodyId } from "../shared/mascot-bodies.ts";
+import { DEFAULT_MASCOT_BODY, type MascotBodyId } from "../shared/relay-tokens.ts";
 import { MAUS_COLOR_NAMES, type MausColor } from "../shared/wire.ts";
 
 export const STARTER_COLORS: readonly MausColor[] = MAUS_COLOR_NAMES.filter((color) => color !== "silver" && color !== "chrome");
