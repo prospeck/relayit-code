@@ -1,3 +1,6 @@
+import { indiaFreeTools, isShippedIndiaConnector } from "../india-services.ts";
+import { PREVIEW_UNAVAILABLE } from "../tool-approval-preview.ts";
+import { mcpApprovalSummary } from "./mcp-approval-preview.ts";
 import { codexToolSurfaceArgs } from "./codex-tool-surface.ts";
 import { codexShellDisabled, GUEST_CONFINED_CODEX_ARGS } from "./codex-guest.ts";
 import { TEAM_TOOLS_FAILED, teamToolsFailed } from "./team-tools.ts";
@@ -1003,6 +1006,25 @@ export const CodexDriver: ProviderDriver<CodexConfig> = {
           send({ jsonrpc: "2.0", id: msg.id, result: { action: "accept", content: {} } });
           return;
         }
+        // Our own connectors say what is safe to run without a card, and what a card should show. A failed preview refuses.
+        const shippedServer = isLegacyMcpPermission && typeof params.serverName === "string" ? turn.integrations?.custom?.[params.serverName] : undefined;
+        if (shippedServer && mcpTool && isShippedIndiaConnector(params.serverName, shippedServer)) {
+          if (indiaFreeTools(params.serverName, shippedServer)?.has(mcpTool)) {
+            send({ jsonrpc: "2.0", id: msg.id, result: { action: "accept", content: {} } });
+            return;
+          }
+          if (msg.previewSummary === undefined) {
+            const input = plainRecord(params._meta?.tool_params) ?? {};
+            void mcpApprovalSummary(`mcp__${params.serverName}__${mcpTool}`, input, turn.integrations).then(
+              (previewSummary) => handleServerRequest({ ...msg, previewSummary }),
+              () => {
+                emit({ ...base(threadId, turnId), type: "runtime.notice", message: PREVIEW_UNAVAILABLE });
+                send({ jsonrpc: "2.0", id: msg.id, result: { action: "decline" } });
+              },
+            );
+            return;
+          }
+        }
         const runs = searchedServer && asksAbout(CALL_TOOL) ? directoryCallTarget(CALL_TOOL, params._meta?.tool_params) : undefined;
         const tool =
           mcpAppApproval
@@ -1036,6 +1058,8 @@ export const CodexDriver: ProviderDriver<CodexConfig> = {
         const summary =
           isAdditionalPermission
             ? additionalPermissionSummary(params.permissions, params.reason)
+            : typeof msg.previewSummary === "string"
+            ? msg.previewSummary
             : isMcpPermission
             ? (mcpAppApproval?.summary ?? (runs ? `Allow the ${params.serverName} MCP server to run tool ${JSON.stringify(runs)}?`
               : typeof params.message === "string" ? params.message : "MCP access requested"))

@@ -1,3 +1,4 @@
+import { indiaServiceSpec } from "../india-services.ts";
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { once } from "node:events";
@@ -1504,6 +1505,51 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\\n');});`)
       await instance.adapter.respondToRequest("t-plan-call", opened.requestId!, { behavior: "allow" });
       await recorder.until((event) => event.type === "turn.completed");
       expect(JSON.parse(readFileSync(dump, "utf8")).decision).toEqual({ action: "accept", content: {} });
+    });
+
+    const shippedFood = () => {
+      const { command, args, env } = indiaServiceSpec("food", join(scratch, "india"))!.server;
+      return { command, args, env: env ?? {} };
+    };
+    const asked = (server: string, tool: string, toolParams: unknown) => JSON.stringify({ method: "mcpServer/elicitation/request", params: {
+      serverName: server, mode: "form", message: `Allow the ${server} MCP server to run tool "${tool}"?`,
+      _meta: { codex_approval_kind: "mcp_tool_call", tool_params: toolParams }, requestedSchema: { type: "object", properties: {} },
+    } });
+
+    it("lets our own connector's look-ups and drafts through without a card", async () => {
+      plan();
+      process.env.FAKE_CODEX_APPROVAL_REQUEST = asked("india-food", "prepare_order", { restaurantId: "r" });
+      await create({ authMode: "chatgpt-plan", mode: "approval" });
+      const dump = join(scratch, "india-free.json");
+      process.env.FAKE_CODEX_DUMP = dump;
+      await instance.adapter.sendTurn({ threadId: "t-india-free", text: "go", model: "gpt-6.1-sol", integrations: { custom: { "india-food": shippedFood() } } });
+      await recorder.until((event) => event.type === "turn.completed");
+      expect(recorder.events.some((event) => event.type === "request.opened")).toBe(false);
+      expect(JSON.parse(readFileSync(dump, "utf8")).decision).toEqual({ action: "accept", content: {} });
+    });
+
+    it("refuses an order when our own connector can't preview it, rather than showing a bare question", async () => {
+      plan();
+      process.env.FAKE_CODEX_APPROVAL_REQUEST = asked("india-food", "place_order", { cartId: "no-such-cart" });
+      await create({ authMode: "chatgpt-plan", mode: "approval" });
+      const dump = join(scratch, "india-preview-failed.json");
+      process.env.FAKE_CODEX_DUMP = dump;
+      await instance.adapter.sendTurn({ threadId: "t-india-preview", text: "go", model: "gpt-6.1-sol", integrations: { custom: { "india-food": shippedFood() } } });
+      await recorder.until((event) => event.type === "turn.completed");
+      expect(recorder.events.some((event) => event.type === "request.opened")).toBe(false);
+      expect(JSON.parse(readFileSync(dump, "utf8")).decision).toEqual({ action: "decline" });
+    });
+
+    it("doesn't let another server borrow our connector's name to skip the card", async () => {
+      plan();
+      process.env.FAKE_CODEX_APPROVAL_REQUEST = asked("india-food", "prepare_order", {});
+      await create({ authMode: "chatgpt-plan", mode: "approval" });
+      process.env.FAKE_CODEX_DUMP = join(scratch, "india-borrowed.json");
+      await instance.adapter.sendTurn({ threadId: "t-india-borrowed", text: "go", model: "gpt-6.1-sol", integrations: { custom: { "india-food": { command: process.execPath, args: ["my-server.js"], env: {} } } } });
+      const opened = await recorder.until((event) => event.type === "request.opened");
+      expect(opened).toMatchObject({ requestType: "permission", tool: "prepare_order", summary: 'Allow the india-food MCP server to run tool "prepare_order"?' });
+      await instance.adapter.respondToRequest("t-india-borrowed", opened.requestId!, { behavior: "deny" });
+      await recorder.until((event) => event.type === "turn.completed");
     });
 
     it("answers a catalog read for no card only when Codex asks exactly about it", async () => {
