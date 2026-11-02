@@ -1,12 +1,7 @@
-// The HighLevel connection's tokens, sealed under a key of their own (a 0600 file beside the store) so they rest
-// encrypted on desktop and on a Cloud home alike, with no keychain in the path. No route ever returns a token.
-import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 
-import { writeFileAtomic } from "../atomic.ts";
-import { decryptBrowserState, encryptBrowserState } from "../browser-sites.ts";
+import { CredentialDocument, holdCredentialValues } from "../credential-store.ts";
 
 export const HIGHLEVEL_FILE = "highlevel.json.enc";
 export const HIGHLEVEL_KEY_FILE = "highlevel-key";
@@ -53,55 +48,31 @@ export const sameTokens = (a: HighLevelConnection, b: HighLevelConnection): bool
   a.accessToken === b.accessToken && a.refreshToken === b.refreshToken;
 
 export class HighLevelStore {
-  private readonly file: string;
-  private readonly keyFile: string;
+  private readonly document: CredentialDocument<StoreFile>;
   private readonly now: () => number;
   private cache: StoreFile | null = null;
-  private unreadableWarned = false;
 
   constructor(options: { dataDir: string; now?: () => number }) {
-    this.file = join(options.dataDir, HIGHLEVEL_FILE);
-    this.keyFile = join(options.dataDir, HIGHLEVEL_KEY_FILE);
+    this.document = new CredentialDocument(options.dataDir, "highlevel", {
+      file: join(options.dataDir, HIGHLEVEL_FILE), keyFile: join(options.dataDir, HIGHLEVEL_KEY_FILE),
+    }, value => fileSchema.parse(value));
     this.now = options.now ?? Date.now;
-  }
-
-  private key(create: boolean): string | null {
-    try {
-      const existing = readFileSync(this.keyFile, "utf8").trim();
-      if (/^[0-9a-f]{64}$/u.test(existing)) return existing;
-    } catch {
-    }
-    if (!create) return null;
-    const key = randomBytes(32).toString("hex");
-    mkdirSync(join(this.keyFile, ".."), { recursive: true });
-    writeFileAtomic(this.keyFile, `${key}\n`, { mode: 0o600 });
-    return key;
   }
 
   private read(): StoreFile {
     if (this.cache) return this.cache;
-    let data: StoreFile = EMPTY;
-    if (existsSync(this.file)) {
-      const key = this.key(false);
-      try {
-        if (!key) throw new Error("missing key");
-        data = fileSchema.parse(JSON.parse(decryptBrowserState(readFileSync(this.file), key)));
-      } catch {
-        // Never log an unreadable file's contents.
-        if (!this.unreadableWarned) console.warn("HighLevel: the saved connection could not be opened; connect again");
-        this.unreadableWarned = true;
-        data = EMPTY;
-      }
-    }
+    const data = this.document.read() ?? EMPTY;
+    holdCredentialValues(data.connection?.accessToken);
+    holdCredentialValues(data.connection?.refreshToken);
     this.cache = data;
     return data;
   }
 
   private write(data: StoreFile): void {
     const parsed = fileSchema.parse(data);
-    const key = this.key(true)!;
-    mkdirSync(join(this.file, ".."), { recursive: true });
-    writeFileAtomic(this.file, encryptBrowserState(JSON.stringify(parsed), key), { mode: 0o600 });
+    holdCredentialValues(parsed.connection?.accessToken);
+    holdCredentialValues(parsed.connection?.refreshToken);
+    this.document.write(parsed);
     this.cache = parsed;
   }
 
@@ -141,8 +112,7 @@ export class HighLevelStore {
   }
 
   clear(): void {
-    this.cache = EMPTY;
-    rmSync(this.file, { force: true });
+    this.write(EMPTY);
   }
 
   /** The tokens, for secret redaction. */

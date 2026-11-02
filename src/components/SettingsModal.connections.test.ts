@@ -3,18 +3,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "@/lib/i18n";
 
-const fixture = vi.hoisted(() => ({ config: undefined as import("@/state/store").ConfigStatus | undefined }));
+const fixture = vi.hoisted(() => ({ section: "connections" as import("@/state/store").AppSettingsSection, config: undefined as import("@/state/store").ConfigStatus | undefined }));
 vi.mock("./DesktopCapabilities", () => ({ useDesktopCapabilities: () => ({ capabilities: {} }) }));
 vi.mock("@/state/store", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/state/store")>(),
   api: vi.fn(),
-  useStore: () => ({ state: { appSettingsSection: "connections", instances: [], config: fixture.config }, dispatch: vi.fn() }),
+  useStore: () => ({ state: { appSettingsSection: fixture.section, instances: [], config: fixture.config }, dispatch: vi.fn() }),
 }));
 vi.mock("@/lib/analytics", () => ({ analyticsEnabled: () => false, setAnalyticsEnabled: vi.fn() }));
 
 beforeEach(() => {
   fixture.config = undefined;
-  vi.stubGlobal("window", {});
+  fixture.section = "connections";
+  vi.stubGlobal("window", { location: { origin: "http://127.0.0.1:8799" } });
   vi.stubGlobal("document", { documentElement: { dataset: {} } });
   setLocale("en");
 });
@@ -25,6 +26,20 @@ afterEach(() => {
 });
 
 describe("Settings → Connections", () => {
+  it("keeps the fallback warning through status frames and shows it in Settings", async () => {
+    const { configStatusFromFrame } = await import("@/state/store");
+    const credentialStorage = { protection: "key-file" as const, label: "Weaker protection: local key file", detail: "Shared credential store: encrypted, but anyone who can read its local key file and ciphertext can decrypt it." };
+    fixture.config = configStatusFromFrame({
+      credentialStorage, composio: { configured: false }, box: { configured: false }, vps: { configured: false, sshAlias: "" },
+      rooms: { turnTimeoutMinutes: 10 }, mcp: { callTimeoutMinutes: 10 }, localVm: { mode: "shared", maxInstances: 1 },
+    });
+    fixture.section = "general";
+    expect(fixture.config.credentialStorage).toEqual(credentialStorage);
+    const { SettingsModal } = await import("./SettingsModal");
+    const html = renderToStaticMarkup(createElement(SettingsModal));
+    expect(html).toContain(credentialStorage.label);
+    expect(html).toContain(credentialStorage.detail);
+  });
   it.each(["router", "OpenRouter", "base URL", "API key", "OpenAI", "Anthropic", "Groq"])("is found by searching for %s", async (typed) => {
     const { SECTIONS, sectionMatches } = await import("./SettingsModal");
     const connections = SECTIONS.find((entry) => entry.id === "connections")!;

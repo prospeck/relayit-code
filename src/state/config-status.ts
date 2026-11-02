@@ -3,13 +3,14 @@ import type { EffortLevel, LiveSettings } from "../../shared/wire";
 import type { OnboardingStatus } from "@/lib/onboarding";
 import type { ModelSelection } from "./store";
 
-/** A saved credential: whether it is set and, for admins, its last four characters. The key itself never comes back. */
+/** A saved credential's configured state; older servers may also send a suffix. */
 export interface SavedKey { configured: boolean; last4?: string }
 
 export type NestedKeyName = "ttsKey" | "fishAudioKey" | "jevApiKey" | "openrouterDeciderKey" | "workersAiToken" | "openaiImageApiKey" | "customImageApiKey" | "openaiLiveKey";
 
 /** GET /api/config — configured flags only; secrets are never echoed. */
 export interface ConfigStatus {
+  credentialStorage?: { protection: "os-keychain" | "key-file"; label: string; detail: string };
   /** The workspace's banner picture (GET /api/workspace/banner), by a version that changes with it; null without one. */
   workspaceBanner?: import("@/lib/place-banner").BannerSummary | null;
   xai?: SavedKey;

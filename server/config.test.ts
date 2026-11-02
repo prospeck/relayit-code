@@ -1,8 +1,19 @@
+import { hydrateConfigCredentials } from "./config-credentials.ts";
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JsonValue } from "./schema.ts";
+
+it("preserves unreadable configuration instead of overwriting credentials on a later save", () => {
+  mkdirSync(DATA_DIR, { recursive: true });
+  const path = join(DATA_DIR, "config.json"), original = '{"openai":{"key":"fixture-private"';
+  writeFileSync(path, original);
+  try {
+    expect(() => saveConfig({ profile: { name: "Fixture" } })).toThrow("Credential storage could not be opened");
+    expect(readFileSync(path, "utf8")).toBe(original);
+  } finally { rmSync(path, { force: true }); }
+});
 
 import { cacheUntilConfigChanges,
   changedInstanceIds,
@@ -694,7 +705,7 @@ describe("a config.json saved with a byte order mark", () => {
     }, null, 2));
     try {
       saveConfig({ budgets: { monthlyUsd: 25, warnAtPercent: 70 } });
-      const disk = JSON.parse(readFileSync(path, "utf8"));
+      const disk = hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))) as any;
       expect(disk).toMatchObject({
         xai: { key: "xai-fixture" },
         mcpServers: { notes: { command: "npx", args: ["notes-mcp"] } },
@@ -739,7 +750,7 @@ describe("saving the newer sections", () => {
       saveConfig({ budgets: { monthlyUsd: 25, warnAtPercent: 70 } });
       saveConfig({ billing: { currency: "EUR", prices: { default: { inputPerMillion: 1, outputPerMillion: 2 } } } });
       saveConfig({ billing: { prices: { "gpt-5": { inputPerMillion: 3, outputPerMillion: 4 } } } });
-      const disk = JSON.parse(readFileSync(path, "utf8"));
+      const disk = hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))) as any;
       expect(disk).toMatchObject({
         xai: { key: "xai-fixture" },
         anthropic: { key: "sk-ant-fixture" },
@@ -778,7 +789,7 @@ describe("saving the newer sections", () => {
     writeFileSync(path, JSON.stringify({}));
     try {
       saveConfig({ threads: { eventLogRetentionDays: 30 } });
-      const disk = JSON.parse(readFileSync(path, "utf8"));
+      const disk = hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))) as any;
       expect(disk.threads).toEqual({ maxConcurrentPerBot: 3, eventLogRetentionDays: 30 });
       expect(parseStoredConfig(disk).threads).toEqual({ maxConcurrentPerBot: 3, eventLogRetentionDays: 30 });
     } finally {
@@ -1603,7 +1614,7 @@ describe("credential env preference", () => {
 
     saveConfig({ defaultModelSelection: selection });
     expect(loadConfig().defaultModelSelection).toEqual(selection);
-    expect(JSON.parse(readFileSync(path, "utf8"))).toEqual({ ...existing, defaultModelSelection: selection });
+    expect(hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8")))).toEqual({ ...existing, defaultModelSelection: selection });
 
     saveConfig({ profile: { email: "ada@example.com" } });
     expect(loadConfig().defaultModelSelection).toEqual(selection);
@@ -1677,7 +1688,7 @@ describe("credential env preference", () => {
     };
     writeFileSync(path, JSON.stringify({ openaiCompat: { url, key: "fixture-shared" }, instances }));
     saveConfig({ openaiCompat: { url } });
-    const disk = JSON.parse(readFileSync(path, "utf8"));
+    const disk = hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))) as any;
     expect(disk.instances.openaiCompat.config).toEqual({ tools: false, model: "selected", provider: "" });
     expect(disk.instances.custom).toEqual(instances.custom);
     expect(disk.instances.customShared).toEqual(instances.customShared);
@@ -1696,7 +1707,7 @@ describe("credential env preference", () => {
     const path = join(DATA_DIR, "config.json");
     writeFileSync(path, JSON.stringify({ instances: { openaiCompat: entry } }));
     saveConfig({ openaiCompat: { url: "https://workspace.example.test/v1" } });
-    expect(JSON.parse(readFileSync(path, "utf8")).instances.openaiCompat).toEqual(entry);
+    expect((hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))).instances as Record<string, unknown>).openaiCompat).toEqual(entry);
   });
 
   it("preserves explicit instance URLs on unrelated saves and in a combined configuration patch", () => {
@@ -1704,9 +1715,9 @@ describe("credential env preference", () => {
     const entry = { driver: "openai-compat", config: { url: "https://explicit.example.test/v1" } };
     writeFileSync(path, JSON.stringify({ instances: { openaiCompat: entry } }));
     saveConfig({ openaiCompat: { key: "fixture-replacement" }, profile: { name: "Fixture" } });
-    expect(JSON.parse(readFileSync(path, "utf8")).instances.openaiCompat).toEqual(entry);
+    expect((hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))).instances as Record<string, unknown>).openaiCompat).toEqual(entry);
     saveConfig({ openaiCompat: { url: "https://workspace.example.test/v1" }, instances: { openaiCompat: entry } });
-    expect(JSON.parse(readFileSync(path, "utf8")).instances.openaiCompat).toEqual(entry);
+    expect((hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8"))).instances as Record<string, unknown>).openaiCompat).toEqual(entry);
   });
 
   it.each(["openai-compat", "future-driver"])("limits URL repair to the default OpenAI-compatible driver (%s)", (driver) => {
@@ -1743,7 +1754,7 @@ describe("credential env preference", () => {
     });
 
     saveConfig({ features: { showToolCalls: true } });
-    const persisted = JSON.parse(readFileSync(path, "utf8"));
+    const persisted = hydrateConfigCredentials(DATA_DIR, JSON.parse(readFileSync(path, "utf8")));
     expect(persisted).toMatchObject({
       xai: { key: "file-xai", url: "https://api.example.test/v1" },
       profile: { name: "Ada" },

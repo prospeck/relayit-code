@@ -1,15 +1,10 @@
-// Sealed under a key of its own (a 0600 file beside it), never the browser engine's, which every browser process gets in
-// its environment. Neither file is ever backed up, exported or moved: a saved password stays on its computer, unless the
-// person sends that one login to their own Cloud with Also use on My Cloud (login-handoff.ts).
-import { randomBytes, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { z } from "zod";
 
 import { HELD_SECRET_MASK } from "../shared/redact.ts";
 import { LOGIN_FIELD_MAX, LOGIN_HOSTS_MAX, loginMatchesHost, loginSite, loginUsableBy, type LoginBots, type LoginPlace, type LoginSummary } from "../shared/logins.ts";
-import { writeFileAtomic } from "./atomic.ts";
-import { decryptBrowserState, encryptBrowserState } from "./browser-sites.ts";
+import { CredentialDocument, holdCredentialValues } from "./credential-store.ts";
 import type { TotpKey } from "./totp.ts";
 
 export const LOGINS_FILE = "logins.json.enc";
@@ -24,8 +19,6 @@ const totpSchema = z.object({
 
 const botsSchema = z.union([z.literal("all"), z.array(z.string())]);
 
-// The previous release reads `version: 1` records by `host` alone and replaces a file it cannot parse, so every record
-// keeps `host` (its first sign-in host) and the version stays 1: going back a release never loses a saved login.
 const diskLoginSchema = z.object({
   id: z.string().min(1),
   host: z.string().min(1),
@@ -99,58 +92,39 @@ function sameAccount(login: StoredLogin, input: NewLogin): boolean {
 }
 
 export class LoginStore {
-  private readonly file: string;
-  private readonly keyFile: string;
+  private readonly document: CredentialDocument<DiskFile>;
   private readonly now: () => number;
   private cache: StoreFile | null = null;
-  private unreadableWarned = false;
   version = 0;
 
   constructor(options: { dataDir: string; now?: () => number }) {
-    this.file = join(options.dataDir, LOGINS_FILE);
-    this.keyFile = join(options.dataDir, LOGINS_KEY_FILE);
+    this.document = new CredentialDocument(options.dataDir, "logins", {
+      file: join(options.dataDir, LOGINS_FILE), keyFile: join(options.dataDir, LOGINS_KEY_FILE),
+    }, value => fileSchema.parse(value));
     this.now = options.now ?? Date.now;
   }
 
-  private key(create: boolean): string | null {
-    try {
-      const existing = readFileSync(this.keyFile, "utf8").trim();
-      if (/^[0-9a-f]{64}$/u.test(existing)) return existing;
-    } catch {
+  private hold(data: DiskFile): void {
+    holdCredentialValues(data.onePassword?.token);
+    for (const login of data.logins) {
+      holdCredentialValues(login.password);
+      holdCredentialValues(login.totp?.secret);
     }
-    if (!create) return null;
-    const key = randomBytes(32).toString("hex");
-    mkdirSync(join(this.keyFile, ".."), { recursive: true });
-    writeFileAtomic(this.keyFile, `${key}\n`, { mode: 0o600 });
-    return key;
   }
 
   private read(): StoreFile {
     if (this.cache) return this.cache;
-    let data: StoreFile = EMPTY;
-    if (existsSync(this.file)) {
-      const key = this.key(false);
-      try {
-        if (!key) throw new Error("missing key");
-        const disk = fileSchema.parse(JSON.parse(decryptBrowserState(readFileSync(this.file), key)));
-        data = { ...disk, logins: disk.logins.map(fromDisk) };
-      } catch {
-        // Never log an unreadable file's contents.
-        if (!this.unreadableWarned) console.warn("saved logins: the saved logins file could not be opened; it will be replaced on the next save");
-        this.unreadableWarned = true;
-        data = EMPTY;
-      }
-    }
-    this.cache = data;
+    const disk = this.document.read() ?? fileSchema.parse(EMPTY);
+    this.hold(disk);
+    this.cache = { ...disk, logins: disk.logins.map(fromDisk) };
     this.version++;
-    return data;
+    return this.cache;
   }
 
   private write(data: StoreFile): void {
     const parsed = fileSchema.parse({ ...data, logins: data.logins.map(toDisk) });
-    const key = this.key(true)!;
-    mkdirSync(join(this.file, ".."), { recursive: true });
-    writeFileAtomic(this.file, encryptBrowserState(JSON.stringify(parsed), key), { mode: 0o600 });
+    this.hold(parsed);
+    this.document.write(parsed);
     this.cache = { ...parsed, logins: parsed.logins.map(fromDisk) };
     this.version++;
   }

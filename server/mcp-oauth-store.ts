@@ -1,9 +1,37 @@
 // Kept apart from config.json so a pasted or exported config never carries a token; a token never follows its entry to another URL.
-import { mkdirSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, readdirSync, rmSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { z } from "zod";
 
-import { writeFileAtomic } from "./atomic.ts";
+import { CredentialDocument, holdCredentialValues } from "./credential-store.ts";
+import { CREDENTIAL_DIRECTORY } from "../electron/credential-store.mjs";
+
+function namespace(file: string): string {
+  return basename(file) === "mcp-oauth.json" ? "mcp-oauth" : `mcp-oauth-${Buffer.from(basename(file)).toString("hex")}`;
+}
+
+export function mcpOAuthEncryptedPath(file: string): string {
+  return join(dirname(file), CREDENTIAL_DIRECTORY, `${namespace(file)}.enc`);
+}
+
+export function mcpOAuthFiles(folder: string): string[] {
+  const files = new Set(existsSync(folder) ? readdirSync(folder).filter(file => file.endsWith(".json")) : []);
+  const encrypted = join(folder, CREDENTIAL_DIRECTORY);
+  if (existsSync(encrypted)) for (const file of readdirSync(encrypted)) {
+    if (file === "mcp-oauth.enc") files.add("mcp-oauth.json");
+    const match = /^mcp-oauth-([0-9a-f]+)\.enc$/.exec(file);
+    if (match) {
+      const name = Buffer.from(match[1]!, "hex").toString("utf8");
+      if (basename(name) === name && name.endsWith(".json") && namespace(name) === file.slice(0, -4)) files.add(name);
+    }
+  }
+  return [...files];
+}
+
+export function removeMcpOAuthFile(file: string): void {
+  rmSync(mcpOAuthEncryptedPath(file), { force: true });
+  rmSync(file, { force: true });
+}
 
 const tokensSchema = z.object({
   access: z.string().min(1),
@@ -17,7 +45,7 @@ const recordSchema = z.object({
   state: z.enum(["needs-sign-in", "signed-in"]),
   issuer: z.string().optional(),
   clientId: z.string().optional(),
-  /** The secret stays in config.json; it is never kept here. */
+  /** Client secrets belong to the encrypted config credential document. */
   tokenAuth: z.enum(["client_secret_post", "client_secret_basic"]).optional(),
   redirectUri: z.string().optional(),
   tokenEndpoint: z.string().optional(),
@@ -40,10 +68,10 @@ export function parseMcpOAuthRecord(value: unknown): McpOAuthRecord | null {
 }
 
 export class McpOAuthStore {
-  private readonly file: string;
+  private readonly document: CredentialDocument<StoreFile>;
 
   constructor(file: string) {
-    this.file = file;
+    this.document = new CredentialDocument(dirname(file), namespace(file), { file }, value => fileSchema.parse(value));
   }
 
   get(name: string, url: string): McpOAuthRecord | undefined {
@@ -66,16 +94,13 @@ export class McpOAuthStore {
 
   // Read through on every call: another process may have changed the file.
   private read(): StoreFile {
-    try {
-      const parsed = fileSchema.safeParse(JSON.parse(readFileSync(this.file, "utf8")));
-      if (parsed.success) return parsed.data;
-    } catch {
-    }
-    return { servers: {} };
+    const data = this.document.read() ?? { servers: {} };
+    for (const record of Object.values(data.servers)) holdCredentialValues(record.tokens);
+    return data;
   }
 
   private write(data: StoreFile): void {
-    mkdirSync(dirname(this.file), { recursive: true });
-    writeFileAtomic(this.file, JSON.stringify(data, null, 2), { mode: 0o600 });
+    for (const record of Object.values(data.servers)) holdCredentialValues(record.tokens);
+    this.document.write(data);
   }
 }

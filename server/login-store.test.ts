@@ -1,12 +1,13 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { loginPlace } from "../shared/logins.ts";
 import { addHeldSecretScrubber, redactSecretsInText } from "../shared/redact.ts";
-import { decryptBrowserState, encryptBrowserState } from "./browser-sites.ts";
+import { encryptBrowserState } from "./browser-sites.ts";
+import { credentialStore } from "./credential-store.ts";
 import { HeldSecrets, LOGINS_FILE, LOGINS_KEY_FILE, LoginStore, secretForms } from "./login-store.ts";
 import { parseTotpKey } from "./totp.ts";
 
@@ -41,14 +42,14 @@ describe("the saved logins store", () => {
     expect(reopened.list()).toEqual([saved]);
     expect(reopened.usableFor("accounts.example.com", "any-bot")[0]).toMatchObject({ password: PASSWORD, totp: TOTP });
 
-    expect(readdirSync(dir).sort()).toEqual([LOGINS_KEY_FILE, LOGINS_FILE].sort());
-    const sealed = readFileSync(join(dir, LOGINS_FILE));
+    expect(readdirSync(dir)).toEqual([".credentials"]);
+    const sealed = readFileSync(join(dir, ".credentials/logins.enc"));
     for (const word of [PASSWORD, "fake-Pa55word", "alice@example.com", "accounts.example.com", TOTP.secret, "password", "username"]) {
       expect(sealed.includes(Buffer.from(word)), word).toBe(false);
     }
     if (process.platform !== "win32") {
-      expect(statSync(join(dir, LOGINS_FILE)).mode & 0o777).toBe(0o600);
-      expect(statSync(join(dir, LOGINS_KEY_FILE)).mode & 0o777).toBe(0o600);
+      expect(statSync(join(dir, ".credentials/logins.enc")).mode & 0o777).toBe(0o600);
+      expect(statSync(join(dir, ".credentials/master-key")).mode & 0o777).toBe(0o600);
     }
   });
 
@@ -59,19 +60,17 @@ describe("the saved logins store", () => {
     expect(readdirSync(dir)).toEqual([]);
   });
 
-  it("opens nothing, and says so once, when the key does not fit", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  it("fails closed without replacing logins when the master key does not fit", () => {
     new LoginStore({ dataDir: dir }).create({ ...at("example.com"), username: "a", password: PASSWORD, source: "card", bots: ["b1"] });
-    writeFileSync(join(dir, LOGINS_KEY_FILE), `${"0".repeat(64)}\n`);
+    const original = readFileSync(join(dir, ".credentials/logins.enc"));
+    writeFileSync(join(dir, ".credentials/master-key"), "0".repeat(64));
     const store = new LoginStore({ dataDir: dir });
-    expect(store.list()).toEqual([]);
-    expect(store.list()).toEqual([]);
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0])).not.toContain(PASSWORD);
-    warn.mockRestore();
+    expect(() => store.list()).toThrow("Credential storage could not be opened");
+    expect(() => store.create({ ...at("example.org"), username: "b", password: "replacement", source: "card", bots: "all" })).toThrow();
+    expect(readFileSync(join(dir, ".credentials/logins.enc"))).toEqual(original);
   });
 
-  it("gives a login saved for one host its site, so it fills on www and other subdomains, and keeps the file readable by the previous release", () => {
+  it("gives a login saved for one host its site, so it fills on www and other subdomains, and migrates its encrypted record without changing the login schema", () => {
     writeFileSync(join(dir, LOGINS_KEY_FILE), `${KEY}\n`, { mode: 0o600 });
     writeFileSync(join(dir, LOGINS_FILE), encryptBrowserState(JSON.stringify({ version: 1, logins: [
       { id: "old-1", host: "example.com", username: "alice", password: PASSWORD, source: "card", bots: ["pepper"], createdAt: 5, updatedAt: 5 },
@@ -90,7 +89,7 @@ describe("the saved logins store", () => {
     expect(store.usableFor("www.example.org", "pepper").map((login) => login.id)).toEqual(["old-3"]);
 
     store.markUsed("old-1");
-    const written = JSON.parse(decryptBrowserState(readFileSync(join(dir, LOGINS_FILE)), KEY));
+    const written = credentialStore(dir).read("logins") as { logins: unknown[] };
     expect(written.logins[0]).toMatchObject({ id: "old-1", host: "example.com", site: "example.com", hosts: ["example.com"], exactHost: false, lastUsedAt: 9 });
     expect(previousRelease.parse(written).logins.map((login) => login.host)).toEqual(["example.com", "alice.github.io", "login.example.org"]);
     expect(new LoginStore({ dataDir: dir }).onePasswordToken()).toBe("ops_fake-token");
@@ -147,7 +146,7 @@ describe("the saved logins store", () => {
     const store = new LoginStore({ dataDir: dir });
     store.setOnePasswordToken("ops_fake-service-account-token");
     expect(new LoginStore({ dataDir: dir }).onePasswordToken()).toBe("ops_fake-service-account-token");
-    expect(readFileSync(join(dir, LOGINS_FILE)).includes(Buffer.from("ops_fake"))).toBe(false);
+    expect(readFileSync(join(dir, ".credentials/logins.enc")).includes(Buffer.from("ops_fake"))).toBe(false);
     expect(store.onePasswordGrants()).toEqual({});
     store.setOnePasswordGrant("v1", ["pepper"]);
     store.setOnePasswordGrant("v2", []);
@@ -205,6 +204,6 @@ describe("the held-secret scrubber", () => {
       expect(redactSecretsInText("My password is fake-hunter2, enjoy.")).toBe("My password is ••••••, enjoy.");
       expect(redactSecretsInText("555123")).toBe("••••••");
     } finally { remove(); }
-    expect(redactSecretsInText("My password is fake-hunter2, enjoy.")).toBe("My password is fake-hunter2, enjoy.");
+    expect(redactSecretsInText("My password is fake-hunter2, enjoy.")).toBe("My password is ••••••, enjoy.");
   });
 });

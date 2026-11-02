@@ -1,3 +1,4 @@
+import { credentialStore } from "./credential-store.ts";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
@@ -355,9 +356,9 @@ describe("a sign-in app registered in advance", () => {
     registered = { clientId: "corp", clientSecret: secret };
     expect((await signIn()).phase).toBe("succeeded");
     expect(oauth.clientAuths).toEqual([{ method: "post", clientId: "corp" }]);
-    const stored = readFileSync(join(dir, "mcp-oauth.json"), "utf8");
+    const stored = readFileSync(join(dir, ".credentials/mcp-oauth.enc"), "utf8");
     expect(stored).not.toContain(secret);
-    expect(JSON.parse(stored).servers.docs).toMatchObject({ clientId: "corp", tokenAuth: "client_secret_post" });
+    expect((credentialStore(dir).read("mcp-oauth") as { servers: { docs: unknown } }).servers.docs).toMatchObject({ clientId: "corp", tokenAuth: "client_secret_post" });
   });
 
   it("reports a refused secret as a failed sign-in", async () => {

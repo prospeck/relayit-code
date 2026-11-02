@@ -11,6 +11,7 @@ import { backup, DatabaseSync } from "node:sqlite";
 import { pipeline } from "node:stream/promises";
 import { Worker } from "node:worker_threads";
 import { writeFileAtomic } from "./atomic.ts";
+import { PROVIDER_AUTH_FOLDER_ENV } from "./provider-auth-paths.ts";
 import { WORKSPACE_BACKUP_CLIENT_KEYS } from "../shared/workspace-backup-client.ts";
 import { INSTRUCTION_FILE, restorePaths, validRelative } from "./workspace-backup-paths.ts";
 import { ephemeralWorkspaceTokenPath, excludedWorkspaceAuthPath, liveDataEnginePath, managedTaskSkillLink, portableWorkspaceConfig, redownloadedOrgLibraryPath, restoredWorkspaceConfig } from "./workspace-backup-policy.ts";
@@ -158,7 +159,7 @@ function assertLocalAuthOutsideSnapshot(dataDir: string): void {
   const configPath = join(dataDir, "config.json");
   const config = existsSync(configPath) ? privateJson(configPath) : {};
   const instances = record(config) && record(config.instances) ? config.instances : {};
-  const fields = ["HOME", "USERPROFILE", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "GROK_HOME", "KIMI_CODE_HOME", "HERMES_HOME", "FACTORY_HOME_OVERRIDE", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "LOCALAPPDATA"];
+  const fields = PROVIDER_AUTH_FOLDER_ENV;
   const check = (value: unknown, field: string, home: string) => {
     if (typeof value !== "string" || !value.trim()) return;
     const text = value.trim();

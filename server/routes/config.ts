@@ -1,4 +1,7 @@
 import * as boat from "../boat.ts";
+import { holdConfigCredentialValues } from "../config-credentials.ts";
+import { onJsonBody } from "../harness/http.ts";
+import { redactSecrets } from "../redact.ts";
 import { boatCreateRecoverySnapshot, retireDeletedBoatCreate } from "../boat-create-idempotency.ts";
 import { boatDeletionSnapshot } from "../boat-delete-journal.ts";
 import { browserEngineStatus, browserSessionId } from "../browser-engine.ts";
@@ -112,12 +115,14 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     configForAccess, resyncOpenCodeProviderKeys, revokeEngineCapabilities, reloadProviders, broadcast, drainQueuedSends, ownProfile, postiz,
   } = deps;
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
+    if (path === "/api/config") onJsonBody(res, redactSecrets);
     // API keys are never echoed back: booleans only.
     if (method === "GET" && path === "/api/config") {
       return json(res, 200, configForAccess(configStatus(), auth));
     }
     if ((method === "PUT" || method === "PATCH") && path === "/api/config") {
       const body = await readBody(req);
+      holdConfigCredentialValues(body);
       if (hostedModels && ["instances", "anthropic", "openai", "openrouter", "openaiCompat", "xai", "mistral", "cerebras", "groq", "greenference", "meta", "opencodeGo"].some(key => Object.hasOwn(body, key))) return json(res, 403, { error: HOSTED_PROVIDER_SETTINGS_ERROR });
       const patch = parseConfigPatch(body);
       if (patch.profile && ownProfile) {

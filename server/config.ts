@@ -6,7 +6,8 @@ import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { normalizeImageGenerationUrl, type ImageGenerationConfig } from "../shared/image-generation.ts";
 import { botAvatarUrlSchema } from "../shared/bot-avatar.ts";
-import { writeFileAtomic } from "./atomic.ts";
+import { holdConfigCredentialValues, hydrateConfigCredentials, persistConfigCredentials, readConfigCredentials } from "./config-credentials.ts";
+import { CredentialStorageError } from "../electron/credential-store.mjs";
 import { anthropicKeyEnv } from "./anthropic-key-env.ts";
 import { withoutComputerEngine } from "./computer-engine-removal.ts";
 import { newBotDefaultsSchema, type NewBotDefaults } from "./new-bot-defaults.ts";
@@ -750,7 +751,7 @@ export function ensureDirs() {
 }
 
 let lastIgnoredConfigWarning = "";
-const storedConfig = settledFileCache(() => join(DATA_DIR, "config.json"), () => parseStoredConfig(parseJson(readFileSync(join(DATA_DIR, "config.json"), "utf8"))));
+const storedConfig = settledFileCache(() => join(DATA_DIR, "config.json"), () => parseStoredConfig(readConfigCredentials(DATA_DIR)));
 
 export function loadConfig(): AppConfig {
   let cfg: AppConfig = {};
@@ -758,6 +759,7 @@ export function loadConfig(): AppConfig {
     cfg = structuredClone(storedConfig.read());
     lastIgnoredConfigWarning = "";
   } catch (error) {
+    if (error instanceof CredentialStorageError) throw error;
     if ((error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT") {
       // JSON.parse errors can quote the input; a credential must never reach the log.
       const reason = error instanceof SyntaxError ? "invalid JSON"
@@ -813,6 +815,7 @@ export function loadConfig(): AppConfig {
     if (process.env.OMB_SIGNIN_EMAILS !== undefined) cfg.signIn.admins = splitEmails(process.env.OMB_SIGNIN_EMAILS);
     if (process.env.OMB_SIGNIN_MEMBER_EMAILS !== undefined) cfg.signIn.members = splitEmails(process.env.OMB_SIGNIN_MEMBER_EMAILS);
   }
+  holdConfigCredentialValues(cfg);
   return cfg;
 }
 
@@ -940,8 +943,10 @@ export function saveConfig(
   let disk: JsonObject = {};
   try {
     const parsed = jsonObjectSchema.safeParse(parseJson(readFileSync(p, "utf8")));
-    if (parsed.success) disk = parsed.data;
-  } catch {
+    if (!parsed.success) throw new CredentialStorageError();
+    disk = hydrateConfigCredentials(DATA_DIR, parsed.data);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT") throw new CredentialStorageError();
   }
   const checkedPatch = appConfigSchema.partial().extend({ threads: threadsPatchSchema.optional(), newBots: newBotsPatchSchema.optional() }).parse(patch);
   const before = configSaveListeners.size ? structuredClone(disk) : disk;
@@ -1042,7 +1047,7 @@ export function saveConfig(
     }
   }
   mkdirSync(DATA_DIR, { recursive: true });
-  writeFileAtomic(p, JSON.stringify(disk, null, 2), { mode: 0o600 });
+  persistConfigCredentials(DATA_DIR, disk);
   storedConfig.forget();
   for (const listener of configSaveListeners) {
     try {

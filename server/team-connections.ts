@@ -6,13 +6,14 @@
 //     own MCP keys and their own MCP sign-ins.
 // Security: 0600 files in a 0700 folder that no backup carries and no bot box binds; a member's key and sign-in are pinned
 // to the server's address, so an admin re-pointing a server never sends them on.
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 
 import { ensureManagedComposioCredentials, managedComposioAccess } from "../electron/managed-composio.mjs";
 import { writeFileAtomic } from "./atomic.ts";
 import { McpOAuthManager, type McpSignInPhase } from "./mcp-oauth.ts";
+import { mcpOAuthFiles, removeMcpOAuthFile } from "./mcp-oauth-store.ts";
 import type { McpOAuthClientConfig } from "./mcp-registry.ts";
 
 export type ConnectionScope = "team" | "person";
@@ -223,7 +224,7 @@ export class PeopleConnections {
   signedInPeople(name: string, url: string): Array<{ person: string; email: string }> {
     const folder = join(this.dir, "mcp-oauth");
     if (!existsSync(folder)) return [];
-    return readdirSync(folder).flatMap((file) => {
+    return mcpOAuthFiles(folder).flatMap((file) => {
       const person = file.replace(/\.json$/, "");
       if (!PERSON.test(person) || !file.endsWith(".json")) return [];
       return this.oauth(person).authState(name, url) === "signed-in" ? [{ person, email: this.emailOf(person) ?? "" }] : [];
@@ -247,7 +248,7 @@ export class PeopleConnections {
     if (changed) this.write("mcp-keys.json", file);
     const folder = join(this.dir, "mcp-oauth");
     if (!existsSync(folder)) return;
-    for (const entry of readdirSync(folder)) {
+    for (const entry of mcpOAuthFiles(folder)) {
       const person = entry.replace(/\.json$/, "");
       if (PERSON.test(person)) this.oauth(person).forget(name);
     }
@@ -260,7 +261,7 @@ export class PeopleConnections {
     if (keys.people[person]) { delete keys.people[person]; this.write("mcp-keys.json", keys); }
     this.managers.get(person)?.dispose();
     this.managers.delete(person);
-    rmSync(join(this.dir, "mcp-oauth", `${person}.json`), { force: true });
+    removeMcpOAuthFile(join(this.dir, "mcp-oauth", `${person}.json`));
   }
 }
 

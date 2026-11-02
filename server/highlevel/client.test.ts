@@ -11,7 +11,7 @@ import { FAKE_LOCATION_ID, startFakeHighLevel, startFakeRelay, type FakeHighLeve
 import { BUDGET_CALLS, FORBIDDEN_PATHS, HIGHLEVEL_CONVERSATIONS_VERSION, HIGHLEVEL_VERSION, HighLevelClient, HighLevelError, assertAllowedPath, type HighLevelClientOptions, isScopeRefusal, lookupLocation, plainError, redactSecrets } from "./client.ts";
 import { HIGHLEVEL_NOT_CONNECTED_TEXT, HIGHLEVEL_SIGNED_OUT_TEXT } from "./instructions.ts";
 import { HighLevelRelayError, createHighLevelRelay, type RelayTokens } from "./relay.ts";
-import { HIGHLEVEL_FILE, HIGHLEVEL_KEY_FILE, HighLevelStore } from "./store.ts";
+import { HighLevelStore } from "./store.ts";
 import { HIGHLEVEL_TOOLS, runHighLevelTool } from "./tools.ts";
 
 let hl: FakeHighLevel;
@@ -53,14 +53,14 @@ function deferred<T = void>() {
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 describe("HighLevelStore", () => {
-  it("rests encrypted under its own 0600 key file and reads back the same connection", () => {
+  it("rests encrypted under the shared master key and reads back the same connection", () => {
     const { dir } = harness();
-    const bytes = readFileSync(join(dir, HIGHLEVEL_FILE));
+    const bytes = readFileSync(join(dir, ".credentials/highlevel.enc"));
     expect(bytes.toString("latin1")).not.toContain("hl_access_seed");
     expect(bytes.toString("latin1")).not.toContain("hl_refresh_seed");
     if (process.platform !== "win32") {
-      expect(statSync(join(dir, HIGHLEVEL_FILE)).mode & 0o777).toBe(0o600);
-      expect(statSync(join(dir, HIGHLEVEL_KEY_FILE)).mode & 0o777).toBe(0o600);
+      expect(statSync(join(dir, ".credentials/highlevel.enc")).mode & 0o777).toBe(0o600);
+      expect(statSync(join(dir, ".credentials/master-key")).mode & 0o777).toBe(0o600);
     }
     const again = new HighLevelStore({ dataDir: dir });
     expect(again.get()).toMatchObject({ kind: "oauth", accessToken: "hl_access_seed", refreshToken: "hl_refresh_seed", locationId: FAKE_LOCATION_ID, locationName: "Example Profiles", state: "signed-in" });

@@ -260,7 +260,7 @@ export async function runSetup(
           entry = reuse && prior
             ? { ...cfg.instances![id]!, config: { ...rawObject(cfg.instances![id]!.config), model } }
             : { driver: "openai-compat", displayName: label, config: { url, key, model, provider: routingProvider ?? "" } };
-          if (!reuse) io.log("The key will be stored in your private config.json (plaintext, owner-only permissions on Unix). Never share this file.");
+          if (!reuse) io.log("The key will be encrypted in the shared credential store. Headless protection is weaker: the master key is a local owner-only file.");
         }
         break;
       } catch (error) {

@@ -1,3 +1,4 @@
+import { credentialStorageStatus, listenDesktopPrivateMessages } from "./credential-store.ts";
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -1538,7 +1539,7 @@ const browserCleanup: BrowserCleanupCoordinator = new BrowserCleanupCoordinator(
   },
 });
 const phoneSecrets = new PhoneSecretBridge(postDesktopPrivateMessage);
-utilityParentPort?.on("message", (event) => {
+listenDesktopPrivateMessages((event) => {
   const message = event?.data;
   try {
     if (applyDesktopMutationTokenMessage(message) || desktopComputer.receive(message)) return;
@@ -11920,6 +11921,7 @@ function configStatus() {
   const eventLogMaxBytes = threadEventLogMaxBytes(cfg);
   const eventLogRetentionDays = threadEventLogRetentionDays(cfg);
   return {
+    credentialStorage: credentialStorageStatus(DATA_DIR),
     xai: keyStatus(cfg.xai?.key),
     mistral: keyStatus(cfg.mistral?.key),
     cerebras: keyStatus(cfg.cerebras?.key),
