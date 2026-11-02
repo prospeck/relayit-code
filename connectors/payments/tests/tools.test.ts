@@ -25,7 +25,8 @@ describe("payment MCP tools", () => {
     }
     try {
       const { tools } = await client.listTools();
-      expect(tools).toHaveLength(3);
+      expect(tools).toHaveLength(5);
+      expect(tools.filter((tool) => tool._meta?.["relayit/previewOnly"] === true)).toHaveLength(2);
       expect(tools.find((tool) => tool.name === "payments_mark_paid_by_user")?.annotations?.readOnlyHint).toBe(false);
       const payment = await call("payments_create_request", input);
       expect(payment).toMatchObject({ type: "payment", status: "pending", amountInr: 450 });

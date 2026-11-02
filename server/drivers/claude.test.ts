@@ -6,6 +6,8 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { MockFoodProvider } from "../../connectors/food/src/mock/provider.ts";
+import { indiaServiceSpec } from "../india-services.ts";
 import { DATA_DIR, ensureDirs, instanceConfigs, NATIVE_DIR, type AppConfig } from "../config.ts";
 import { TurnAuthenticationRefusedError, type ProviderInstance } from "../contracts.ts";
 import { recordEvents, type EventRecorder } from "../testing/events.ts";
@@ -1072,7 +1074,35 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     await recorder.until((e) => e.type === "turn.completed");
   });
 
-  it("still shows an unknown permission tool's raw arguments — they are the whole decision", async () => {
+  it.each(["cart", "missing"])("previews a shipped food permission from %s before opening a card", async (which) => {
+    const food = new MockFoodProvider(join(scratch, "india-services", "food"));
+    const restaurant = (await food.searchRestaurants({ query: "California Pizza" }))[0]!;
+    const menu = await food.getMenu(restaurant.id);
+    const cart = await food.quote({ restaurantId: restaurant.id, items: [{ itemId: menu.categories[0]!.items[0]!.id, qty: 1 }], deliveryAddress: { label: "Home", line: "12 Demo Road, Bengaluru" } });
+    await create("hang");
+    const threadId = `preview-${which}`;
+    await instance.adapter.sendTurn({ threadId, text: "go", integrations: { custom: { "india-food": indiaServiceSpec("food", scratch)!.server } } });
+    await recorder.until((event) => event.type === "session.started");
+    const conn = await connectSocket(permissionSocketPath(threadId));
+    const next = answerQueue(conn);
+    conn.write(JSON.stringify({ t: "ask", id: "preview", tool: "mcp__india-food__place_order", input: { cartId: which === "cart" ? cart.cartId : "missing", amountInr: 1 } }) + "\n");
+    if (which === "cart") {
+      const opened = await recorder.until((event) => event.type === "request.opened");
+      if (opened.type !== "request.opened") throw new Error("Expected a permission card");
+      expect(opened.summary).toContain(`Total: ₹${cart.totalInr.toFixed(2)}`);
+      expect(opened.summary).toContain("12 Demo Road, Bengaluru");
+      await instance.adapter.respondToRequest(threadId, opened.requestId!, { behavior: "deny" });
+    } else {
+      await recorder.until((event) => event.type === "runtime.notice" && event.message.includes("preview failed"));
+      expect(recorder.events.some((event) => event.type === "request.opened")).toBe(false);
+    }
+    expect(await next()).toMatchObject({ t: "answer", behavior: "deny" });
+    conn.destroy();
+    await instance.adapter.interruptTurn(threadId);
+    await recorder.until((event) => event.type === "turn.completed");
+  });
+
+  it("shows an unknown MCP tool with labelled arguments", async () => {
     await create("hang");
     await instance.adapter.sendTurn({ threadId: "t-perm-raw", text: "go" });
     await recorder.until((e) => e.type === "session.started");
@@ -1083,7 +1113,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     );
 
     const opened = await recorder.until((e) => e.type === "request.opened");
-    expect(opened).toMatchObject({ requestType: "permission", summary: '{"amount":4200,"to":"acct-9"}' });
+    expect(opened).toMatchObject({ requestType: "permission", summary: "Amount: 4200\nTo: acct-9" });
     expect((opened as { choices?: string[] }).choices).toBeUndefined();
 
     conn.end();

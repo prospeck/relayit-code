@@ -1,3 +1,4 @@
+import { ToolApprovalPreviewError } from "../tool-approval-preview.ts";
 import { createHash } from "node:crypto";
 import { isOutboundTool } from "../../shared/outbound.ts";
 import { localModelRedirect } from "./local-model-guard.ts";
@@ -604,6 +605,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
       const denials: string[] = [], failedCalls: string[] = [];
       const seenCalls = new Set<string>();
       let nudges = 0;
+      let localNudges = 0;
       let unread: string[] = [];
       let callsAtNudge = -1;
       const repeats = options.localModel ? new ChatRepeatGuard() : undefined;
@@ -650,7 +652,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
               }
               pending[streamKind] = hold ? combined.slice(-hold) : "";
               const visible = safeText(hold ? combined.slice(0, -hold) : combined);
-              if (visible) emit({ ...base(turn.threadId, turnId), type: "content.delta", streamKind, delta: visible });
+              if (visible && !(options.localModel && tools?.definitions.length && streamKind === "assistant_text")) emit({ ...base(turn.threadId, turnId), type: "content.delta", streamKind, delta: visible });
             };
             try {
               completion = await complete(messages, model, true, abort.signal, (text, streamKind) => {
@@ -733,7 +735,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
           }
           // Reasoning on a tool-call round belongs to the protocol, not a final reply.
           const reply = completion.text.trim() ? completion.text : completion.toolCalls.length || unreadable ? "" : completion.reasoning;
-          if (reply.trim()) emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "assistant_text", text: safeText(reply) });
+          if (reply.trim() && !(options.localModel && tools.definitions.length)) emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "assistant_text", text: safeText(reply) });
           abort.signal.throwIfAborted();
           if (unreadable) {
             askedAgain = true;
@@ -757,17 +759,23 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
             }
             if (options.localModel && tools.definitions.length && !turnEntry.ending) {
               const toolResults = messages.flatMap((message) => message.role === "tool" && typeof message.content === "string" ? [message.content] : []);
-              const toolsCalled = messages.flatMap((message) => message.role === "assistant" ? (message.tool_calls ?? []).map((call) => call.function.name) : []);
-              const redirect = localModelRedirect(completion.text, toolResults, toolsCalled);
-              if (redirect && nudges < MAX_ANNOUNCEMENT_NUDGES) {
-                nudges += 1;
-                callsAtNudge = seenCalls.size;
+              const successful = new Set(messages.flatMap((message) => {
+                if (message.role !== "tool" || typeof message.content !== "string") return [];
+                try { return JSON.parse(message.content).ok === true ? [message.tool_call_id] : []; } catch { return []; }
+              }));
+              const toolsCalled = messages.flatMap((message) => message.role === "assistant" ? (message.tool_calls ?? []).filter((call) => successful.has(call.id)).map((call) => call.function.name) : []);
+              const redirect = localModelRedirect(completion.text, toolResults, toolsCalled, tools.definitions.some((tool) => tool.function.name.endsWith("payments_create_request")),
+                /^(?:please\s+)?order\b|\b(?:can|could|would) you (?:please )?order\b|\bi (?:want|would like) to order\b/i.test(turn.text.trim()) && tools.definitions.some((tool) => tool.function.name.endsWith("prepare_order")));
+              if (redirect && localNudges < MAX_ANNOUNCEMENT_NUDGES) {
+                localNudges += 1;
                 messages.push(assistantReply(model, completion, completion.text), { role: "user", content: redirect.message });
                 continue;
               }
               if (redirect?.mustHold) {
                 stopReason = "incomplete_action";
-                throw new ChatProtocolError("The local model kept stating prices it hadn't looked up, so its reply was held back. Try again, or use a stronger model.");
+                emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "assistant_text", text: "I couldn't verify the next step, so I stopped. Check any existing order or payment before trying again." });
+                ok = true;
+                break;
               }
             }
             if (options.nudgeAnnouncedAction && tools.definitions.length && announcesAction(completion.text)) {
@@ -788,6 +796,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
               messages.push(assistantReply(model, completion, reply));
               continue;
             }
+            if (options.localModel && tools.definitions.length && reply.trim()) emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "assistant_text", text: safeText(reply) });
             ok = true;
             break;
           }
@@ -840,11 +849,11 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
                 if (refused) { skipRepeatCount = true; throw new Error(refused); }
                 tools.validate(call.function.name, args);
                 const shown = tools.view(call.function.name, args as Record<string, unknown>); title = shown.title;
-                const shownPreview = shown.input === args ? inputPreview : preview(shown.input);
+                const shownPreview = await tools.approvalSummary(call.function.name, args as Record<string, unknown>);
                 // This runtime has no provider reviewer, so Full access is honoured here, except for sends and money.
                 const full = (turn.approvalModeNow?.() ?? turn.approvalMode) === "full";
                 const floored = approval.floored({ full, threadId: turn.threadId, botId: turn.botId, shown, summary: shownPreview });
-                const allowed = !floored && ((full ? !isOutboundTool(call.function.name) : !shown.ask)
+                const allowed = !floored && ((full ? !isOutboundTool(shown.title) : !shown.ask)
                   || await approval.ask(shown.title, shownPreview ?? "This tool has no arguments.", shown.grant));
                 abort.signal.throwIfAborted();
                 emit({ ...base(turn.threadId, turnId), type: "item.started", itemType: "tool", itemId: call.id,
@@ -872,6 +881,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
               }
             } catch (error) {
               if (error instanceof ChatToolSessionError) fatal = error;
+              if (error instanceof ToolApprovalPreviewError) denials.push(title);
               result = { ok: false, text: abort.signal.aborted
                 ? "Tool interrupted; an operation already dispatched may have taken effect. Verify its state before retrying."
                 : safeText(asError(error).message).slice(0, 2_000) };
@@ -882,12 +892,28 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
             const output = preview({ ok: result.ok, result: text });
             emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "tool", itemId: call.id, ok: result.ok, output });
             if (!result.ok) { toolFailed = true; failedCalls.push(title); }
+            else localNudges = 0;
             messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ ok: result.ok, result: repeatNote ? `${text}\n\n${repeatNote}` : text }) });
+            if (options.localModel && call.function.name === "india_food_prepare_order" && result.ok) {
+              const lookupIds = new Set(messages.flatMap((message) => message.role === "assistant"
+                ? (message.tool_calls ?? []).filter((call) => ["india_food_search_restaurants", "india_food_get_menu"].includes(call.function.name)).map((call) => call.id) : []));
+              for (const message of messages) {
+                if (message.role === "tool" && lookupIds.has(message.tool_call_id!)) {
+                  message.content = JSON.stringify({ ok: true, result: "Catalogue lookup completed. The prepared cart below contains the selected items, delivery address and authoritative total." });
+                }
+              }
+            }
             screenshotParts.push(...chatToolImages(call.id, result.images));
             abort.signal.throwIfAborted();
             if (fatal) throw fatal;
+            if (options.localModel && denials.length) {
+              emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "assistant_text",
+                text: result.text.includes("server preview failed") ? result.text : "The action was declined. I stopped; it was not executed." });
+              break;
+            }
             if (repeats?.stopped) { stopReason = "incomplete_action"; throw new ChatProtocolError(repeats.stopped); }
           }
+          if (options.localModel && denials.length) { ok = true; stopReason = "refused"; break; }
           if (screenshotParts.length) messages.push({ role: "user", content: screenshotParts });
         }
         if (!ok) throw new ChatProtocolError(stoppedAfter(`${MAX_CHAT_ROUNDS} steps`));

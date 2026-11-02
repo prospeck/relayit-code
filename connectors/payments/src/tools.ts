@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { amountInPaise, VPA_PATTERN } from "./upi.ts";
-import type { Payment, PaymentService } from "./service.ts";
+import type { CreatePaymentRequest, Payment, PaymentService } from "./service.ts";
 
 export const createInput = z.object({
   orderId: z.string().trim().min(1),
@@ -26,7 +26,7 @@ export function paymentOutput(payment: Payment) {
   return { type: "payment" as const, demo: payeeName.endsWith(" (demo)"), id, orderId, amountInr, payeeName, payeeVpa, status, upiUri, checkoutUrl, externalRef };
 }
 
-export function registerTools(server: McpServer, service: PaymentService, settled?: (payment: Payment) => Promise<void>) {
+export function registerTools(server: McpServer, service: PaymentService, settled?: (payment: Payment) => Promise<void>, resolveRequest?: (input: CreatePaymentRequest) => Promise<CreatePaymentRequest>) {
   async function result(work: () => Promise<Payment>) {
     try {
       const payment = await work();
@@ -36,11 +36,29 @@ export function registerTools(server: McpServer, service: PaymentService, settle
       return { isError: true, content: [{ type: "text" as const, text: "Payment request failed. Check the request or connection and retry." }] };
     }
   }
+  const request = async (input: CreatePaymentRequest) => resolveRequest ? resolveRequest(input) : input;
+  const preview = (title: string, input: { amountInr: number; payeeName: string; payeeVpa: string; orderId: string }) => ({
+    title, summary: `For order ${input.orderId}. No money is sent by this app.`, recipient: input.payeeName, amountInr: input.amountInr,
+    details: [{ label: "Payee", value: input.payeeName }, { label: "UPI address", value: input.payeeVpa }, { label: "Order", value: input.orderId }],
+  });
+  const previewResult = async (work: () => Promise<unknown>) => {
+    try { return { content: [{ type: "text" as const, text: JSON.stringify(await work()) }] }; }
+    catch { return { isError: true, content: [{ type: "text" as const, text: "Payment preview unavailable" }] }; }
+  };
+  server.registerTool("preview_create_request", {
+    description: "Preview the stored order's payment request.", inputSchema: createInput,
+    _meta: { "relayit/previewOnly": true }, annotations: { readOnlyHint: true },
+  }, (input) => previewResult(async () => preview("Create payment request", await request(input))));
+  server.registerTool("preview_mark_paid_by_user", {
+    description: "Preview the stored payment assertion.", inputSchema: confirmInput,
+    _meta: { "relayit/previewOnly": true }, annotations: { readOnlyHint: true },
+  }, (input) => previewResult(async () => preview("Record your unverified payment assertion", await service.getPayment(input.paymentId))));
   server.registerTool("payments_create_request", {
     description: "Prepare a UPI QR and optional Razorpay test link for a quoted order. Never sends money; the person pays themselves. Use the exact quoted payee and amount. Demo orders must never be paid with real money.",
     inputSchema: createInput,
+    _meta: { "relayit/previewTool": "preview_create_request", "relayit/money": true },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-  }, (input) => result(() => service.createRequest(input)));
+  }, (input) => result(async () => service.createRequest(await request(input))));
   server.registerTool("payments_check_status", {
     description: "Check payment by paymentId or orderId. A user_confirmed UPI assertion is not bank verification. Razorpay is test mode only.",
     inputSchema: lookupInput,
@@ -52,6 +70,7 @@ export function registerTools(server: McpServer, service: PaymentService, settle
   server.registerTool("payments_mark_paid_by_user", {
     description: "Requires the person's approval: record their assertion that they paid, optionally with a 12-digit UTR. Does not verify payment or confirm an order.",
     inputSchema: confirmInput,
+    _meta: { "relayit/previewTool": "preview_mark_paid_by_user", "relayit/money": true },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
   }, (input) => result(() => service.userConfirmedUpi(input.paymentId, input.utr)));
 }

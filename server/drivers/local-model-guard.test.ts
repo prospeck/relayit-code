@@ -28,7 +28,7 @@ describe("localModelRedirect", () => {
     "I can't access your orders.",
     "Sorry, I have no access to that.",
   ])("sends back a claim of no access: %s", (reply) => {
-    expect(localModelRedirect(reply, [])?.mustHold).toBe(false);
+    expect(localModelRedirect(reply, [])?.mustHold).toBe(true);
   });
   it.each([
     "I've prepared the cart. Would you like me to place the order?",
@@ -54,4 +54,29 @@ describe("localModelRedirect", () => {
     expect(localModelRedirect(summary, [MENU], ["india_food_prepare_order", "india_food_place_order"])).toBeNull();
     expect(localModelRedirect(summary, [MENU], ["india_food_get_menu"])).toBeNull();
   });
+});
+
+it("requires a payment handoff after a successful awaiting-payment order only when payments are available", () => {
+  const result = JSON.stringify({ ok: true, result: JSON.stringify({ status: "awaiting_payment", orderId: "o", amountInr: 851, payee: { name: "Demo", vpa: "demo@bank" } }) });
+  expect(localModelRedirect("Your order is confirmed.", [result], ["india_food_place_order"], true)?.message).toContain('"amountInr":851');
+  expect(localModelRedirect("Your order awaits payment.", [result], ["india_food_place_order"])).toBeNull();
+  expect(localModelRedirect("Scan the card.", [result], ["india_food_place_order", "india_payments_payments_create_request"], true)).toBeNull();
+});
+
+it("holds a made-up claim that ordering is unavailable before any lookup", () => {
+  expect(localModelRedirect("I can't order from California Pizza as it's not available in India or in the demo catalogues I have access to.", [])?.mustHold).toBe(true);
+});
+
+it("holds an unavailable-service claim phrased as inability to assist with ordering", () => {
+  expect(localModelRedirect("I can't assist with ordering from California Pizza as it's not available in India.", [])?.mustHold).toBe(true);
+});
+
+it("allows a generated payment link without mistaking it for completed payment", () => {
+  expect(localModelRedirect("Your payment link has been successfully generated. Pay when ready.", ['{"type":"payment","status":"pending"}'], ["india_payments_payments_create_request"], true)).toBeNull();
+  expect(localModelRedirect("I’ve checked the order status and payment status. Order Status: Confirmed.", [], [], true)?.mustHold).toBe(true);
+});
+
+it("requires an order request to progress beyond the menu, while a menu-only request can finish", () => {
+  expect(localModelRedirect("Here is the menu.", [MENU], ["india_food_get_menu"], true, true)?.message).toContain("prepare_order");
+  expect(localModelRedirect("Here is the menu.", [MENU], ["india_food_get_menu"], true, false)).toBeNull();
 });

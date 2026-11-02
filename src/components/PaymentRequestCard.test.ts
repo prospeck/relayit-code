@@ -38,6 +38,10 @@ describe("UPI chat card", () => {
     expect(render({ ...card, demo: true })).toContain("no real payment");
     expect(render({ ...card, demo: true })).not.toContain("<svg");
     expect(render({ ...card, status: "user_confirmed" })).not.toContain("<svg");
+    const mock = render({ ...card, demo: true, checkoutUrl: "http://127.0.0.1:1234/pay/mock" });
+    expect(mock).toContain("<svg");
+    expect(mock).not.toContain("Open UPI app");
+    expect(mock).toContain("no real payment");
   });
   it("uses English fallback when a translated pack lacks the new strings", () => {
     try { setLocale("hi"); expect(render(card)).toContain("Pay in your UPI app"); }

@@ -1,3 +1,6 @@
+import { isOutboundTool } from "../../shared/outbound.ts";
+import { mcpApprovalSummary } from "./mcp-approval-preview.ts";
+import { PREVIEW_UNAVAILABLE } from "../tool-approval-preview.ts";
 // Claude Code over stream-json both ways: prompt on stdin, one retained CLI process per thread,
 // each turn settled by the CLI's own `result` frame.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -1296,7 +1299,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
           broker = await createPermissionBroker({
             socketPaths: brokerSocketCandidates(threadId, botId),
             isActive: () => Boolean(sessions.get(threadId)?.turn),
-            onAsk: (ask) => {
+            onAsk: async (ask) => {
               const eventTurnId = sessions.get(threadId)?.turn?.turnId ?? turnId;
               askTools.set(ask.id, typeof ask.tool === "string" ? ask.tool : undefined);
               const nativeMode = sessions.get(threadId)?.nativePermissionMode ?? null;
@@ -1305,18 +1308,28 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
                   ? nativeMode === "auto" ? "active" : "inactive"
                   : undefined;
               const questions = askQuestions(ask);
+              let summary = askSummary(ask);
+              if (ask.kind === "permission" && ask.tool.startsWith("mcp__")) {
+                try { summary = await mcpApprovalSummary(ask.tool, ask.input, sessions.get(threadId)?.turn?.input.integrations ?? turn.integrations); }
+                catch {
+                  emit({ ...base(threadId, eventTurnId), type: "runtime.notice", message: PREVIEW_UNAVAILABLE });
+                  broker?.answer(ask.id, "deny", PREVIEW_UNAVAILABLE);
+                  return;
+                }
+                if (!sessions.get(threadId)?.turn || sessions.get(threadId)?.turn?.turnId !== eventTurnId) return;
+              }
               emit({
                 ...base(threadId, eventTurnId),
                 type: "request.opened",
                 requestId: ask.id,
                 requestType: ask.kind,
                 tool: ask.tool,
-                summary: askSummary(ask),
+                summary,
                 // The Bash command, for exact-command grants and for the safety floor.
                 ...shellRequest(ask.kind === "permission" && ask.tool === "Bash" ? ask.input.command : undefined, commandCwd), ...(ask.kind === "permission" && readToolPaths(ask.tool, ask.input) ? { reads: readToolPaths(ask.tool, ask.input) } : {}),
                 requiresExplicitApproval: ask.kind === "permission" && ask.tool === "Bash" && ask.input.dangerouslyDisableSandbox === true || undefined,
                 nativeReview,
-                allowSession: ask.kind === "permission" && !(controlsHost && typeof ask.tool === "string" && ask.tool.startsWith("mcp__computer")) ? true : undefined,
+                allowSession: ask.kind === "permission" && !isOutboundTool(ask.tool) && !(controlsHost && typeof ask.tool === "string" && ask.tool.startsWith("mcp__computer")) ? true : undefined,
                 approvalScope:
                   typeof ask.tool === "string" && controlsHost && ask.tool.startsWith("mcp__computer")
                     ? "local-computer"

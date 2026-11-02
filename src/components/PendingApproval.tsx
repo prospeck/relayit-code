@@ -212,7 +212,9 @@ export const PendingApprovalPanel = memo(function PendingApprovalPanel({
         )}
       </div>
       {summary && <p dir="auto" className="mt-1.5 break-words text-[15px] font-medium leading-[22px] text-ink">{summary}</p>}
-      {inline && <AskDetail text={inline} mono label={t("approval.aria.reviewDetails")} />}
+      {inline && (COMMAND_TOOLS.has(pending.tool)
+        ? <AskDetail text={inline} mono label={t("approval.aria.reviewDetails")} />
+        : <p dir="auto" aria-label={t("approval.aria.reviewDetails")} className="mt-2 whitespace-pre-wrap break-words text-[14px] leading-[21px] text-ink">{inline}</p>)}
       {note && <p dir="auto" data-computer-ask-reason className="mt-1 break-words text-[13px] leading-[18px] text-ink-secondary">{note}</p>}
       {heldNote && (outbound ? (
         <p className="mt-2 flex items-center gap-1.5 text-[13px] leading-[18px] text-warning">

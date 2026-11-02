@@ -94,7 +94,7 @@ export function approvalCardOutcome(card: OptionCardData): string | undefined {
 
 export function toolLabel(tool?: string): string {
   if (!tool) return t("approval.tool.takeAction");
-  const bare = tool.replace(/^mcp__[^_]+__/, "").replace(/_/g, " ");
+  const bare = tool.replace(/^mcp__[^_]+__/, "").replace(/^india_(?:food|travel|payments)_/, "").replace(/_/g, " ");
   const nice: ToolLabels = {
     Bash: "approval.tool.runCommand",
     Read: "approval.tool.readFile",

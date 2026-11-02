@@ -30,10 +30,9 @@ export async function previewPlaceOrder(
   input: z.infer<typeof placeSchema>,
 ) {
   const cart = await provider.getCart(input.cartId);
-  const n = cart.lines.reduce((sum, line) => sum + line.qty, 0);
   return {
     title: `Order from ${cart.restaurant.name}`,
-    summary: `${n} item${n === 1 ? "" : "s"} delivered to ${cart.deliveryAddress.label} in about ${cart.etaMin} min. You'll pay on the next screen.`,
+    summary: `${cart.lines.map((line) => `${line.qty} × ${line.name}`).join(", ")} from ${cart.restaurant.name}. Delivered to ${cart.deliveryAddress.label}, ${cart.deliveryAddress.line}. Demo only; no real food or payment.`,
     service: "RelayIt Food (demo)",
     recipient: cart.restaurant.name,
     amountInr: cart.totalInr,
@@ -124,7 +123,7 @@ export function registerTools(server: McpServer, provider: FoodProvider) {
       description: "Preview the stored cart for order approval.",
       inputSchema: placeSchema,
       annotations: { readOnlyHint: true, destructiveHint: false },
-      _meta: meta("read", "Reviewing your order"),
+      _meta: { ...meta("read", "Reviewing your order"), "relayit/previewOnly": true },
     },
     (input) => result(() => previewPlaceOrder(provider, input)),
   );

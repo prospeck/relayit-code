@@ -70,8 +70,8 @@ button:hover{filter:brightness(.96)}button:focus-visible{outline:3px solid #9db7
 <div class="label">Paying</div><div class="payee">${escapeHtml(link.description || "RelayIt test merchant")}</div><div class="divider"></div>
 ${
   pending
-    ? `<form method="post" action="/pay/${link.id}/complete"><button class="pay" type="submit">Pay ${amount} (test)</button></form>
-<form method="post" action="/pay/${link.id}/cancel"><button class="cancel" type="submit">Cancel</button></form>`
+    ? `<form method="post" action="${escapeHtml(link.short_url)}/complete"><button class="pay" type="submit">Pay ${amount} (test)</button></form>
+<form method="post" action="${escapeHtml(link.short_url)}/cancel"><button class="cancel" type="submit">Cancel</button></form>`
     : `<div class="done">${link.status === "paid" ? "✓ Test payment complete" : "Test checkout closed"}</div>`
 }
 <footer>A local simulation. No bank details or UPI PIN needed.</footer></div></main></body></html>`;
@@ -94,22 +94,14 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
+export function createMockCheckoutHandler({ origin: getOrigin, prefix = "" }: { origin: () => string; prefix?: string }) {
   const links = new Map<string, MockLink>();
-  // eslint-disable-next-line prefer-const -- assigned once the server is listening
-  let origin: string;
-  const server = createServer((req, res) => {
-    void handle(req, res).catch(() => {
-      if (!res.headersSent) sendJson(res, 400, { error: "Invalid checkout request" });
-      else res.end();
-    });
-  });
-
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const path = new URL(req.url ?? "/", "http://localhost").pathname;
+    const origin = getOrigin();
+    const path = new URL(req.url ?? "/", "http://localhost").pathname.slice(prefix.length);
     if (req.method === "POST" && path === "/v1/payment_links") {
       // Browser forms must not create local links on behalf of another origin.
-      if (req.headers.origin && req.headers.origin !== origin) {
+      if (req.headers.origin && req.headers.origin !== new URL(origin).origin) {
         sendJson(res, 403, { error: "Origin not allowed" });
         return;
       }
@@ -151,7 +143,7 @@ export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
     const action = page?.[2];
     if (page && ((req.method === "GET" && !action) || (req.method === "POST" && action))) {
       if (req.method === "POST") {
-        if (req.headers.origin && req.headers.origin !== origin) {
+        if (req.headers.origin && req.headers.origin !== new URL(origin).origin) {
           sendJson(res, 403, { error: "Origin not allowed" });
           return;
         }
@@ -174,6 +166,19 @@ export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
     sendJson(res, 405, { error: "Method not allowed" });
   }
 
+  return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    try { await handle(req, res); }
+    catch {
+      if (!res.headersSent) sendJson(res, 400, { error: "Invalid checkout request" });
+      else res.end();
+    }
+  };
+}
+
+export async function startMockCheckout({ port = 0 }: { port?: number } = {}) {
+  let origin = "";
+  const handle = createMockCheckoutHandler({ origin: () => origin });
+  const server = createServer((req, res) => { void handle(req, res); });
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => {
