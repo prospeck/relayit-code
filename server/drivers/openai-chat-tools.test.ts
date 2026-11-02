@@ -1,6 +1,6 @@
 // Real HTTP + stdio MCP contract tests; tools write only in a fresh temporary directory.
-// Use the hosted driver by default: loopback OpenAI-compatible URLs deliberately enable local-model guards,
-// which have their own suite. Explicit provider cases below still cover OpenAI-compatible transport.
+// Hosted streaming and continuation cases use Cerebras: loopback OpenAI-compatible URLs deliberately
+// enable local-model guards, covered separately in openai-chat-local-model.test.ts.
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
@@ -94,7 +94,7 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
 });
 
-async function fixture(script: Script, provider: Provider = "grok", apiKey = API_KEY_CANARY) {
+async function fixture(script: Script, provider: Provider = "openai-compat", apiKey = API_KEY_CANARY) {
   const directory = mkdtempSync(join(tmpdir(), "omb-chat-tools-"));
   const requests: ChatRequest[] = [];
   const rpcStarted = deferred<{ name: string; args: Record<string, unknown> }>();
@@ -202,7 +202,7 @@ describe("bounded action announcement recovery", () => {
   it("does not nudge after a denied operation", async () => {
     const f = await fixture((_body, response, round) => round === 1
       ? sse(response, [chunk({ tool_calls: [toolCall()] }, "tool_calls")])
-      : answer(response, "I'll write the receipt now."));
+      : answer(response, "I'll write the receipt now."), "cerebras");
     await f.start();
     await f.decide("deny");
     expect(await f.completed()).toMatchObject({ ok: false });
@@ -289,7 +289,7 @@ describe("approvals that follow the other engines", () => {
       const call = calls[round - 1];
       if (call) sse(response, [chunk({ tool_calls: [call] }, "tool_calls")]);
       else answer(response);
-    });
+    }, "cerebras");
     const opened = () => f.recorder.events.filter((event) => event.type === "request.opened");
     await f.start();
     const first = await f.recorder.until((event) => event.type === "request.opened");
@@ -340,7 +340,7 @@ describe("whose allow \"Always allow this session\" keeps", () => {
       const call = calls[round - 1];
       if (call) sse(response, [chunk({ tool_calls: [call] }, "tool_calls")]);
       else answer(response);
-    });
+    }, "cerebras");
     const opened = () => f.recorder.events.filter((event) => event.type === "request.opened");
     // a room runs each member's turn on the room's one thread
     await f.start({ botId: "mira" });
@@ -489,7 +489,7 @@ describe("optional built-in question compatibility", () => {
   it("does not retry a streamed error after partial output", async () => {
     const f = await fixture((_body, response) => {
       sse(response, [chunk({ content: "Already started." }), unsupported]);
-    });
+    }, "cerebras");
     await f.start({ integrations: undefined });
     expect(await f.completed()).toMatchObject({ ok: false });
     expect(f.requests).toHaveLength(1);
@@ -644,7 +644,7 @@ describe("OpenAI-compatible computer images", () => {
     const f = await fixture((_body, response, round) => {
       if (round === 1) sse(response, [chunk({ tool_calls: [{ ...toolCall(), function: { ...toolCall().function, name: "computer_write" } }] }, "tool_calls")]);
       else answer(response, "The action was denied.");
-    });
+    }, "cerebras");
     await f.start({ integrations: { localComputer: f.integrations!.custom!.audit as NonNullable<SendTurnInput["integrations"]>["localComputer"] } });
     await f.decide("deny");
     expect(await f.completed()).toMatchObject({ ok: false });
@@ -966,7 +966,7 @@ describe("structured tool execution boundaries", () => {
       chunk({ [field]: `Before ${pieces[0]}` }),
       chunk({ [field]: pieces[1] }),
       chunk({ [field]: `${pieces[2]} after.` }, "stop"),
-    ]));
+    ]), "cerebras");
     await f.start({ integrations: undefined });
     expect(await f.completed()).toMatchObject({ ok: true });
     const deltas = f.recorder.events.filter((event) => event.type === "content.delta");
@@ -1079,7 +1079,7 @@ describe("structured tool execution boundaries", () => {
     const f = await fixture((_body, response, round) => {
       if (round === 1) sse(response, [chunk({ tool_calls: [toolCall()] }, "tool_calls")]);
       else answer(response, "I successfully wrote the receipt.");
-    });
+    }, "cerebras");
     await f.start();
     expect(await f.decide("deny")).toBe("rejected");
     expect(await f.completed()).toMatchObject({ ok: false });

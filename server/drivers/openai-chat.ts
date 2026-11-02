@@ -906,14 +906,14 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
             screenshotParts.push(...chatToolImages(call.id, result.images));
             abort.signal.throwIfAborted();
             if (fatal) throw fatal;
-            if (options.localModel && denials.length) {
+            if (options.localModel && denials.some((tool) => tool !== ASK_USER_TOOL)) {
               emit({ ...base(turn.threadId, turnId), type: "item.completed", itemType: "assistant_text",
                 text: result.text.includes("server preview failed") ? result.text : "The action was declined. I stopped; it was not executed." });
               break;
             }
             if (repeats?.stopped) { stopReason = "incomplete_action"; throw new ChatProtocolError(repeats.stopped); }
           }
-          if (options.localModel && denials.length) { ok = true; stopReason = "refused"; break; }
+          if (options.localModel && denials.some((tool) => tool !== ASK_USER_TOOL)) { ok = true; stopReason = "refused"; break; }
           if (screenshotParts.length) messages.push({ role: "user", content: screenshotParts });
         }
         if (!ok) throw new ChatProtocolError(stoppedAfter(`${MAX_CHAT_ROUNDS} steps`));
