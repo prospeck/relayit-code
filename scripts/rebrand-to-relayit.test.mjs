@@ -27,6 +27,7 @@ test("finds upstream addresses rather than turning them into domains we don't ow
   assert.deepEqual(upstreamAddresses("github.com/milind-soni/OpenMausBot"), ["github.com/milind-soni/OpenMausBot"]);
   assert.deepEqual(upstreamAddresses("openmausbot-composio.milindsoni201.workers.dev"), ["openmausbot-composio.milindsoni201.workers.dev"]);
   assert.deepEqual(upstreamAddresses("~/.openmausbot/config.json and openmausbot.js"), []);
+  assert.deepEqual(upstreamAddresses("/Applications/OpenMausBot.app/Contents"), []);
 });
 
 test("never touches the files the licence requires", () => {
