@@ -1,3 +1,4 @@
+import { createMockCheckoutHandler } from "../../connectors/payments/src/mockCheckout.ts";
 import { LOGIN_FIELD_MAX } from "../../shared/logins.ts";
 import { randomUUID } from "node:crypto";
 import { DATA_DIR } from "../config.ts";
@@ -8,7 +9,12 @@ import { PASS, type RouteHandler } from "./table.ts";
 
 export function createIndiaServiceRoutes({ config, cfg, logins: sharedLogins }: Pick<McpServerRouteDeps, "config" | "cfg" | "logins">): RouteHandler {
   const logins = sharedLogins ?? new LoginStore({ dataDir: DATA_DIR });
+  const mockPrefix = "/api/india/mock-checkout";
+  let mockOrigin = "";
+  const mockCheckout = createMockCheckoutHandler({ origin: () => mockOrigin, prefix: mockPrefix });
   return async ({ req, res, path, method, json, readBody }) => {
+    mockOrigin ||= `http://127.0.0.1:${req.socket.localPort}${mockPrefix}`;
+    if (path.startsWith(`${mockPrefix}/`)) return mockCheckout(req, res);
     if (method !== "POST" || !path.startsWith("/api/mcp/builtins/")) return PASS;
     if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, { error: "content-type must be application/json" });
     const answer = (result: ReturnType<typeof config.add>) => "body" in result
@@ -16,7 +22,7 @@ export function createIndiaServiceRoutes({ config, cfg, logins: sharedLogins }: 
       : json(res, result.status, { error: result.error });
     const indiaBuiltin = /^\/api\/mcp\/builtins\/(food|travel|payments)$/.exec(path);
     if (method === "POST" && indiaBuiltin) {
-      const spec = indiaServiceSpec(indiaBuiltin[1]!, DATA_DIR)!;
+      const spec = indiaServiceSpec(indiaBuiltin[1]!, DATA_DIR, undefined, `${mockOrigin}/v1`)!;
       return answer(config.add(spec.name, spec.server));
     }
     if (method === "POST" && path === "/api/mcp/builtins/payments/credentials") {
