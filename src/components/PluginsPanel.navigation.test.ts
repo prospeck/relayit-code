@@ -41,9 +41,7 @@ vi.mock("@/state/store", () => ({
   }),
 }));
 vi.mock("./McpServersPanel", () => ({
-  McpServersPanel: ({ embedded, whopCard }: { embedded?: boolean; whopCard?: boolean }) => whopCard
-    ? createElement("div", { "data-whop-card": true }, "Connect Whop")
-    : createElement("div", { "data-embedded": String(Boolean(embedded)) }, "MCP inventory"),
+  McpServersPanel: ({ embedded }: { embedded?: boolean }) => createElement("div", { "data-embedded": String(Boolean(embedded)) }, "MCP inventory"),
 }));
 
 vi.mock("./Avatar", () => ({ BotAvatar: ({ bot }: { bot: Bot }) => createElement("span", { "data-avatar": bot.id }) }));
@@ -64,11 +62,10 @@ const CARDS = 0;
 const CONFIGURED = 3;
 const STATUS = 6;
 const PHASE = 13;
-const HIGHLEVEL_CONNECTED = 21;
-const X_CONNECTED = 22;
-const CATEGORY = 20;
-const POSTIZ_CONNECTED = 23;
-const MODE = 4;
+const HIGHLEVEL_CONNECTED = 20;
+const X_CONNECTED = 21;
+const CATEGORY = 19;
+const POSTIZ_CONNECTED = 22;
 const SEARCH = 15;
 const TAB = 16;
 
@@ -114,20 +111,6 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Apps pop-up", () => {
-  it("connects Whop inside the apps grid without a Composio key or MCP detour", () => {
-    fixture.overrides.set(CONFIGURED, false);
-    const { html, nodes: tree } = render();
-    expect(html).toContain("Connect Whop");
-    expect(html).not.toContain("Set up Whop");
-    const grid = tree.find((node) => node.props["data-apps-grid"] !== undefined)!;
-    expect(nodes(grid).some((node) => node.props.whopCard === true)).toBe(true);
-    expect(fixture.dispatch).not.toHaveBeenCalled();
-  });
-  it("counts Whop among connected apps", () => {
-    fixture.overrides.set(18, true);
-    const { html } = render();
-    expect(html).toContain("2 connected");
-  });
   it("shows the native HighLevel card in the grid and counts it once connected", () => {
     const { html, nodes: tree } = render();
     const grid = tree.find((node) => node.props["data-apps-grid"] !== undefined)!;
@@ -187,17 +170,6 @@ describe("Apps pop-up", () => {
     expect(wrapper(render().nodes).props.className).toBe("contents");
     fixture.overrides.set(SEARCH, "gmail");
     expect(wrapper(render().nodes).props.className).toBe("hidden");
-  });
-  it("leaves out the managed install's dead Twitter tile, which the X card replaces, unless it is already connected", () => {
-    const tile = (tree: Node[]) => tree.find((node) => node.props["data-app-tile"] === "twitter");
-    fixture.overrides.set(CARDS, [card("gmail"), card("twitter")]);
-    fixture.overrides.set(MODE, "managed");
-    expect(tile(render().nodes)).toBeUndefined();
-    fixture.overrides.set(STATUS, { twitter: { connected: true, accounts: [{ id: "ca_x", status: "ACTIVE" }] } });
-    expect(tile(render().nodes)).toBeDefined();
-    fixture.overrides.set(STATUS, {});
-    fixture.overrides.set(MODE, "self-hosted");
-    expect(tile(render().nodes)).toBeDefined();
   });
   it("keeps a safe explicit authorization link and reopens without creating another account", async () => {
     const url = "https://auth.example.test/flow";
@@ -478,10 +450,10 @@ describe("Apps pop-up", () => {
   });
 
   it("drops a selected category when a filter is chosen, so the MCP section comes back", () => {
-    fixture.overrides.set(20, "Design");
+    fixture.overrides.set(CATEGORY, "Design");
     expect(render().html).not.toContain("MCP inventory");
     chip(render().nodes, "mcp").props.onClick!();
-    expect(fixture.overrides.get(20)).toBeNull();
+    expect(fixture.overrides.get(CATEGORY)).toBeNull();
     expect(render().html).toContain("MCP inventory");
   });
 
@@ -518,13 +490,13 @@ describe("Apps pop-up", () => {
     expect([...design.html.matchAll(/<h3 id="[^"]*"[^>]*>([^<]*)/g)].map((match) => match[1])).toEqual(["Design"]);
     expect(chip(design.nodes, "all").props["aria-pressed"]).toBe(false);
     expect(design.nodes.find((node) => node.props["data-apps-category"] === "Design")!.props["aria-pressed"]).toBe(true);
-    fixture.overrides.set(20, null);
+    fixture.overrides.set(CATEGORY, null);
     const again = render();
     expect(again.html.match(/>View all</g)).toHaveLength(1);
     const sections = again.nodes.filter((node) => node.props.viewAll);
     expect(sections.map((node) => node.props.title)).toEqual(["Productivity"]);
     (sections[0]!.props.viewAll as { onClick: () => void }).onClick();
-    expect(fixture.overrides.get(20)).toBe("Productivity");
+    expect(fixture.overrides.get(CATEGORY)).toBe("Productivity");
   });
 
   it("pairs the search with an MCP servers pill and puts the connected count, with app icons, in the header", () => {

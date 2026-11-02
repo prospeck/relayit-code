@@ -8,7 +8,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { openCredentialBroker, type CredentialBroker } from "../bot-box/broker.ts";
 import type { BrokerPath } from "../bot-box/broker-probe.ts";
-import { LOGINS_FILE } from "../login-store.ts";
 import { DATA_DIR, type AppConfig } from "../config.ts";
 import { json, readBody } from "../harness/http.ts";
 import type { TeamConnectionsHost } from "../host/team-connections-host.ts";
@@ -274,7 +273,7 @@ it("adds the shipped India tools off by default and keeps Razorpay keys out of c
   const visible = JSON.stringify({ response: await saved.json(), config: route.cfg, listing: await (await route.get()).json() });
   expect(visible).not.toContain("rzp_test_fixture");
   expect(visible).not.toContain("unused-local-placeholder");
-  const encrypted = readFileSync(join(DATA_DIR, LOGINS_FILE), "utf8");
+  const encrypted = readFileSync(join(DATA_DIR, ".credentials", "logins.enc"), "utf8");
   expect(encrypted).not.toContain("rzp_test_fixture");
   expect(encrypted).not.toContain("unused-local-placeholder");
   expect(route.cfg.mcpServers?.["india-payments"]).toMatchObject({ enabled: false });

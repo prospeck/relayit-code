@@ -15,4 +15,3 @@ export const CLOUD_SWATCH_LABEL = {
 } as const satisfies Record<CloudSwatch, LocaleKey>;
 export const CLOUD_SWATCH_ORDER = Object.keys(CLOUD_SWATCH_LABEL) as CloudSwatch[];
 export const DEFAULT_SWATCH: CloudSwatch = "blue";
-

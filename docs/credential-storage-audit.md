@@ -2,6 +2,18 @@
 
 This is a source audit of the RelayIt snapshot, plus isolated tests of the changed paths. It is not a claim that every upstream feature now satisfies RelayIt's secret rules. No installed application data or real keychain entry was inspected. Paths below are relative to the workspace data directory unless marked `userData`, companion, connector, or CLI-owned. Unix permission bits do not supply equivalent Windows ACL guarantees.
 
+## Service-removal scope — 3 November 2026
+
+The upstream Cloud accounts, managed Composio installation, tunnel accounts,
+managed companion tunnel, hosted connector deployment and organization handoff
+were removed after this audit. Their inventory entries below describe the
+2 November snapshot, not available features in this build. Direct Google,
+HighLevel private-integration tokens, user-supplied Composio keys, encrypted
+configuration, local CLI sign-ins, Tailscale and the person's own HTTPS server
+remain. Local transfer to a server of the person's own still carries selected
+credentials and is a privileged operation. No installed credentials were read
+or migrated during the service removal.
+
 ## Shared store design and migration
 
 `electron/credential-store.mjs` implements AES-256-GCM documents in `.credentials/`, with a random 32-byte master key, fresh 12-byte nonces, and authenticated version/namespace separation. Files are atomic, fsynced, owner-only writes; Unix directories are fsynced too. Decryption, authentication and schema failures refuse mutation. Errors never include plaintext, key material or parser input.

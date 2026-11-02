@@ -128,8 +128,9 @@ endpoints.
 API connections currently support chat only. Setup asks before a short,
 potentially billable API test; native setup confirms sign-in, with model
 access checked when you send a message. API billing is separate from
-ChatGPT/Claude subscriptions. New API keys in config.json are plaintext, not encrypted,
-with owner-only permissions (0600 on Unix). Keep these files private.
+ChatGPT/Claude subscriptions. API keys are encrypted in the shared credential store; config.json holds field-bound
+references. Headless mode protects the master with a local key file (0600 on Unix),
+so anyone who can read that file and the ciphertext can decrypt the keys.
 
 Ctrl-C before saving AI setup leaves its pending OMB changes unapplied.
 During the later phone step, it keeps the AI setup already saved and exits

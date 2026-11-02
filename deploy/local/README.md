@@ -1,6 +1,7 @@
 # Local Docker Compose
 
-From the repository root, run `docker compose up -d --build`, then open
+From the repository root, build the base with `docker build -t openmausbot:local .`,
+then run `docker compose up -d --build` and open
 http://localhost:8080. Docker with Linux containers is required.
 Compose supplies defaults; no `.env` file is required.
 The application container uses Docker's init process to reap orphaned agent

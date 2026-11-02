@@ -13,49 +13,13 @@ OpenMausBot uses one Composio project API key and one reusable Composio Session.
 
 The Connected tab lists every account separately. **Disconnect** revokes only the account named on that row. OpenMausBot asks for a label for every new account and configures Composio to require explicit selection when more than one account could run a tool; a new OAuth flow never silently becomes the default for an existing connection.
 
-The desktop app validates the key before saving it. The key is encrypted using Electron's operating-system-backed `safeStorage`; the local JSON configuration stores only the non-secret Composio user and Session identifiers.
-
-## MausBot Cloud
-
-A MausBot Cloud plan includes connected apps: there is no key to add. At every start a Cloud home's server makes sure it has its own installation on OpenMausBot's managed connection service, the same one the packaged desktop app registers with (`server/cloud-connected-apps.ts`, sharing `electron/managed-composio.mjs` with the app):
-
-- The first start registers the installation (`POST /v1/installations`) and keeps its token in `connected-apps-installation.json` in the data folder (`/data/.openmausbot`), owner-only (0600). The token is never written to `config.json`, sent to a client or logged.
-- Every later start serves that token at once and checks it with `GET /v1/me`. Only a refusal (401) registers a new installation; an outage or a rate limit keeps the token, so the Cloud's connected accounts are never stranded.
-- While the Cloud has no token (the service is down or refuses new registrations), the server keeps booting and serving, Connected apps says the service is temporarily unavailable, and it tries again after 30 seconds, then 1, 2, 5, 10 and every 30 minutes, with some jitter.
-- The file never goes into a backup or a move to another computer, and a restore keeps the Cloud's own (`server/workspace-backup-policy.ts`): its connected accounts belong to that installation.
-- A Composio project key the owner saves under **Self-host connected apps** still wins; clearing it returns to the included service.
-
-The built image uses the default service; `OMB_COMPOSIO_BROKER_URL` names another (a staging service, or a closed port in CI). The server run from source registers only with an explicitly named service, so development and tests never create installations on the real one.
+The desktop app validates the key before saving it. The key is stored in the shared encrypted credential store. Desktop uses OS-backed protection; headless mode uses a local master-key file, as explained in [credential storage](credential-storage-audit.md).
 
 ## App events
 
-An app-event automation runs a bot when something happens in a connected app: a new Gmail message, a Slack
-message in a channel, a HubSpot deal changing stage. It uses Composio triggers through the managed service, on
-the desktop, a headless server and a Cloud alike:
-
-1. `trigger` (`action: "create"`, `when: "app_event"`) or the editor saves the automation in `app-triggers.json` in the data
-   folder and creates its trigger on the service (`POST /v1/triggers`), which checks that the connected account
-   belongs to this installation. A Gmail filter (from, subject, label, words) becomes Gmail's own search, so
-   other mail never arrives; other apps match the filter as events arrive.
-2. Composio posts each event, signed, to the service, which queues it per installation for up to 7 days.
-3. The server long-polls the queue (`GET /v1/events`, 25 seconds at a time) while it has an automation switched
-   on. Each event becomes a routine run, with the event fenced as untrusted data. A burst shares runs: at most 3
-   waiting runs per automation, up to 20 events each. The cursor that acknowledges events moves only after the
-   run is saved, and a redelivered event is recognised by its id, so each event runs once.
-4. The server compares its automations with the service at start and every 15 minutes (hourly while all are
-   paused) and fixes any difference by itself: a lost copy is made again, an unwanted one is removed, on/off is
-   matched. An expired connection shows as **Needs you** with **Reconnect**.
-
-| | Desktop | Paid Cloud |
-| --- | --- | --- |
-| Events kept per day (UTC) | 500 | 2,000 |
-
-A Cloud counts as paid once its server presents the Admin's signed grant (`OMB_CLOUD_CONNECTED_APPS_GRANT`).
-Events over the limit are not run; the automation shows how many were skipped today and why.
-
-Gmail and other polled apps are checked every 15 minutes, the minimum for Composio-managed sign-ins. A server
-that uses its own Composio project key cannot watch apps yet: `trigger_info` (`action: "events"`) and the editor say so, and a
-schedule that checks the app, or a webhook, does the job instead.
+The upstream managed broker and included accounts are removed. Composio app-event
+delivery is unavailable with this build. Use a scheduled check or your own webhook;
+direct Google inbox checks remain available.
 
 ## Scoped key permissions
 
@@ -75,7 +39,7 @@ Set the key in the server environment:
 COMPOSIO_API_KEY=ak_your_project_key pnpm dev:server
 ```
 
-The browser-only development UI can also save a key to the owner-only `~/.openmausbot/config.json` file. Using the environment variable is preferred for headless and shared development machines.
+The browser-only development UI can also save a key to the shared encrypted credential store; `config.json` holds a field-bound reference. Using the environment variable is preferred for headless and shared development machines.
 
 OpenMausBot creates a stable random user identifier for the installation, stores the returned Session identifier, and reuses that Session across launches. No Gmail, GitHub, Slack, or other provider tokens are stored by OpenMausBot; Composio owns their connection lifecycle.
 

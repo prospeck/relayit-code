@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 import { checkNoUpstream, upstreamReferences } from "./check-no-upstream.mjs";
 
@@ -34,7 +35,7 @@ test("leaves brand identifiers and independent direct-key services alone", () =>
 });
 
 test("scans shipped roots and permits only explicit legal paths", async () => {
-  const root = await mkdtemp(path.resolve('.relayit-guard-fixture-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'relayit-guard-fixture-'));
   try {
     for (const dir of ['server', 'public', 'src/third_party', 'docs']) await mkdir(path.join(root, dir), { recursive: true });
     const upstream = 'https://accounts.openmausbot.com';

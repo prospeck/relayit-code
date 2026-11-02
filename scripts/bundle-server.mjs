@@ -36,8 +36,6 @@ const ENTRY_POINTS = [
   "openmausbot.ts",
   "pair-cli.ts",
   "workspace-backup.worker.ts",
-  // the OMB Cloud Pro home image's entry point
-  "cloud-home-start.ts",
   // the container image's entry point
   "server-launcher.ts",
   // Imported directly by the packaged smoke probes. An explicit root sibling,
@@ -96,14 +94,6 @@ await build({
   logLevel: "info",
   plugins: [serverLocalePlugin],
 });
-
-// `openmausbot serve --tunnel` spawns the connector guardian as its own
-// process, so it must exist as a file beside the server.
-
-
-// Runs itself when executed directly, so it must never be inlined into another
-// entry.
-
 
 // The enterprise layer (enterprise/LICENSE; delete the folder for pure OSS).
 // Shipped bundled to dist-server/enterprise/server/index.js, where the server

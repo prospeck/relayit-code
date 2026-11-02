@@ -6,7 +6,7 @@ export const ELEVENLABS_API_DEFAULT = "https://api.elevenlabs.io/v1";
 export interface ServiceCredential {
   token: string;
   api: string;
-  
+
 }
 
 function credential(own: string | undefined, api: string): ServiceCredential | null {

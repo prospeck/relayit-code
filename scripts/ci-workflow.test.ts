@@ -249,33 +249,11 @@ describe("CI concurrency", () => {
     )).toBe(true);
     for (const [name, job] of Object.entries(workflow.jobs) as [string, { needs?: string | string[]; if?: string }][]) {
       if (["static", "gate"].includes(name)) continue;
-      // The one deploy job: after the control-plane checks, on main pushes only. It is
-      // not part of the merge gate.
-      if (name === "deploy-composio-broker") {
-        expect(job.needs).toEqual(["control-plane"]);
-        expect(job.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/main'");
-        expect(workflow.jobs.gate.needs).not.toContain(name);
-        // Without the Cloudflare token the deploy is skipped with a warning, not failed:
-        // every step after the token check waits on it.
-        const [check, ...rest] = job.steps as { id?: string; if?: string; env?: Record<string, string>; run?: string }[];
-        expect(check.id).toBe("token");
-        expect(check.env).toEqual({ CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}" });
-        expect(check.run).toContain("::warning");
-        for (const step of rest) expect(step.if).toBe("steps.token.outputs.present == 'true'");
-        // The broker is typechecked and tested in the same checkout it deploys.
-        const runs = rest.map((step) => step.run);
-        const deploy = rest.findIndex((step) => (step as { uses?: string }).uses?.startsWith("cloudflare/wrangler-action@"));
-        expect(runs.indexOf("pnpm broker:check")).toBeGreaterThan(-1);
-        expect(runs.indexOf("pnpm broker:check")).toBeLessThan(deploy);
-        expect(runs.indexOf("pnpm broker:test")).toBeGreaterThan(-1);
-        expect(runs.indexOf("pnpm broker:test")).toBeLessThan(deploy);
-        continue;
-      }
       expect(job.needs).toBe("static");
       expect(job.if).toBe(`contains(needs.static.outputs.jobs, '"${name}"')`);
     }
     // ci-scope selects exactly the jobs the workflow has.
-    expect(Object.keys(workflow.jobs).filter((name) => !["static", "gate", "deploy-composio-broker"].includes(name)).sort())
+    expect(Object.keys(workflow.jobs).filter((name) => !["static", "gate"].includes(name)).sort())
       .toEqual([...SELECTABLE_JOBS].sort());
   });
 

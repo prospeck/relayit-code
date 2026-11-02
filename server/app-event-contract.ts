@@ -85,4 +85,3 @@ export interface AppTriggerBroker {
 
 
 /** `access` is read on every call: the desktop hands the token over after the server starts, and a Cloud registers late. */
-
