@@ -29,7 +29,7 @@ const EXTRAS: Partial<Record<KeyId, () => ReactNode>> = {
 function connected(entry: KeyEntry, config: ConfigStatus | null | undefined): boolean {
   if (entry.kind === "uses") return false;
   const saved = savedState(entry, config);
-  return saved.configured || saved.included === true;
+  return saved.configured || false;
 }
 
 function PanelRow({ entry }: { entry: KeyEntry }) {

@@ -100,7 +100,7 @@ export function KeyRow({
   const [draft, setDraft] = useState("");
   const [shown, setShown] = useState(false);
   const [replacing, setReplacing] = useState(false);
-  const [ownKey, setOwnKey] = useState(false);
+
   const [busy, setBusy] = useState<"saving" | "checking" | "removing" | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -142,7 +142,7 @@ export function KeyRow({
   const rejected = !works && (rejectedHere ?? (saved.configured && engineRejected));
   const failure = problem ?? (rejected && !busy ? t("keys.testRejected") : null);
   const editing = !saved.configured || replacing;
-  const fieldShown = editing && (!saved.included || saved.configured || ownKey);
+  const fieldShown = editing && (true);
   const other = fieldShown && draft ? looksLikeOtherKey(row, draft) : null;
 
   const status: KeyStatus = busy === "saving" ? { tone: "busy", text: t("keys.row.saving") }
@@ -150,8 +150,7 @@ export function KeyRow({
       : busy === "checking" ? { tone: "busy", text: t("common.checking") }
         : failure && (saved.configured || !fieldShown) ? { tone: "bad", text: t("keys.row.didntWork") }
           : saved.configured ? { tone: "ok", text: target.test || target.verifiedOnSave || works ? t("keys.connected") : t("common.saved") }
-            : saved.included ? { tone: "ok", text: t("keys.includedWithCloudPro") }
-              : null;
+            : (null);
 
   const runCheck = async (): Promise<KeyResult> => {
     if (!target.test) return "unverified";
@@ -193,7 +192,7 @@ export function KeyRow({
       setDraft("");
       setShown(false);
       setReplacing(false);
-      setOwnKey(false);
+
       if (hadFocus) focusAfter.current = now.configured ? "replace" : "input";
       if (!now.configured) setProblem(t("keys.row.notKept"));
       onSaved?.(now.configured);
@@ -341,7 +340,7 @@ export function KeyRow({
     <div
       data-key-row={row.id}
       data-api-key-row={pointer ? undefined : entry.id}
-      data-key-state={saved.configured ? "saved" : saved.included ? "included" : "empty"}
+      data-key-state={saved.configured ? "saved" : ("empty")}
       aria-labelledby={bare ? undefined : titleId}
       role="group"
       className={cn(KEY_ROW, className)}
@@ -350,7 +349,7 @@ export function KeyRow({
       <div className={cn("flex flex-col gap-2", !bare && "pl-8")}>
         {fieldShown ? field : saved.configured ? masked : (
           <div>
-            <button type="button" data-key-own className="ui-button" onClick={() => { setOwnKey(true); focusAfter.current = "input"; }}>{t("keys.row.useOwn")}</button>
+
           </div>
         )}
         {(notice || failure || other || warning || installCommand || note || verdict || (fieldShown && target.href) || (!fieldShown && saved.configured && target.test)) && (

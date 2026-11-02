@@ -3,7 +3,7 @@
 // in the tool list, so no later tool can grow a path to them.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { HIGHLEVEL_NOT_CONNECTED_TEXT, HIGHLEVEL_SIGNED_OUT_TEXT } from "./instructions.ts";
-import { HighLevelRelayError, type RelayTokens } from "./relay.ts";
+import { HighLevelRelayError, type RelayTokens } from "./token-contract.ts";
 import { sameTokens, type HighLevelConnection, type HighLevelStore } from "./store.ts";
 
 export const HIGHLEVEL_API_URL = "https://services.leadconnectorhq.com";

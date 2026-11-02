@@ -8,7 +8,7 @@ import workersFixture from "./fixtures/workers-ai-clairic.json" with { type: "js
 import {
   EXTRACT_LIMITS, extractRequestProblem, INBOX_FIELDS, parseExtractResponse, relayAcceptsExtract,
 } from "./contract.ts";
-import { createExtractor, describeExtractor, extractorAccount } from "./index.ts";
+import { createExtractor, extractorAccount } from "./index.ts";
 import { openrouterExtractSchema } from "./remote.ts";
 import type { ExtractInput, ExtractSeam, FieldSchema } from "./types.ts";
 
@@ -122,23 +122,9 @@ describe("whose key reads: own Workers AI, Cloud's relay, OpenRouter, nothing", 
     expect(sent(fetchImpl).url).toBe(`${CF_RUN}/clairic`);
   });
 
-  it("with no own key, Cloud's relay gets { seam, fields, input } with the included token", async () => {
-    cloud();
-    const fetchImpl = vi.fn<typeof fetch>(async () => json({ values: { total: 1080, currency: "USD" }, model: "clairic" }));
-    const fields: FieldSchema = { total: { type: "number" }, currency: { type: "enum", options: ["USD", "EUR"] } };
-    const result = await extractor({}, fetchImpl).extract("botExtract", fields, INPUT);
-    expect(result).toMatchObject({ ok: true, provider: "jev", values: { total: 1080, currency: "USD" }, model: "clairic" });
-    expect(sent(fetchImpl)).toEqual({ url: `${RELAY}/v1/extract`, auth: `Bearer ${INCLUDED}`, seam: "botExtract", body: { seam: "botExtract", fields, input: INPUT } });
-    expect(describeExtractor({})).toEqual({ provider: "jev", included: true, ready: true });
-  });
 
-  it("a request the relay would refuse never goes through the included token", async () => {
-    cloud();
-    const fetchImpl = vi.fn<typeof fetch>();
-    const result = await extractor({}, fetchImpl).extract("inboxTriage", { ...INBOX_FIELDS, body: { type: "string" } }, { text: "x" });
-    expect(result).toEqual({ ok: false, reason: "misconfigured" });
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
+
+
 
   it("…and goes to OpenRouter instead when the person has an OpenRouter key", async () => {
     cloud();
@@ -177,17 +163,7 @@ describe("whose key reads: own Workers AI, Cloud's relay, OpenRouter, nothing", 
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("the relay's 413 is too large, and is asked once", async () => {
-    cloud();
-    const fetchImpl = vi.fn<typeof fetch>(async () => new Response("too big", { status: 413 }));
-    await expect(extractor({}, fetchImpl).extract("botExtract", FIELDS, INPUT)).resolves.toMatchObject({ ok: false, reason: "too_large", status: 413 });
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-  });
 
-  it("the key check is one fixed extraction, through the relay too", async () => {
-    cloud();
-    const fetchImpl = vi.fn<typeof fetch>(async () => json({ values: { ok: true }, model: "clairic" }));
-    await expect(extractor({}, fetchImpl).testKey()).resolves.toMatchObject({ ok: true, values: { ok: true } });
-    expect(sent(fetchImpl).body).toEqual(relayFixtures.requests.find((fixture) => fixture.seam === "keyCheck" && fixture.accepts)!.body);
-  });
+
+
 });

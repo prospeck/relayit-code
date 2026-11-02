@@ -1,12 +1,9 @@
-// Typed values out of text or images, mirroring server/decider: never throws, every failure is { ok: false, reason }.
-// Whose key: the person's own Workers AI token (Clairic, with Clef for yes/no and choices), else Cloud's included relay
-// (only for requests it accepts), else the OpenRouter LLM fallback, else nothing. Jev does not extract. One switch for
-// both helper models: decider.enabled.
+// Typed extraction through the person's own Workers AI or OpenRouter key; decider.enabled controls both helpers.
 import type { AppConfig } from "../config.ts";
-import { helpersOn, includedAccount, openrouterAccount, sharedOpenRouterKey, workersAiAccount, type HelperAccount } from "../decider/accounts.ts";
+import { helpersOn, openrouterAccount, sharedOpenRouterKey, workersAiAccount, type HelperAccount } from "../decider/accounts.ts";
 import type { DeciderFailure } from "../decider/types.ts";
-import { EXTRACT_KEY_CHECK, extractRequestProblem, relayAcceptsExtract } from "./contract.ts";
-import { extractWithOpenRouter, extractWithRelay, OPENROUTER_EXTRACT_MODEL } from "./remote.ts";
+import { EXTRACT_KEY_CHECK, extractRequestProblem } from "./contract.ts";
+import { extractWithOpenRouter, OPENROUTER_EXTRACT_MODEL } from "./remote.ts";
 import type { ExtractBackendRequest, ExtractBackendResult, ExtractInput, ExtractOptions, ExtractResult, ExtractSeam, FieldSchema } from "./types.ts";
 import { extractWithWorkersAi } from "./workers-ai.ts";
 
@@ -17,10 +14,10 @@ const MIN_TIMEOUT_MS = 50;
 const MAX_TIMEOUT_MS = 30_000;
 
 /** In order: own Workers AI, Cloud's included relay (only for requests it accepts), OpenRouter, nothing. */
-export function extractorAccount(cfg: AppConfig, request?: { seam: ExtractSeam; fields: FieldSchema; input: ExtractInput }): HelperAccount | null {
-  const candidates = [workersAiAccount(cfg), includedAccount(), openrouterAccount(cfg)];
+export function extractorAccount(cfg: AppConfig, _request?: { seam: ExtractSeam; fields: FieldSchema; input: ExtractInput }): HelperAccount | null {
+  const candidates = [workersAiAccount(cfg), openrouterAccount(cfg)];
   return candidates.find((account): account is HelperAccount =>
-    Boolean(account) && !(account!.included && request && !relayAcceptsExtract(request.seam, request.fields, request.input))) ?? null;
+    Boolean(account)) ?? null;
 }
 
 export function extractorReady(cfg: AppConfig): boolean {
@@ -28,9 +25,9 @@ export function extractorReady(cfg: AppConfig): boolean {
 }
 
 /** Settings: which backend reads, never a key. */
-export function describeExtractor(cfg: AppConfig): { provider?: HelperAccount["provider"]; included?: true; ready: boolean } {
+export function describeExtractor(cfg: AppConfig): { provider?: HelperAccount["provider"];  ready: boolean } {
   const account = extractorAccount(cfg);
-  return { ...(account ? { provider: account.provider } : {}), ...(account?.included ? { included: true as const } : {}), ready: helpersOn(cfg, account) };
+  return { ...(account ? { provider: account.provider } : {}), ready: helpersOn(cfg, account) };
 }
 
 /** The OpenRouter model extraction uses: the decider's own when it is a chat model, else a default one. */
@@ -83,7 +80,7 @@ export function createExtractor(deps: ExtractorDeps): Extractor {
       ...(provider === "openrouter" ? { model: openrouterModel(cfg) } : {}),
       seam, fields, input, referenceDate: today(deps.timeZone?.()), signal: controller.signal, fetch: fetchImpl,
     };
-    const backend = provider === "workersai" ? extractWithWorkersAi : provider === "openrouter" ? extractWithOpenRouter : extractWithRelay;
+    const backend = provider === "workersai" ? extractWithWorkersAi : extractWithOpenRouter;
     const started = now();
     let outcome: ExtractBackendResult;
     try {
@@ -112,7 +109,7 @@ export function createExtractor(deps: ExtractorDeps): Extractor {
         if (seam === "inboxTriage" && cfg.decider?.jobs?.inboxTriage === false) return { ok: false, reason: "job_off" };
         const account = extractorAccount(cfg, { seam, fields, input });
         // Through the included token, only the exact requests the relay takes.
-        if (!account) return { ok: false, reason: any.included ? "misconfigured" : "no_key" };
+        if (!account) return { ok: false, reason: ("no_key") };
         return await call(account, cfg, seam, fields, input, options);
       } catch {
         return { ok: false, reason: "malformed" };

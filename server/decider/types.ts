@@ -108,7 +108,7 @@ export interface BackendRequest {
   accountId?: string;
   careful?: boolean;
   /** Set only for the included relay, which is told the seam in a header. */
-  relaySeam?: DeciderSeam;
+
   state: unknown;
   questions: Record<string, DeciderQuestion>;
   signal: AbortSignal;

@@ -1,11 +1,8 @@
-// Research for bots through treg (treg.to): find an endpoint for a job in treg's catalog, read it, call it. With the
-// person's own treg key the calls go straight to treg, billed to their treg balance, with no limits from this side;
-// otherwise they go through the MausBot Cloud Admin's research relay (its `/research/*` routes under the plan's X relay
-// URL), within the plan's monthly research budget.
-import { createHash, randomUUID } from "node:crypto";
+// Research through the person's own treg key. Responses are bounded and retries keep their idempotency key.
+import { randomUUID } from "node:crypto";
 
-import type { ServiceCredential } from "./included-services.ts";
-import { dollarsText, readCapped, tregAuthHeaders, tregErrorFor, X_MESSAGES, XResearchError } from "./x-research.ts";
+import type { ServiceCredential } from "./provider-credentials.ts";
+import { dollarsText, readCapped, tregAuthHeaders, tregErrorFor, XResearchError } from "./x-research.ts";
 
 /** A catalog id, or a hub tool's versioned id; never a path or a URL (those would reach a team's own tools). */
 export const RESEARCH_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,159}(?:@[A-Za-z0-9._-]{1,40})?$/;
@@ -17,13 +14,9 @@ const QUERY_METHODS = new Set(["GET", "HEAD", "DELETE"]);
 const PARAMS_IN_SEARCH = 1_500;
 
 /** What a bot does when research is off: says so and offers another way, never quietly works around it. */
-const RESEARCH_INSTEAD = "Tell the person research isn't available here and offer another way, such as web search or the browser; their own treg key in Settings → API keys turns research on.";
 
-export const RESEARCH_MESSAGES = {
-  unavailable: "Research is temporarily unavailable. Try again shortly.",
-  notOffered: `MausBot Cloud doesn't offer research yet. ${RESEARCH_INSTEAD}`,
-  off: `Research isn't on for this MausBot Cloud plan right now, so research_search and research_call can't be used. ${RESEARCH_INSTEAD}`,
-} as const;
+
+
 
 export interface ResearchCallInput {
   id: string;
@@ -123,92 +116,11 @@ const costOf = (value: string | null, scale: number) => {
   return Number.isFinite(amount) && amount >= 0 ? amount / scale : undefined;
 };
 
-/** The relay's own refusals carry a sentence in `message`; a 404 on its research routes means research isn't on yet. */
-function relayError(status: number, body: unknown): XResearchError {
-  const said = isRow(body) && typeof body.message === "string" ? body.message.slice(0, 400) : undefined;
-  const code = isRow(body) ? body.error : undefined;
-  if (status === 404 && (code === "not_found" || !said)) return new XResearchError("off", RESEARCH_MESSAGES.notOffered);
-  if (researchIsOff(status, body)) return new XResearchError("off", status === 402 && said ? `${said} ${RESEARCH_INSTEAD}` : RESEARCH_MESSAGES.off);
-  if (!said) return new XResearchError("unavailable", RESEARCH_MESSAGES.unavailable);
-  const kind = status === 400 || status === 422 ? "bad_input" : status === 404 ? "not_found" : status === 402 ? "no_credit" : status === 409 ? "in_progress" : status === 429 ? "rate_limited" : "unavailable";
-  const near = isRow(body) && Array.isArray(body.didYouMean) ? (body.didYouMean as unknown[]).filter((id): id is string => typeof id === "string").slice(0, 5) : [];
-  if (status === 429 && code === "quota_exceeded") return new XResearchError(kind, `${said} ${X_MESSAGES.addOwnKey}`);
-  return new XResearchError(kind, near.length ? `${said} Did you mean ${near.join(", ")}?` : said);
-}
-
-/** The relay says research is off for this account: no paid plan (402), or research switched off (503 `service_unavailable`;
- * a busy relay says `overloaded`). */
-function researchIsOff(status: number, body: unknown): boolean {
-  return status === 402 || (status === 503 && isRow(body) && body.error === "service_unavailable");
-}
-
-/** Whether research works for `credential`, asked without spending anything. The person's own treg key goes straight to
- * treg, so it does. The plan's relay refuses a search that names no job (400) only once it has checked the token, the
- * account's plan and that research is on, before it reads the catalog; a 401, 404 or an off answer there means research
- * is not on. Null when the relay could not be asked, or answered anything else. */
-export async function researchOffered(credential: ServiceCredential, options: { fetcher?: typeof fetch; timeoutMs?: number } = {}): Promise<boolean | null> {
-  if (!credential.included) return true;
-  let response: Response;
-  try {
-    response = await (options.fetcher ?? fetch)(`${credential.api.replace(/\/+$/, "")}/research/search`, {
-      headers: { ...tregAuthHeaders(credential), accept: "application/json" }, redirect: "error", signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
-    });
-  } catch {
-    return null;
-  }
-  const body = parsed(await readCapped(response).catch(() => ""));
-  if (response.status === 400) return true;
-  return response.status === 401 || response.status === 404 || researchIsOff(response.status, body) ? false : null;
-}
-
-/** Research's availability for this server's credential, kept between turns so a conversation's tool list holds still:
- * asked once, asked again an hour after it was off, and set off at once by a call the relay refuses as off. Until the
- * relay has said, research counts as on: a bot then offered it and refused is told what to do. */
-export function createResearchAvailability(deps: {
-  credential: () => ServiceCredential | null;
-  offered?: (credential: ServiceCredential) => Promise<boolean | null>;
-  now?: () => number;
-  recheckOffMs?: number;
-}) {
-  const now = deps.now ?? Date.now;
-  const recheckOffMs = deps.recheckOffMs ?? 60 * 60_000;
-  let known: { key: string; on: boolean; at: number } | null = null;
-  let asking: string | null = null;
-  const keyOf = (credential: ServiceCredential) => createHash("sha256").update(`${credential.api}\0${credential.token}`).digest("hex");
-  const ask = (credential: ServiceCredential, key: string) => {
-    if (asking === key) return;
-    asking = key;
-    void (deps.offered ?? researchOffered)(credential).then((on) => {
-      if (on !== null) known = { key, on, at: now() };
-    }, () => {}).finally(() => {
-      if (asking === key) asking = null;
-    });
-  };
-  return {
-    available(): boolean {
-      const credential = deps.credential();
-      if (!credential) return false;
-      if (!credential.included) return true;
-      const key = keyOf(credential);
-      if (known?.key !== key || (!known.on && now() - known.at >= recheckOffMs)) ask(credential, key);
-      return known?.key === key ? known.on : true;
-    },
-    refused(): void {
-      const credential = deps.credential();
-      if (credential?.included) known = { key: keyOf(credential), on: false, at: now() };
-    },
-  };
-}
-
-export type ResearchAvailability = ReturnType<typeof createResearchAvailability>;
-
-/** The research client for a credential: treg's own API with the person's key (`included` false), else the plan's
- * relay. One retry, with the same Idempotency-Key, when a call's answer is lost on the way or treg says it is still
- * running; anything else is answered once. */
+/** Direct treg client; a lost response retries once with the same idempotency key. */
 export function createResearchClient(credential: ServiceCredential, options: { fetcher?: typeof fetch; timeoutMs?: number; retryDelayMs?: number } = {}): ResearchClient {
   const fetcher = options.fetcher ?? fetch;
   const base = credential.api.replace(/\/+$/, "");
-  const own = !credential.included;
+
   const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
 
   async function send(method: string, path: string, init: { body?: string; headers?: Record<string, string> } = {}) {
@@ -228,13 +140,13 @@ export function createResearchClient(credential: ServiceCredential, options: { f
       throw error instanceof XResearchError ? new XResearchError("unavailable", "That answer was too large to read. Ask for fewer results.") : error;
     });
     const body = parsed(raw);
-    if (!response.ok) throw own ? tregErrorFor(response.status, body, response.headers) : relayError(response.status, body);
+    if (!response.ok) throw (tregErrorFor(response.status, body, response.headers));
     return { body, headers: response.headers };
   }
 
   const answered = async (method: string, path: string, init?: { body?: string; headers?: Record<string, string> }) => {
     const answer = await send(method, path, init);
-    if (!answer) throw new XResearchError("unavailable", own ? "Couldn't reach treg. Try again in a minute." : RESEARCH_MESSAGES.unavailable);
+    if (!answer) throw new XResearchError("unavailable", ("Couldn't reach treg. Try again in a minute."));
     return answer;
   };
 
@@ -247,25 +159,23 @@ export function createResearchClient(credential: ServiceCredential, options: { f
 
   return {
     async search({ job, limit }) {
-      if (!own) return (await answered("GET", `/research/search?${new URLSearchParams({ q: job, limit: String(limit) })}`)).body;
+
       const { body } = await answered("GET", `/catalog/search?${new URLSearchParams({ q: job, limit: String(limit) })}`);
       const rows = isRow(body) && Array.isArray(body.results) ? body.results.filter(isRow) : [];
       const results = rows.map((row) => endpointView(row, { maxParamsChars: PARAMS_IN_SEARCH })).filter((view): view is Row => view !== null).slice(0, limit);
       return { query: job, results, ...(isRow(body) && text(body.verdict) ? { verdict: body.verdict } : {}) };
     },
     async endpoint(id) {
-      if (!own) return (await answered("GET", `/research/endpoints/${encodeURIComponent(id)}`)).body;
+
       return { endpoint: endpointView(await endpointRow(id)) };
     },
     async call(input, callOptions = {}) {
       const key = callOptions.idempotencyKey ?? randomUUID();
       let request: { method: string; path: string; body?: string };
-      if (own) {
+      {
         const row = await endpointRow(input.id);
         const built = researchRequest(row, input);
         request = { method: String(row.method).toUpperCase(), path: `/call/${encodeURIComponent(input.id)}${built.search}`, ...(built.body === undefined ? {} : { body: built.body }) };
-      } else {
-        request = { method: "POST", path: `/research/call/${encodeURIComponent(input.id)}`, body: JSON.stringify({ ...(input.params === undefined ? {} : { params: input.params }), ...(input.query ? { query: input.query } : {}) }) };
       }
       const once = () => send(request.method, request.path, { ...(request.body === undefined ? {} : { body: request.body }), headers: { "idempotency-key": key } });
       let answer: Awaited<ReturnType<typeof send>>;
@@ -279,15 +189,15 @@ export function createResearchClient(credential: ServiceCredential, options: { f
         await new Promise((resolve) => setTimeout(resolve, options.retryDelayMs ?? 2_000));
         answer = await once();
       }
-      if (!answer) throw new XResearchError("unavailable", own ? "Couldn't reach treg. Try again in a minute." : RESEARCH_MESSAGES.unavailable);
+      if (!answer) throw new XResearchError("unavailable", ("Couldn't reach treg. Try again in a minute."));
       const { body, headers } = answer;
-      const costUsd = own ? costOf(headers.get("x-treg-cost-micro"), 1_000_000) : costOf(headers.get("x-omb-research-charged-usd"), 1);
-      const failed = headers.get(own ? "x-treg-upstream-failed" : "x-omb-research-upstream-failed")?.slice(0, 200);
+      const costUsd = (costOf(headers.get("x-treg-cost-micro"), 1_000_000));
+      const failed = headers.get(("x-treg-upstream-failed"))?.slice(0, 200);
       const callId = headers.get("x-treg-call-id")?.trim();
       return {
         result: body,
         ...(costUsd === undefined ? {} : { costUsd }),
-        ...(!own && headers.get("x-omb-research-pending") === "true" ? { costPending: true as const } : {}),
+        ...(({})),
         ...(callId ? { callId } : {}),
         ...(failed ? { upstreamFailed: failed } : {}),
       };

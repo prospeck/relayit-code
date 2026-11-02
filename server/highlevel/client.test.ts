@@ -10,7 +10,7 @@ import { removeTempDir } from "../testing/cleanup.ts";
 import { FAKE_LOCATION_ID, startFakeHighLevel, startFakeRelay, type FakeHighLevel, type FakeRelay } from "../testing/fake-highlevel.ts";
 import { BUDGET_CALLS, FORBIDDEN_PATHS, HIGHLEVEL_CONVERSATIONS_VERSION, HIGHLEVEL_VERSION, HighLevelClient, HighLevelError, assertAllowedPath, type HighLevelClientOptions, isScopeRefusal, lookupLocation, plainError, redactSecrets } from "./client.ts";
 import { HIGHLEVEL_NOT_CONNECTED_TEXT, HIGHLEVEL_SIGNED_OUT_TEXT } from "./instructions.ts";
-import { HighLevelRelayError, createHighLevelRelay, type RelayTokens } from "./relay.ts";
+import { HighLevelRelayError, type RelayTokens } from "./token-contract.ts";
 import { HIGHLEVEL_FILE, HIGHLEVEL_KEY_FILE, HighLevelStore } from "./store.ts";
 import { HIGHLEVEL_TOOLS, runHighLevelTool } from "./tools.ts";
 
@@ -753,3 +753,5 @@ describe("lookupLocation", () => {
     expect(cut.message).not.toMatch(/pit-|0f1e/u);
   });
 });
+
+function createHighLevelRelay(url: string) { return { async refresh(refreshToken: string): Promise<RelayTokens> { const response = await fetch(`${url}/v1/highlevel/refresh`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ refreshToken }) }); if (!response.ok) throw new HighLevelRelayError(response.status, "fixture", "Fixture refused refresh"); return await response.json() as RelayTokens; } }; }

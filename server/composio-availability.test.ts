@@ -28,16 +28,14 @@ describe("connectorAvailability", () => {
 
 describe("connectorSetup", () => {
   it("is ready when a connection service is configured", () => {
-    expect(connectorSetup(cfg({ composio: { apiKey: "ak_live" } }), false)).toBe("ready");
-    expect(connectorSetup(cfg({ composio: { apiKey: "ak_live" } }), true)).toBe("ready");
+    expect(connectorSetup(cfg({ composio: { apiKey: "ak_live" } }))).toBe("ready");
+    expect(connectorSetup(cfg({ composio: { apiKey: "ak_live" } }))).toBe("ready");
   });
 
   it("needs setup on a fresh server that has no managed service to wait for", () => {
-    expect(connectorSetup(cfg(), false)).toBe("needs-setup");
-    expect(connectorSetup(cfg({ composio: { apiKey: "" } }), false)).toBe("needs-setup");
+    expect(connectorSetup(cfg())).toBe("needs-setup");
+    expect(connectorSetup(cfg({ composio: { apiKey: "" } }))).toBe("needs-setup");
   });
 
-  it("reports the managed service as unavailable only on a host it comes with (the installed desktop app, a Cloud home)", () => {
-    expect(connectorSetup(cfg(), true)).toBe("service-unavailable");
-  });
+
 });
