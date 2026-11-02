@@ -10,7 +10,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Required by Apache-2.0 sections 4 and 6, or describing where the code came from. */
-const KEEP = [/^LICENSE$/, /^NOTICE$/, /^UPSTREAM\.md$/, /^LICENSING\.md$/, /^third_party\//, /^pnpm-lock\.yaml$/, /^scripts\/rebrand-to-relayit/];
+const KEEP = [/^LICENSE$/, /^NOTICE$/, /^UPSTREAM\.md$/, /^LICENSING\.md$/, /^third_party\//, /^pnpm-lock\.yaml$/, /^scripts\/rebrand-to-relayit/, /^scripts\/check-no-upstream/];
 const BINARY = /\.(png|jpe?g|gif|webp|ico|icns|ttf|otf|woff2?|mp3|mp4|wav|webm|pdf|zip|gz|tgz|wasm|node|dylib|exe|jar)$/i;
 
 const NAMES = [
