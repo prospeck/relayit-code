@@ -92,7 +92,7 @@ for (const [scale, name] of [
   [1, "background.png"],
   [2, "background@2x.png"],
 ]) {
-  const image = new Resvg(svg, { fitTo: { mode: "zoom", value: scale }, font: { loadSystemFonts: false } }).render();
+  const image = new Resvg(svg, { fitTo: { mode: "zoom", value: scale }, font: { loadSystemFonts: true } }).render();
   const png = encodeOpaquePng(image.width, image.height, image.pixels);
   writeFileSync(new URL(`../${name}`, import.meta.url), png);
   console.log(`build/${name}: ${image.width}x${image.height}, ${png.length} bytes`);
