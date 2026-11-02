@@ -135,13 +135,13 @@ const __APP_VERSION__: string;
       cloudPlan?: import("../../electron/cloud-account.mjs").CloudPlanBridge;
       /** This computer's page, and My Cloud's own page once it is the person's home: the window onto My Cloud. */
       home?: import("../../electron/home-window.mjs").HomeBridge;
-      desktopNotices?: import("../../electron/desktop-prefs.mjs").DesktopNoticesBridge;
+
       /** This computer's own page only: the account's full name, for a first run's profile (system-name.mjs). */
       desktopProfile?: { systemName(): Promise<string | null> };
-      desktopAnalytics?: import("../../electron/desktop-prefs.mjs").DesktopAnalyticsBridge;
+
       desktopLanguage?: import("../../electron/desktop-prefs.mjs").DesktopLanguageBridge;
       /** This computer's page and My Cloud's own page: the one-time "Get MausBot updates?" answer. */
-      updatesConsent?: import("../../electron/updates-consent.mjs").UpdatesConsentBridge;
+
       companyBackups?: {
         state(): Promise<CompanyBackupState>;
         list(): Promise<{ backups: CompanyBackupEntry[]; usedBytes: number; limits: { ownerQuotaBytes: number; retainedSnapshots: number } }>;
@@ -420,15 +420,7 @@ const __APP_VERSION__: string;
        * download by themselves. On this computer's page and the person's own
        * Cloud page; any other server's page gets no state. onState fires
        * with the current state, then on transitions. */
-      updater?: {
-        check(): Promise<void>;
-        /** apply the download: quit-and-install, or copy the command and open
-         * a terminal. On a server's page, only from the person's click. */
-        install(): Promise<void>;
-        /** The person saw the line that the app updated itself: it is not shown again. */
-        seen?(): Promise<void>;
-        onState(cb: (s: UpdaterState) => void): () => void;
-      };
+
     };
   }
 }
@@ -444,43 +436,6 @@ export interface LinuxLocalControlStatus {
   session?: "x11" | "wayland" | "headless" | "unknown";
   compositor?: "gnome-mutter";
   warnings?: Array<{ label: string; status: string; message: string; detail?: string }>;
-}
-
-export interface UpdaterState {
-  status:
-    | "idle"
-    | "checking"
-    | "downloading"
-    /** downloaded bytes are being staged by the native macOS updater */
-    | "preparing"
-    | "downloaded"
-    | "installing"
-    /** the command is on the clipboard; the user finishes in a terminal */
-    | "handed-off"
-    | "error";
-  version?: string;
-  /** the release's notes as published (HTML or Markdown), when the feed has them */
-  releaseNotes?: string;
-  percent?: number;
-  message?: string;
-  /** native work may still be running; recovery requires an app restart */
-  retryable?: boolean;
-  /**
-   * How the download gets applied. "restart" quits and installs in place (an
-   * Ubuntu .deb asks for the password once, installs and reopens);
-   * "handoff" copies the install command and opens a terminal so the user
-   * can finish — rpm/pacman builds, and a .deb where no password prompt
-   * can be shown, use this.
-   */
-  installMode?: "restart" | "handoff";
-  /** hand-off only: the install command, already on the clipboard */
-  command?: string;
-  /** hand-off only: whether a terminal was opened to paste it into */
-  terminalOpened?: boolean;
-  /** downloaded only: the app installs it by itself the next time the person is away and nothing is running */
-  installsByItself?: boolean;
-  /** the version the app updated itself to while the person was away, until they have seen it said */
-  updated?: string;
 }
 
 export interface CompanionAccountState {

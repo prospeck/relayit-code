@@ -12,8 +12,6 @@ import { useSidebarToolsLayout, type SidebarDensity } from "@/lib/sidebar-prefer
 import { useStore } from "@/state/store";
 
 import { SidebarSectionHeader } from "./SidebarSectionHeader";
-import { UpdateIndicator } from "./UpdateIndicator";
-
 
 function NavRow({
   id,
@@ -96,7 +94,7 @@ export function SidebarBottomButtons() {
   return (
     <div data-sidebar-bottom-buttons="" className="flex shrink-0 items-center gap-0.5">
       <SidebarAppsButton />
-      <UpdateIndicator />
+
     </div>
   );
 }

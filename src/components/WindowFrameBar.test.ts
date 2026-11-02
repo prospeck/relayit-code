@@ -3,21 +3,19 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { UpdaterState } from "@/types/ogb";
-
 type Place = { local: boolean; name: string; origin?: string; color?: string; home?: boolean; role?: string; localPath?: string };
 const fixture = vi.hoisted(() => ({
   windowChrome: "mac-inset" as "mac-inset" | "win-caption" | "native",
   windowFrame: undefined as boolean | undefined,
   rail: { available: true, hidden: false } as { available: boolean; hidden: boolean } | null,
-  update: null as UpdaterState | null,
+
   dispatch: vi.fn(),
   config: {} as { team?: { name: string } },
   look: null as { color: string | null } | null,
   frameDrawn: vi.fn(),
 }));
 vi.mock("@/lib/chrome-rail", () => ({ useChromeRail: () => fixture.rail, setChromeRailHidden: () => {}, sayFrameDrawn: fixture.frameDrawn }));
-vi.mock("@/lib/updater", () => ({ useUpdaterState: () => fixture.update }));
+
 vi.mock("@/lib/place-look", () => ({ usePlaceLook: () => fixture.look }));
 vi.mock("@/state/store", () => ({ useStore: () => ({ state: { config: fixture.config }, dispatch: fixture.dispatch }) }));
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
@@ -27,7 +25,7 @@ vi.mock("./DesktopCapabilities", async (importOriginal) => ({
 
 import { setLocale } from "@/lib/i18n";
 import { tilesClearCorner } from "./SidebarTiles";
-import { UpdateIndicator } from "./UpdateIndicator";
+
 import { WindowFrameBar } from "./WindowFrameBar";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -40,7 +38,7 @@ beforeEach(() => {
   fixture.windowChrome = "mac-inset";
   fixture.windowFrame = undefined;
   fixture.rail = { available: true, hidden: false };
-  fixture.update = null;
+
   fixture.config = {};
   fixture.look = null;
   fixture.dispatch.mockClear();
@@ -147,25 +145,6 @@ describe("the window frame's top bar", () => {
     expect(fixture.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true });
   });
 
-  it("shows a download arrow in the accent while an update waits, its words in its name, and the sidebar's round buttons step aside for it", async () => {
-    fixture.update = { status: "downloading", percent: 45.4 };
-    await mount(createElement("div", null, createElement(WindowFrameBar), createElement("aside", null, createElement(UpdateIndicator))));
-    const arrow = () => bar()!.querySelector<HTMLButtonElement>("[data-update-indicator]")!;
-    expect(arrow().textContent, "an icon, no words on the bar").toBe("");
-    expect(arrow().getAttribute("aria-label")).toBe("Downloading an update, 45%");
-    expect(arrow().className.split(" ")).toEqual(expect.arrayContaining(["size-[22px]", "text-accent"]));
-    expect(arrow().querySelector("svg")!.getAttribute("class"), "it pulses while it downloads").toContain("animate-pulse");
-    expect(host.querySelector("aside")!.innerHTML, "one update button in a framed window").toBe("");
-    const order = [...bar()!.querySelectorAll("button")].map((button) => button.hasAttribute("data-update-indicator") ? "update" : button.getAttribute("aria-label"));
-    expect(order, "before Settings, at the right end").toEqual(["Hide your computers", "update", "App settings"]);
-    fixture.update = { status: "downloaded", version: "0.1.136" };
-    await act(async () => root!.render(createElement(WindowFrameBar)));
-    expect(arrow().getAttribute("aria-label")).toContain("0.1.136");
-    expect(arrow().querySelector("svg")!.getAttribute("class")).not.toContain("animate-pulse");
-    fixture.windowChrome = "native";
-    await act(async () => root!.render(createElement(UpdateIndicator)));
-    expect(host.querySelector("[data-update-indicator='downloaded']"), "unframed, the sidebar keeps its own").not.toBeNull();
-  });
 });
 
 describe("Simple's sidebar corner", () => {

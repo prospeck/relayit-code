@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fixture = vi.hoisted(() => ({ track: vi.fn(), openBot: vi.fn() }));
-vi.mock("@/lib/analytics", () => ({ track: fixture.track }));
+
 vi.mock("@/state/thread-navigation", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/state/thread-navigation")>(), openBot: fixture.openBot,
 }));
@@ -43,7 +43,7 @@ async function newBot(request: never, action: Partial<Extract<Action, { type: "n
   return dispatch.mock.calls.map(([sent]) => sent);
 }
 
-beforeEach(() => { fixture.track.mockReset(); fixture.openBot.mockReset(); });
+beforeEach(() => {  fixture.openBot.mockReset(); });
 afterEach(() => { vi.unstubAllGlobals(); setTeamPeople(null); setTeamChats(null); });
 
 describe("New bot", () => {
@@ -54,7 +54,7 @@ describe("New bot", () => {
     expect(created()).toMatchObject({ name: "Pixel", modelSelection: { instanceId: "claude", model: "sonnet" }, requireAvailableModel: true, useDefaults: false });
     expect(created()).not.toHaveProperty("reportsTo");
     expect(sent).toEqual([{ type: "botAdded", bot: expect.objectContaining({ id: "created", name: "Pixel" }), preserveSelection: false }]);
-    expect(fixture.track.mock.calls).toEqual([["bot_created", { source: "blank" }]]);
+
   });
 
   it("names the bot so it never repeats one already here", async () => {
@@ -101,7 +101,7 @@ describe("New bot", () => {
     const sent = await newBot(request);
     expect(sent).toEqual([{ type: "error", message: "Couldn't make a new bot: this workspace is limited to 200 bots" }]);
     if (on === "PATCH") expect(calls.at(-1)).toMatchObject({ method: "DELETE", path: "/api/bots/created" });
-    expect(fixture.track).not.toHaveBeenCalled();
+
     const onError = vi.fn();
     expect(await newBot(server({}, { on, error: "offline" }).request, { onError })).toEqual([]);
     expect(onError).toHaveBeenCalledWith("Couldn't make a new bot: offline");

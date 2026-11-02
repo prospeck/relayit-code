@@ -15,8 +15,7 @@ const fixture = vi.hoisted(() => ({
   dispatch: vi.fn(),
   switches: [] as ComponentProps<typeof Switch>[],
   ownerOrAdmin: null as boolean | null,
-  updater: null as import("@/lib/updater").UpdaterState | null,
-  serverUpdate: null as ReturnType<typeof import("./SidebarProfileMenu").useServerUpdateItem>,
+
   rail: null as { available: boolean; hidden: boolean } | null,
   railHidden: [] as boolean[],
 }));
@@ -31,7 +30,7 @@ vi.mock("@/lib/interface-mode", () => ({
   useAdvancedMode: () => fixture.advancedMode,
   setAdvancedMode: vi.fn(),
 }));
-vi.mock("@/lib/analytics", () => ({ analyticsEnabled: () => false, setAnalyticsEnabled: vi.fn() }));
+
 vi.mock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => fixture.ownerOrAdmin }));
 vi.mock("@/lib/chrome-rail", () => ({ useChromeRail: () => fixture.rail, setChromeRailHidden: (hidden: boolean) => fixture.railHidden.push(hidden) }));
 vi.mock("./SettingsPrimitives", async (importOriginal) => {
@@ -66,18 +65,6 @@ vi.mock("./WorkspaceBackupSettings", () => ({ WorkspaceBackupSettings: marker("b
 vi.mock("./RoomTurnTimeoutSettings", () => ({ RoomTurnTimeoutSettings: () => null }));
 vi.mock("./CompanyBackupSettings", () => ({ CompanyBackupSettings: () => null }));
 vi.mock("./ImportSettings", () => ({ ImportSettings: marker("import") }));
-vi.mock("./UpdatesConsent", async (importOriginal) => ({
-  ...await importOriginal<typeof import("./UpdatesConsent")>(),
-  UpdatesConsentRow: marker("updatesConsent"),
-}));
-vi.mock("./SidebarProfileMenu", async (importOriginal) => ({
-  ...await importOriginal<typeof import("./SidebarProfileMenu")>(),
-  useServerUpdateItem: () => fixture.serverUpdate,
-}));
-vi.mock("@/lib/updater", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/lib/updater")>(),
-  useUpdaterState: () => fixture.updater,
-}));
 
 const desktop = { ogb: { environments: {}, organization: {}, cloudAccount: {} } };
 
@@ -88,8 +75,7 @@ beforeEach(() => {
   fixture.config = { features: { browser: false }, browserEngine: { kind: "bundled", installable: true }, composio: { mode: "self" } };
   fixture.switches = [];
   fixture.ownerOrAdmin = null;
-  fixture.updater = null;
-  fixture.serverUpdate = null;
+
   fixture.rail = null;
   fixture.railHidden = [];
   fixture.api.mockResolvedValue({});
@@ -205,11 +191,11 @@ describe("Settings in Simple mode", () => {
 
   it("keeps the everyday rows and leaves the fourteen builder controls to Advanced, where search still points", () => {
     const general = open("general");
-    for (const shown of ['aria-label="Send usage analytics"', 'aria-label="Color my messages with the bot&#x27;s color"', 'aria-label="Send messages with"',
+    for (const shown of ['aria-label="Color my messages with the bot&#x27;s color"', 'aria-label="Send messages with"',
       'aria-label="Notification sounds"', 'aria-label="Show the notification feed"', 'aria-label="App language"', 'role="radiogroup" aria-label="Theme"']) {
       expect(placement(general, shown), shown).toBe("shown");
     }
-    expect(placement(open("updates"), "MARKER:updatesConsent;")).toBe("shown");
+
     const everyPage = ["general", "engines", "companion", "usage", "updates"].map((section) => open(section as AppSettingsSection)).join("");
     for (const gone of ["Effort for new bots", "Defaults for new bots", "Group turns", "MCP calls", "Parallel threads", "Automatic recovery", "Event log cleanup",
       "Interface font", "Chat width", "Pinned bots as circles", "Universal pins", "Tool calls", "This run", "Keep prompt cache warm"]) {
@@ -217,24 +203,6 @@ describe("Settings in Simple mode", () => {
     }
     expect(SIMPLE_ADVANCED_ONLY).toHaveLength(14);
     expect(SIMPLE_ADVANCED_ONLY.map((key) => t(key))).toEqual(expect.arrayContaining(["Effort for new bots", "Interface font", "Keep prompt cache warm"]));
-  });
-
-  it("names this app and its version on Updates, then product updates, the welcome tour and diagnostics", () => {
-    vi.stubGlobal("window", { ogb: { ...desktop.ogb, updater: { check: vi.fn(), install: vi.fn(), onState: vi.fn() } } });
-    fixture.updater = { status: "idle" };
-    const html = open("updates");
-    expect(html).toMatch(/>MausBot [^<]+<\/div>/);
-    for (const shown of ["Check for updates", "MARKER:updatesConsent;", "Replay welcome tour", "Diagnostics"]) expect(placement(html, shown), shown).toBe("shown");
-  });
-
-  it("checks the server's version from a browser", () => {
-    vi.stubGlobal("window", {});
-    const onSelect = vi.fn();
-    fixture.serverUpdate = { phase: "up-to-date", pending: false, label: "Up to date", item: { key: "update", label: "Up to date", subtitle: "v1.2.3", icon: null, disabled: false, onSelect } };
-    const html = open("updates");
-    expect(html).toMatch(/>MausBot [^<]+<\/div>/);
-    expect(html).toContain("Up to date v1.2.3");
-    expect(placement(html, "Check for updates")).toBe("shown");
   });
 
   it("opens the fold that holds a linked setting: API keys, Servers or this app as a client", () => {
@@ -364,7 +332,7 @@ describe("Settings in Advanced mode", () => {
     expect(html.indexOf('aria-label="Advanced mode"')).toBeLessThan(html.indexOf("Language"));
     expect(html).toContain("Show every technical control on this device");
     expect(html).not.toContain("More settings");
-    for (const kept of ["Group turns", 'aria-label="Effort for new bots"', 'aria-label="Send usage analytics"', "Diagnostics"]) {
+    for (const kept of ["Group turns", 'aria-label="Effort for new bots"', "Diagnostics"]) {
       expect(placement(html, kept), kept).toBe("shown");
     }
   });

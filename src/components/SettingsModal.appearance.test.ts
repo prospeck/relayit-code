@@ -74,7 +74,7 @@ vi.mock("@/lib/interface-mode", () => ({
   useAdvancedMode: () => fixture.advancedMode,
   setAdvancedMode: fixture.setAdvancedMode,
 }));
-vi.mock("@/lib/analytics", () => ({ analyticsEnabled: () => false, setAnalyticsEnabled: vi.fn() }));
+
 vi.mock("./PeopleSection", () => ({ PeopleSection: () => null }));
 vi.mock("@/lib/chrome-rail", () => ({ useChromeRail: () => fixture.rail, setChromeRailHidden: (hidden: boolean) => fixture.railHidden.push(hidden) }));
 vi.mock("./SettingsPrimitives", async (importOriginal) => {
@@ -152,7 +152,6 @@ describe("Settings → Appearance", () => {
   it("does not repeat the app language in Appearance on this computer", () => {
     expect(render()).not.toContain('aria-label="App language"');
   });
-
 
   it("groups skins, thread visibility, and tool-call display with preservation copy", () => {
     const html = render();

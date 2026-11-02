@@ -9,7 +9,7 @@ import { ADVANCED_MODE_KEY, readAdvancedMode, setAdvancedMode, useAdvancedMode }
 import { SIMPLE_MODE_PROMPT_KEY, simpleModePromptSeen } from "@/lib/simple-mode-prompt";
 
 const analytics = vi.hoisted(() => ({ track: vi.fn() }));
-vi.mock("@/lib/analytics", () => analytics);
+
 const { SimpleModePrompt } = await import("./SimpleModePrompt");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

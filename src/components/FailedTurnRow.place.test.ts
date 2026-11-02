@@ -28,11 +28,9 @@ vi.mock("@/lib/interface-mode", async (importOriginal) => ({
   useAdvancedMode: () => fixture.advanced,
 }));
 vi.mock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => fixture.ownerOrAdmin }));
-vi.mock("@/lib/analytics", () => ({ track: vi.fn() }));
 
 const { FailedTurnRow } = await import("./ChatView");
 const { placeRowViewFor } = await import("@/lib/place-view");
-
 
 const stored = (place: PlaceRow): NonNullable<Message["tool"]> => failedTurnTool(placeRowText(place), { place });
 const hours: PlaceRow = { state: "cc-no-hours", params: { bot: "Scout", plan: "Pro", hours: 50, month: "November" }, source: "works-on" };

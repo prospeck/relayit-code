@@ -1,8 +1,8 @@
 // Security: secrets are write-only; GET /api/config returns configured flags and, for admins, the last four characters.
 import { api, type ConfigStatus } from "@/state/store";
 import { t } from "@/lib/i18n";
-import { keyTestResult } from "@/lib/product-events";
-import type { KeyResult } from "@/lib/analytics-allowlist";
+
+import { keyTestResult, type KeyResult } from "@/lib/key-result";
 import { keyEntry, type KeyId, type KeyTarget, type TestableProvider } from "./key-catalog";
 
 /** Saves one credential where this app keeps it ("" removes it): the desktop's encrypted store when the key has a slot

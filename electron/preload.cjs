@@ -64,22 +64,17 @@ function railKeepsItsSize() {
 if (typeof window !== "undefined") {
   for (const type of ["resize", "DOMContentLoaded"]) window.addEventListener(type, () => { leaveRailRoom(); railKeepsItsSize(); });
 }
-const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "cloudAdd", "cloudPlan", "cloudSendPage", "desktopNotices", "desktopAnalytics", "desktopLanguage", "updatesConsent", "windowControls", "onOpenAppSettings", "windowFrame"]);
+const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "cloudAdd", "cloudPlan", "cloudSendPage", "desktopLanguage", "windowControls", "onOpenAppSettings", "windowFrame"]);
 /** My Cloud's own page once it is the person's home (main checks the sender again): it is this app's page then. */
 const HOME_PAGE = ["home", "onChatLink", "onPackageInstall", "exportDiagnostics", "openLogsFolder", "openAtLogin", "callActive"];
-function updaterOffered() {
-  try { return ipcRenderer.sendSync("update:offered") === true; } catch { return false; }
-}
+
 function homePage() {
   try { return ipcRenderer.sendSync("home:page") === true; } catch { return false; }
 }
 function reloadedForUpdate() {
   try { return ipcRenderer.sendSync("home:updating") === true; } catch { return false; }
 }
-function savedAnalyticsChoice() {
-  try { const saved = ipcRenderer.sendSync("desktop-analytics:read"); return typeof saved === "boolean" ? saved : null; } catch { return null; }
-}
-let analyticsChoice;
+
 function savedLanguageChoice() {
   try { const saved = ipcRenderer.sendSync("desktop-language:read"); return typeof saved === "string" ? saved : null; } catch { return null; }
 }
@@ -91,7 +86,7 @@ ipcRenderer.on("desktop-language:changed", (_event, language) => {
   for (const listener of languageListeners) listener(language);
 });
 const onHomePage = !isLocalPage && homePage();
-const remoteKeys = isLocalPage ? REMOTE_SAFE : new Set([...REMOTE_SAFE, ...(updaterOffered() ? ["updater"] : []), ...(onHomePage ? HOME_PAGE : [])]);
+const remoteKeys = isLocalPage ? REMOTE_SAFE : new Set([...REMOTE_SAFE, ...(onHomePage ? HOME_PAGE : [])]);
 
 // Keep in parity with shared/workspace-backup-client.ts (a sandboxed preload cannot import it).
 const COMPANY_BACKUP_CLIENT_KEYS = [
@@ -99,7 +94,7 @@ const COMPANY_BACKUP_CLIENT_KEYS = [
   "omb-skin", "omb-show-threads", "omb-show-run-card", "omb-send-key", "omb-color-user-bubbles", "omb-chat-width", "openmausbot.sidebarDensity",
   "openmausbot.sidebarToolsLayout",
   "openmausbot.sidebarCollapsedSections.v1", "openmausbot.sidebarSectionOrder.v1",
-  "omb-analytics-opt-out", "openmausbot.remote-voice.v1",
+  "openmausbot.remote-voice.v1",
 ];
 if (isLocalPage && !desktopRemoteClient && process.argv.includes("--omb-company-desktop=1")) {
   ipcRenderer.on("company-backups:collect-client-state", (_event, request) => {
@@ -382,22 +377,6 @@ const bridge = {
   },
   setCredential: (name, value) => ipcRenderer.invoke("credential:set", name, value),
 
-  updater: {
-    check: () => ipcRenderer.invoke("update:check"),
-    install: () => isLocalPage || navigator.userActivation?.isActive === true
-      ? ipcRenderer.invoke("update:install") : Promise.reject(new Error("Choose Restart to update.")),
-    seen: () => ipcRenderer.invoke("update:seen"),
-    onState: (cb) => {
-      ipcRenderer
-        .invoke("update:get-state")
-        .then((s) => cb(s))
-        .catch(() => {});
-      const handler = (_event, s) => cb(s);
-      ipcRenderer.on("update:state", handler);
-      return () => ipcRenderer.removeListener("update:state", handler);
-    },
-  },
-
   /** A remote page may read the list but never change where this window goes. */
   environments: {
     state: () => ipcRenderer.invoke("environments:state"),
@@ -573,30 +552,11 @@ const bridge = {
     repair: () => ipcRenderer.invoke("home:repair"),
     updating: onHomePage && reloadedForUpdate(),
   },
-  updatesConsent: {
-    state: () => ipcRenderer.invoke("updates-consent:state"),
-    choose: choice => ipcRenderer.invoke("updates-consent:choose", {
-      status: String(choice?.status),
-      ...(typeof choice?.email === "string" ? { email: choice.email } : {}),
-    }),
-  },
+
   desktopProfile: {
     systemName: () => ipcRenderer.invoke("desktop-profile:system-name"),
   },
-  desktopNotices: {
-    state: () => ipcRenderer.invoke("desktop-notices:state"),
-    seen: id => ipcRenderer.invoke("desktop-notices:seen", String(id)),
-    // A Cloud or server page on 0.1.135 or older calls this as its Cloud Pro popup opens, and the whole page went blank
-    // when it was missing. Nothing asks main any more: never the first showing today, so that page reports nothing.
-    shown: () => Promise.resolve(false),
-  },
-  desktopAnalytics: {
-    enabled: () => {
-      if (analyticsChoice === undefined) analyticsChoice = savedAnalyticsChoice();
-      return analyticsChoice;
-    },
-    ...(isLocalPage ? { set: enabled => { analyticsChoice = enabled === true; return ipcRenderer.invoke("desktop-analytics:set", analyticsChoice); } } : {}),
-  },
+
   desktopLanguage: {
     choice: () => {
       if (languageChoice === undefined) languageChoice = savedLanguageChoice();
