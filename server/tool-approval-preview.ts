@@ -39,7 +39,14 @@ export function readableToolArguments(input: Record<string, unknown>): string {
   const safe = toolDetailPreview(input);
   if (!safe) return "This tool has no arguments.";
   let value: unknown;
-  try { value = JSON.parse(safe); } catch { return safe; }
+  try { value = JSON.parse(safe); }
+  catch {
+    return Object.entries(input).slice(0, 40).map(([key, child]) => {
+      const field = toolDetailPreview({ [key]: child });
+      try { return readableToolArguments(JSON.parse(field ?? "{}")); }
+      catch { return `${key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ")}: [Large value omitted; review the tool input.]`; }
+    }).join("\n");
+  }
   const lines = (item: unknown, prefix = "", depth = 0): string[] => {
     if (item === null || typeof item !== "object" || depth > 6) return [`${prefix}: ${String(item)}`];
     return Object.entries(item).flatMap(([key, child]) => {

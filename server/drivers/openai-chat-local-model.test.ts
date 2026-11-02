@@ -255,7 +255,7 @@ describe("a local model repeating itself", () => {
 
 
 describe("stored-cart approvals on the local model path", () => {
-  it.each(["allow", "deny", "failed-preview"] as const)("handles %s without executing an unapproved order", async (behavior) => {
+  it.each(["allow", "deny", "failed-preview", "stalled"] as const)("handles %s without executing an unapproved order", async (behavior) => {
     const dir = mkdtempSync(join(tmpdir(), "relayit-card-gate-"));
     cleanups.push(() => removeTempDir(dir));
     const provider = new MockFoodProvider(join(dir, "india-services", "food"));
@@ -264,18 +264,22 @@ describe("stored-cart approvals on the local model path", () => {
     const cart = await provider.quote({ restaurantId: restaurant.id, items: [{ itemId: menu.categories[0]!.items[0]!.id, qty: 1 }], deliveryAddress: { label: "Home", line: "12 Demo Road, Bengaluru" } });
     const f = await fixture((_body, response, round) => round === 1
       ? sse(response, [chunk({ tool_calls: [{ index: 0, id: "order", type: "function", function: { name: "india_food_place_order", arguments: JSON.stringify({ cartId: behavior === "failed-preview" ? "missing" : cart.cartId, amountInr: 1 }) } }] }, "tool_calls")])
-      : say(response, "The demo order awaits payment."));
+      : say(response, behavior === "stalled" ? "Your order is paid. Total ₹9999." : "The demo order awaits payment."));
     await f.start({ integrations: { custom: { "india-food": indiaServiceSpec("food", dir)!.server } }, approvalMode: "ask" });
     if (behavior !== "failed-preview") {
       const ask = await f.recorder.until((event) => event.type === "request.opened");
       if (ask.type !== "request.opened") throw new Error("Expected a permission card");
       expect(ask.summary).toContain(`Total: ₹${cart.totalInr.toFixed(2)}`);
-      await f.respond(ask.requestId!, behavior);
+      await f.respond(ask.requestId!, behavior === "stalled" ? "allow" : behavior);
     }
     expect(await f.completed()).toMatchObject({ ok: true });
     const state = JSON.parse(readFileSync(join(dir, "india-services", "food", "food-state.json"), "utf8"));
-    expect(Object.values(state.orders)).toHaveLength(behavior === "allow" ? 1 : 0);
-    expect(f.requests).toHaveLength(behavior === "allow" ? 2 : 1);
+    expect(Object.values(state.orders)).toHaveLength(behavior === "allow" || behavior === "stalled" ? 1 : 0);
+    expect(f.requests).toHaveLength(behavior === "stalled" ? 5 : behavior === "allow" ? 2 : 1);
+    if (behavior === "stalled") {
+      expect(f.opened()).toHaveLength(1);
+      expect(f.replies()).toEqual(["I couldn't verify the next step, so I stopped. Check any existing order or payment before trying again."]);
+    }
     if (behavior === "failed-preview") {
       expect(f.opened()).toEqual([]);
       expect(f.replies().join(" ")).toContain("card can't be shown");

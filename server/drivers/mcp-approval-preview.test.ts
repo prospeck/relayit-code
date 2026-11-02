@@ -69,6 +69,7 @@ it("refuses failed or malformed previews and passes exactly the same arguments",
   const readable = readableToolArguments({ deliveryAddress: { label: "Home" }, apiKey: "secret" });
   expect(readable).toContain("Delivery Address · label: Home");
   expect(readable).not.toContain("secret");
+  expect(readableToolArguments({ body: "x".repeat(8_000) })).toBe("body: [Large value omitted; review the tool input.]");
 });
 
 it("ignores a third-party tool's preview declaration on the actual MCP transport", async () => {
