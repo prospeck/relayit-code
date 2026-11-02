@@ -335,6 +335,7 @@ export function SettingsModal() {
         return (
           <>
             <AdvancedModeRow />
+            {state.config?.credentialStorage && <Card title={state.config.credentialStorage.label} subtitle={state.config.credentialStorage.detail} />}
             <DefaultBotSidebarRow />
             <TalkShortcutRow />
 
@@ -432,7 +433,7 @@ export function SettingsModal() {
     switch (page.id) {
       case "general": return looks
         ? <SimpleLooksPage onBack={() => { setLooks(false); setReveal("appearance"); }} />
-        : <SimpleGeneralPage has={has} peopleOpen={section === "people"} onLooks={() => setLooks(true)} />;
+        : <>{state.config?.credentialStorage && <Card title={state.config.credentialStorage.label} subtitle={state.config.credentialStorage.detail} />}<SimpleGeneralPage has={has} peopleOpen={section === "people"} onLooks={() => setLooks(true)} /></>;
       case "ai": return <SimpleAiPage has={has} disclose={disclose} connections={renderSection("connections")} />;
       case "computer": return <SimpleComputerPage has={has} remoteAccess={remoteAccess} servers={renderSection("desktopWorkspaces")} disclose={disclose} />;
       case "billing": return <SimpleBillingPage has={has} disclose={disclose} cloudAccount={renderSection("cloudAccount")} />;
