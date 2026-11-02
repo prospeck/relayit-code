@@ -125,9 +125,6 @@ describe("a saved key", () => {
   });
 });
 
-describe("a key that comes with the Cloud plan", () => {
-
-});
 
 describe("a row that uses another row's key", () => {
   it("shows the OpenAI key under its own name in Voice and calls, without a second Remove", () => {

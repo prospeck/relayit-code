@@ -636,29 +636,6 @@ describe("application and rejected Markdown links", () => {
   });
 });
 
-describe("a bot's link to a page it published", () => {
-  const PAGE = "https://abcdefghijklmnopqrstuvwxyz.pages.example.test/";
-  const text = `Here is your dashboard: [Sales dashboard](${PAGE})`;
-  async function clickPage(store?: Parameters<typeof BotEditorStore>[0]["value"]) {
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    try {
-      const markdown = createElement(ChatMarkdown, { text });
-      await act(async () => root.render(store ? createElement(BotEditorStore, { value: store, children: markdown }) : markdown));
-      const link = host.querySelector<HTMLAnchorElement>(`a[href="${PAGE}"]`)!;
-      expect(link.textContent).toBe("Sales dashboard");
-      const click = new MouseEvent("click", { bubbles: true, cancelable: true });
-      await act(async () => { link.dispatchEvent(click); });
-      return click;
-    } finally {
-      await act(async () => root.unmount());
-      host.remove();
-    }
-  }
-
-
-});
 
 describe("Markdown image metadata", () => {
   it("prefers alt text and otherwise derives a readable filename", () => {
