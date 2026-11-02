@@ -29,7 +29,7 @@ const NAMES = [
 ];
 
 /** A host or repo address that still names upstream. Word lists can't tell what it should become. */
-const UPSTREAM_ADDRESS = /(?:[a-z0-9-]+\.)*(?:openmausbot|mausbot|opengrokbot|supamaus)[a-z0-9-]*\.(?:com|si|page|io|dev|net|org|ai|workers\.dev)\b|github\.com\/milind-soni\/[A-Za-z0-9._-]+|milindsoni[0-9]*\.workers\.dev/gi;
+const UPSTREAM_ADDRESS = /(?:[a-z0-9-]+\.)*(?:openmausbot|mausbot|opengrokbot|supamaus)[a-z0-9-]*\.(?:com|si|page|io|dev|net|org|ai|workers\.dev)\b|github\.com\/milind-soni\/[A-Za-z0-9._-]+|(?:[a-z0-9-]+\.)*milindsoni[0-9]*\.workers\.dev/gi;
 
 /** Marked for a person: their name and mascot are trademarks, and these need new words or art, not a swap. */
 const NEEDS_A_PERSON = /supamaus|\bmaus\b|\bmauses\b|\bmascot/i;
