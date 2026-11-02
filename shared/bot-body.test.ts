@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { BOT_BODY_IDS, COSTUME_FOR_COLOR, botBodyId, botBodySchema, isHalloweenBody } from "./bot-body.ts";
-import { HALLOWEEN_BODY_IDS } from "./halloween-bodies.ts";
-import { MASCOT_BODY_IDS } from "./mascot-bodies.ts";
+import { HALLOWEEN_BODY_IDS } from "./seasonal-tokens.ts";
+import { MASCOT_BODY_IDS } from "./relay-tokens.ts";
 import { MAUS_COLOR_NAMES } from "./wire.ts";
 
 describe("bot bodies", () => {

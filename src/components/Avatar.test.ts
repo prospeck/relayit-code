@@ -9,7 +9,7 @@ import {
   type BotAvatarProps,
   type MausAvatarProps,
 } from "./Avatar";
-import { MASCOT_BODIES } from "../../shared/mascot-bodies";
+import { MASCOT_BODIES } from "../../shared/relay-tokens";
 
 const render = (props: Partial<MausAvatarProps>) =>
   renderToStaticMarkup(createElement(MausAvatar, { color: "green", animated: false, ...props }));
@@ -21,19 +21,19 @@ const renderBot = (bot: Partial<BotAvatarProps["bot"]>) =>
 
 describe("MausAvatar body", () => {
   it("wears the cursor when no body is given", () => {
-    expect(render({})).toContain(MASCOT_BODIES.cursor.fit);
+    expect(render({})).toContain(MASCOT_BODIES.cursor.outline);
   });
 
   it("wears the body it is given", () => {
     const markup = render({ bodyId: "star" });
-    expect(markup).toContain(MASCOT_BODIES.star.fit);
+    expect(markup).toContain(MASCOT_BODIES.star.outline);
   });
 
   it("falls back to the cursor for an unknown body", () => {
     // SAFETY: "hexagram" is deliberately not a MascotBodyId, to exercise the runtime fallback for persisted or streamed
     // data.
     expect(render({ bodyId: "hexagram" as MausAvatarProps["bodyId"] })).toContain(
-      MASCOT_BODIES.cursor.fit,
+      MASCOT_BODIES.cursor.outline,
     );
   });
 
@@ -46,12 +46,11 @@ describe("MausAvatar body", () => {
 });
 
 describe("mascot facial feature colors", () => {
-  it.each(["white", "black"] as const)("uses %s for both eyes and mouth on every body type", (mascotFaceColor) => {
+  it.each(["white", "black"] as const)("uses %s for the Relay mark on every token type", (mascotFaceColor) => {
     const ink = mascotFaceColor === "white" ? "#ffffff" : "#000000";
     for (const mascotBody of ["cursor", "star", "pumpkin", "vampire"] as const) {
       for (const color of ["green", "chrome"] as const) {
         const markup = renderBot({ color, mascotBody, mascotFaceColor });
-        expect(markup).toContain(`fill="${ink}"`);
         expect(markup).toContain(`stroke="${ink}"`);
         expect(markup).not.toContain('visibility="hidden"');
       }
@@ -59,8 +58,8 @@ describe("mascot facial feature colors", () => {
   });
 
   it("keeps default inks when an override is reset or comes from an older profile", () => {
-    expect(renderBot({ color: "chrome", mascotFaceColor: null })).toContain('stroke="#1E2833"');
-    expect(renderBot({ mascotBody: "pumpkin" })).toContain('stroke="#0d0a10"');
+    expect(renderBot({ color: "chrome", mascotFaceColor: null })).toContain('stroke="#202A35"');
+    expect(renderBot({ mascotBody: "pumpkin" })).toContain('stroke="#ffffff"');
     expect(renderBot({})).toContain('stroke="#ffffff"');
   });
 

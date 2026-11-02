@@ -1,3 +1,4 @@
+import type { MausColor } from "@/lib/mascot";
 // Adapted from pingdotgg/t3code@00cdceb1 apps/web/src/browser/ServerBrowserSurface.tsx, MIT License, Copyright (c)
 // 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: OpenMausBot's UI, the panel picks the
 // transport (the v2 stream, or the v1 view as a fallback), page input goes through the panel's control rules so the
@@ -172,6 +173,7 @@ export function StreamSurface(props: {
   /** Page input and toolbar commands, through the panel's control rules. */
   readonly input: (input: PreviewStreamInput) => void;
   readonly label?: string;
+  readonly cursorColor?: MausColor;
   readonly onClient?: (client: PreviewStreamClient | null) => void;
   readonly onControl?: (control: PreviewStreamControl | null) => void;
   readonly onMessage?: (message: Readonly<Record<string, unknown>>) => void;
@@ -637,7 +639,7 @@ export function StreamSurface(props: {
           onMouseDown={(event) => event.preventDefault()}
           onContextMenu={(event) => event.preventDefault()}
         />
-        {agentCursor && !you ? <AgentCursor {...agentCursor} controller={control?.controller === "agent" ? "agent" : "none"} /> : null}
+        {agentCursor && !you ? <AgentCursor {...agentCursor} color={props.cursorColor} controller={control?.controller === "agent" ? "agent" : "none"} /> : null}
         {/* Focus target for page keyboard input. Pinned top-left so focusing it never scrolls the surface; 16px keeps
           iOS from zooming the app on focus. */}
         <textarea

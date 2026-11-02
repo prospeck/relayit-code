@@ -1,15 +1,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
-import cloudHomeDark from "@/assets/whats-new/cloud-home-dark.webp";
-import cloudHomeLight from "@/assets/whats-new/cloud-home-light.webp";
 import { cn } from "@/lib/cn";
-import { useColorScheme } from "@/lib/color-scheme";
 import { t } from "@/lib/i18n";
 import { newCloudUrl, startTeamUrl, type WhatsNewAction, type WhatsNewSlide, type WhatsNewView } from "@/lib/whats-new";
 import type { LocaleKey } from "@/locales";
 import { CLOSE, PRIMARY, QUIET, SHEET } from "../cloud-buy/parts";
 import { LinkButton, NotNowButton } from "../NoticeCard";
 import { TeamPicture } from "./TeamPicture";
+import { MausAvatar } from "../Avatar";
 
 export const WHATS_NEW_POPUP = "[data-whats-new]";
 
@@ -24,15 +22,15 @@ const focusLost = (focus: Element | null) => !focus || focus === document.body |
 const titleId = (slide: WhatsNewSlide) => `whats-new-${slide}-title`;
 const controls = (popup: Element | null) => [...(popup?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? [])].filter(button => !button.closest("[inert]"));
 
-/** A slide's picture, at least half as tall as it is wide; the new Cloud's grows into the room the taller Team slide leaves,
- * showing more of the page, centered once all of it fits. */
 function Picture({ slide, active }: { slide: WhatsNewSlide; active: boolean }) {
-  const scheme = useColorScheme();
   return <div data-whats-new-picture={slide} className="relative aspect-[2/1] shrink-0 grow overflow-hidden bg-ink/[0.035] [@media(max-height:600px)]:hidden">
     {slide === "pro"
-      ? <div className="absolute inset-0 flex flex-col items-center px-[4%] pt-3.5">
-        <img src={scheme === "dark" ? cloudHomeDark : cloudHomeLight} alt={t("whatsNew.cloud.pictureAlt")} width={1120} height={762} decoding="async" draggable={false}
-          className="my-auto w-full max-w-none select-none" />
+      ? <div data-relay-handoff aria-hidden="true" className="absolute inset-0 flex items-center justify-center gap-5 bg-linear-to-br from-orange-500/10 to-transparent">
+        <MausAvatar color="chrome" state="idle" size={76} animated={false} />
+        <ArrowRight size={28} className="text-ink-tertiary" />
+        <MausAvatar color="orange" state="working" size={96} animated={active} />
+        <ArrowRight size={28} className="text-ink-tertiary" />
+        <MausAvatar color="purple" state="happy" size={76} animated={false} />
       </div>
       : <TeamPicture active={active} />}
   </div>;

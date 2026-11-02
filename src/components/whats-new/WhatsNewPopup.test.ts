@@ -64,16 +64,17 @@ describe("the What's new popup", () => {
     const slide = live();
     expect(slide.textContent).toContain("Your bots keep working when this computer is off. The new Cloud website puts your Clouds, team, billing and usage in one place.");
     expect(slide.textContent).toContain("Pro · $49/month + tax · 14-day money-back");
-    const picture = slide.querySelector("img")!;
-    expect(picture.getAttribute("alt")).toBe("The new Cloud website's Home: each Cloud with its plan and status, this month's usage and the apps signed in.");
-    expect(picture.getAttribute("src"), "dark skins get the dark picture").toMatch(/cloud-home-dark\.webp/);
+    expect(slide.querySelector("[data-relay-handoff]")).not.toBeNull();
+    expect(slide.querySelectorAll("[data-maus]")).toHaveLength(3);
+    expect(slide.querySelector("img")).toBeNull();
     expect([...slide.querySelectorAll("button")].map(item => item.textContent)).toEqual(["Get Pro", "See the new Cloud"]);
   });
 
-  it("a light skin gets the light picture", async () => {
+  it("the handoff artwork uses live theme colours in light mode", async () => {
     document.documentElement.style.setProperty("--code-color-scheme", "light");
     await show();
-    expect(live().querySelector("img")!.getAttribute("src")).toMatch(/cloud-home-light\.webp/);
+    expect(live().querySelector("[data-relay-handoff]")).not.toBeNull();
+    expect(live().querySelector("img")).toBeNull();
   });
 
   it("Next, Back, the dots and the arrow keys move between the slides; each slide is counted seen once, and each move from where it was", async () => {

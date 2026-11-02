@@ -332,6 +332,7 @@ export function LiveBrowser({ bot, signIn, page }: { bot: Bot; signIn?: BrowserS
           connect={connect}
           input={interact}
           label={`${bot.name}’s browser page`}
+          cursorColor={bot.color}
           onClient={onClient}
           onControl={onControl}
           onMessage={onMessage}

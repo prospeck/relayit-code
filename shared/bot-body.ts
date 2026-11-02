@@ -2,8 +2,8 @@
 
 import { z } from "zod";
 
-import { DEFAULT_MASCOT_BODY, MASCOT_BODY_IDS } from "./mascot-bodies.ts";
-import { HALLOWEEN_BODY_IDS, type HalloweenBodyId } from "./halloween-bodies.ts";
+import { DEFAULT_MASCOT_BODY, MASCOT_BODY_IDS } from "./relay-tokens.ts";
+import { HALLOWEEN_BODY_IDS, type HalloweenBodyId } from "./seasonal-tokens.ts";
 import type { MausColor } from "./wire.ts";
 
 export const BOT_BODY_IDS = [...MASCOT_BODY_IDS, ...HALLOWEEN_BODY_IDS] as const;

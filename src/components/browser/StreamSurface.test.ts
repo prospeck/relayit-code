@@ -255,11 +255,12 @@ describe("what the page asks of the person", () => {
   });
 
   it("shows the bot's cursor where it acts, and hides it while the person has control", async () => {
-    const { show, events } = await mount();
+    const { show, events } = await mount({ cursorColor: "purple" });
     await show(control("agent"));
     await act(async () => events().onPointer?.({ phase: "click", x: 800, y: 500, sequence: 3 }));
     const cursor = host.querySelector<HTMLElement>("[data-agent-cursor]")!;
     expect(cursor.style.transform).toBe("translate3d(800px, 500px, 0)");
+    expect(cursor.querySelector("rect")?.getAttribute("fill")).toBe("#8057C8");
     await show(control("you"));
     expect(host.querySelector("[data-agent-cursor]")).toBeNull();
   });
