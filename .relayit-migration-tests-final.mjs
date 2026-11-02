@@ -1,0 +1,4 @@
+import {fs,tests,declarations,cleanImports} from './.relayit-edit.mjs';
+let p='electron/cloud-connections.node-test.mjs',s=fs.readFileSync(p,'utf8').replace('  await assert.rejects(adoptComposioId(quiet, { local, here, there: null }), (error) => error instanceof ConnectionMoveError && error.code === "not_ready" && !error.final);','  assert.deepEqual(await adoptComposioId(quiet, { local, here, there: null }), { kept: true, missing: [] });\n  assert.deepEqual(quiet.calls[0], ["POST", "/api/cloud-connections/connected-apps", { apiKey: "ck", userId: "u1", apps: ["gmail"] }]);');fs.writeFileSync(p,s);cleanImports(p);
+p='electron/cloud-send.node-test.mjs';tests(p,title=>title.startsWith('the bridge: either page gets only the move'));declarations(p,['preload']);cleanImports(p);
+console.log('Retired cloud bridge assertions removed; direct migration handoff asserted');

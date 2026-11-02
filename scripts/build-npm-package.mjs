@@ -60,8 +60,6 @@ writeFileSync(
       },
       files: ["cli.js", "dist-server", "dist", "skills", "enterprise", "LICENSE", "README.md"],
       engines: { node: ">=24" },
-      repository: { type: "git", url: "https://github.com/milind-soni/OpenMausBot.git" },
-      homepage: "https://github.com/milind-soni/OpenMausBot#readme",
       keywords: ["openmausbot", "agents", "self-hosted", "server"],
     },
     null,
@@ -90,11 +88,7 @@ or Claude CLI. The saved model applies only to new bots; existing bots and
 conversations keep their settings.
 
 One optional step connects your phone, defaulting to Skip for now. Choose
-an explicitly approved managed public HTTPS endpoint protected by pairing,
-existing Tailscale, or an HTTPS reverse proxy you already configured.
-Managed access uses a separate OpenMausBot account and asks permission for
-the public endpoint and possible connector download. The pairing page and
-basic server identity are public; chat and settings require pairing.
+existing Tailscale or an HTTPS reverse proxy you already configured.
 Tailscale must already be installed and signed in on both devices.
 
 After the HTTPS connection is checked, scan the QR with your phone. When
@@ -134,8 +128,7 @@ endpoints.
 API connections currently support chat only. Setup asks before a short,
 potentially billable API test; native setup confirms sign-in, with model
 access checked when you send a message. API billing is separate from
-ChatGPT/Claude subscriptions. New API keys in config.json and managed
-account credentials in tunnel-account.json are plaintext, not encrypted,
+ChatGPT/Claude subscriptions. New API keys in config.json are plaintext, not encrypted,
 with owner-only permissions (0600 on Unix). Keep these files private.
 
 Ctrl-C before saving AI setup leaves its pending OMB changes unapplied.
@@ -143,10 +136,7 @@ During the later phone step, it keeps the AI setup already saved and exits
 without starting a server. Completed installs and sign-ins remain; run
 \`openmausbot setup\` to continue without deleting your data.
 
-For a service, use \`serve --tunnel\` after \`login\` for managed HTTPS,
-\`serve --tailscale\` for your tailnet, or your own reverse proxy. The
-\`login\` command signs in to an OpenMausBot account, not an AI provider;
-it does not start the tunnel itself.
+For a service, use \`serve --tailscale\` for your tailnet, or your own HTTPS reverse proxy.
 
 Scripts, CI and other agents can drive a running workspace without a screen:
 set a team up from a file, give a bot one job and wait until it and every
@@ -158,9 +148,8 @@ openmausbot run "Room Lead" "Rehearse the launch of https://example.com" --expor
 openmausbot help run       # every verb: doctor, run, wait, send, export, events, team, engine, connect, mcp
 \`\`\`
 
-[Setup guide](https://github.com/milind-soni/OpenMausBot/blob/main/docs/cli-onboarding.md)
-· [Scripts and CI](https://github.com/milind-soni/OpenMausBot/blob/main/docs/headless-cli.md)
-· [Hosting guide](https://github.com/milind-soni/OpenMausBot/blob/main/docs/self-hosting.md)
+Use \`openmausbot --help\` for setup and command-line usage.
+
 `,
 );
 console.log(`npm package assembled at ${out} (openmausbot@${app.version})`);

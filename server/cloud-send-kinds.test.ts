@@ -36,7 +36,7 @@ function deps(dataDir: string, over: Partial<MoveKindsDeps> = {}): MoveKindsDeps
     store: { bots: [...bots.values()] as never, bot: (id: string) => bots.get(id) as never, group: () => undefined,
       patchBot: (id: string, patch: object) => { patched.push([id, patch]); Object.assign(bots.get(id)!, patch); return bots.get(id) as never; },
       setChiefOfStaff: (id: string | null) => { chief.push(String(id)); return []; } } as never,
-    routines: () => null, calls: () => null, webhooks: () => null, appEvents: () => null, claudeCodeSkills: () => [],
+    routines: () => null, calls: () => null, webhooks: () => null,  claudeCodeSkills: () => [],
     instanceExists: (id) => id === "claude", owner: () => OWNER, ownRoutine: (r, person) => owned.push([r.id, person]),
     ...over,
   };

@@ -132,7 +132,7 @@ export const WINDOWS_PATH = new RegExp([
   String.raw`^(?:electron-builder\.yml|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|\.npmrc|\.gitattributes|vite\.config\.ts)$`,
   String.raw`^\.github/workflows/ci\.yml$|^scripts/ci-scope\.mjs$`,
   String.raw`^scripts/testing/(?:host-e2e\.ts|duration-sequencer\.ts|vitest-shard-weights\.json|ci-retry-[^/]+)$|^server/testing/host-timeout\.ts$`,
-  String.raw`^scripts/(?:build|bundle|prepare|package|smoke|after-pack|stage)[^/]*$`,
+  String.raw`^scripts/(?:build|bundle|prepare|package|smoke|after-pack|stage|executable-target)[^/]*$`,
 ].join("|"), "i");
 
 /** A changed line of code that names Windows or one of its APIs. */

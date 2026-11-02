@@ -45,7 +45,7 @@ const { desktopCapabilities } = createRequire(import.meta.url)("../../electron/c
 };
 const PRELOAD = readFileSync(join(process.cwd(), "electron", "preload.cjs"), "utf8");
 const LOCAL_ORIGIN = "http://127.0.0.1:8799";
-const CLOUD_ORIGIN = "https://omb-t-0123456789ab.fly.dev";
+const CLOUD_ORIGIN = "https://omb-t-0123456789ab.server.example.test";
 
 type Bridge = NonNullable<Window["ogb"]>;
 type Platform = "darwin" | "win32" | "linux";

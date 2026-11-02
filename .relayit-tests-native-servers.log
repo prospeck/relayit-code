@@ -1,0 +1,89 @@
+✔ origins are bare http(s) origins, nothing else (1.771166ms)
+✔ a pairing link keeps its code in the hash; a code anywhere else is refused (1.635333ms)
+✔ self-hosted pairing supports custom HTTPS and Cloudflare names without Tailscale (1.30975ms)
+✔ persisted state parses defensively and never resurrects Local as a remote (2.311708ms)
+✔ adding the same server twice updates the name instead of duplicating; forgetting the active one falls back to Local (0.247125ms)
+✔ hosted workspace input accepts addresses and keeps valid codes only in the fragment (1.285791ms)
+✔ workspace shell exposes only current identity and rejects subframes and unrelated windows (0.171792ms)
+✔ renderer links and redirects cannot switch onto the local or another saved workspace (0.13125ms)
+✔ native workspace choices use saved IDs and connect opens settings without changing state (0.312833ms)
+✔ Add a Cloud… sits just under the saved servers only where main offers it, and My Cloud's line can say Always on (1.199ms)
+✔ with My Cloud, the switcher says first which side has which bots, and under My Cloud what is not on it yet, with Send (0.453875ms)
+✔ someone who has not moved hears their bots live on this computer, even with My Cloud open in the window (0.30475ms)
+✔ the send line counts bots first, then everything else, and is absent when nothing waits (0.064917ms)
+✔ the places line names this computer's bots briefly, says nothing when its server does not answer, and is absent without a Cloud (0.221708ms)
+✔ native window identity distinguishes hosted HTML, companion data, and the local workspace (0.122583ms)
+✔ a version 1 file parses as all-remote with kind stamped and activeId preserved, and serializes back as version 2 (0.179625ms)
+✔ version 2 keeps locals with an absolute dataDir and drops relative, dir-less and unknown-version ones (0.297917ms)
+✔ withLocalEnvironment registers absolute, non-default, non-nested directories only (0.479125ms)
+✔ activeLocalDataDir reports only an active local environment's directory (0.060584ms)
+✔ startupEnvironmentDir boots on the active local dir and falls back to the default (0.04325ms)
+✔ bootEnvironmentDir refuses to boot onto a missing named env dir — the default dir instead, flagged (0.075291ms)
+✔ data dirs are absolute in POSIX, drive-letter and UNC shape; relative and drive-relative are refused (0.137166ms)
+✔ withLocalEnvironment rejects a candidate that contains a registered local dir, accepts siblings (0.12475ms)
+✔ a named local environment is this computer with its path, and gets its own menu row (0.152917ms)
+✔ withLocalEnvironment compares Windows-shaped paths by separators and case (0.323125ms)
+✔ parseEnvironments dedups local dirs on the same normalized key (0.087125ms)
+✔ once My Cloud is home the switcher lists whole places only: My Cloud first, then each saved server, never this computer (0.252166ms)
+✖ the switcher lists My Cloud first, then each team from the session with this person's role, then saved servers; a team has no Forget (0.470125ms)
+✔ the session's teams become saved places, named and roled as the Admin says; one it no longer lists is gone, with its name, and the window falls back to My Cloud (0.463959ms)
+✔ with My Cloud as home, the menu still folds its status line into the name where menus show no sublabels (0.165625ms)
+✔ a server answers with any status but a proxy's 5xx; a name that doesn't resolve, a refused or a slow one doesn't (135.906667ms)
+✔ the window goes to a server that answers without asking anything (1.729208ms)
+✔ one that doesn't answer is the person's choice: Cancel stays put, Remove forgets it, Try again looks once more (0.468916ms)
+✔ a bot counts only as a move would carry it: by name, never a place's untouched first bot (1.906292ms)
+✔ bots here and bots on a server of the person's own: one suggestion to bring them together there, My Cloud first when both (4.704625ms)
+✔ no suggestion when only one place has bots, while a move is under way, or for a place that couldn't say (0.431541ms)
+✔ Not now is remembered for that place, after the app opens again too; another place may still be suggested (0.436167ms)
+✔ the one tap starts the move to the place suggested, and only to it (0.338459ms)
+✔ each place is read again at most every ten minutes, unless something about the places changed (0.362584ms)
+✖ main's places: My Cloud only while the person keeps this computer's bots here, a server only when it says it is theirs alone; never a team's Cloud (62.258208ms)
+✔ each place of the person's own hears which bots their other places have, names only, and again only once that changed (0.842709ms)
+ℹ tests 41
+ℹ suites 0
+ℹ pass 39
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2886.048041
+
+✖ failing tests:
+
+test at electron/environments.node-test.mjs:419:1
+✖ the switcher lists My Cloud first, then each team from the session with this person's role, then saved servers; a team has no Forget (0.470125ms)
+  TypeError [Error]: Cannot read properties of undefined (reading 'team')
+      at TestContext.<anonymous> (file:///Users/work/relayit-next/electron/environments.node-test.mjs:435:77)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at electron/two-places.node-test.mjs:99:1
+✖ main's places: My Cloud only while the person keeps this computer's bots here, a server only when it says it is theirs alone; never a team's Cloud (62.258208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      suggest: {
+  +     key: 'server:https://garage.example.test',
+  +     kind: 'server',
+  +     name: 'Garage server'
+  -     key: 'cloud:https://omb-u-1.server.example.test',
+  -     kind: 'cloud',
+  -     name: 'My Cloud'
+      }
+    }
+  
+      at TestContext.<anonymous> (file:///Users/work/relayit-next/electron/two-places.node-test.mjs:119:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { suggest: { key: 'server:https://garage.example.test', name: 'Garage server', kind: 'server' } },
+    expected: { suggest: { key: 'cloud:https://omb-u-1.server.example.test', name: 'My Cloud', kind: 'cloud' } },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

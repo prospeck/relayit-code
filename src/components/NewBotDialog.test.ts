@@ -168,7 +168,7 @@ describe("bot draft dialog", () => {
     [["research"], { source: "template", template: "research" }],
     [["coder", ""], { source: "blank" }],
     [[], { source: "blank" }],
-  ])("reports the starting role chosen in the dialog (%j) once the bot is created", async (choices, props) => {
+  ])("reports the starting role chosen in the dialog (%j) once the bot is created", async (choices, _props) => {
     vi.stubGlobal("window", {});
     fixture.ready = true;
     fixture.create.mockResolvedValue({ bot: { id: "created", name: "Fixture" }, warnings: [] });

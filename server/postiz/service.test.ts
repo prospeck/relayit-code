@@ -15,7 +15,6 @@ let dir: string;
 let cfg: Pick<AppConfig, "postiz" | "mcpServers">;
 let oauth: McpOAuthManager;
 let busy = false;
-let scope: "team" | "person" = "team";
 const forgotten: string[] = [];
 
 beforeAll(async () => {
@@ -31,7 +30,6 @@ beforeEach(() => {
   cfg = { mcpServers: {} };
   oauth = new McpOAuthManager({ file: join(dir, "mcp-oauth.json") });
   busy = false;
-  scope = "team";
   forgotten.length = 0;
 });
 afterEach(() => {
@@ -44,7 +42,7 @@ const postiz = (loopback = true) => createPostiz({
   persistMcpServers: (next) => { cfg = { ...cfg, mcpServers: next }; },
   mcpConfigBusy: { get: () => busy, set: (value) => { busy = value; } },
   mcpPolicyRefusal: (_name, server) => (server as { url: string }).url.includes("blocked.example") ? "Your organization allows only approved MCP servers." : undefined,
-  team: { team: null, scopes: { scope: () => scope }, forgetServer: (name) => forgotten.push(name) },
+  team: { forgetServer: (name) => forgotten.push(name) },
   loopback,
 });
 /** What config.ts would hold after the route saved this patch. */

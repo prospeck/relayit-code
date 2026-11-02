@@ -1,0 +1,1 @@
+{"env":{"node":true,"browser":true},"rules":{"no-undef":"error"}}

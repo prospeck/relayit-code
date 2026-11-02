@@ -3,7 +3,7 @@
 // if the move stops. Once it lives in the team its routines are gone from here (they run there), and the bot stays here
 // archived, with its notes about the person, as the line that opens it in the team.
 import type { BotMovedTo } from "../shared/wire.ts";
-import type { AppTriggerManager } from "./app-triggers.ts";
+
 import type { RoutineManager } from "./routines.ts";
 import type { BotRecord } from "./store.ts";
 import type { WaitManager } from "./waits.ts";
@@ -13,7 +13,7 @@ export interface BotMovesDeps {
   store: { bot(id: string): BotRecord | null | undefined; patchBot(id: string, patch: Partial<BotRecord>): BotRecord | null };
   routines(): Pick<RoutineManager, "listRoutines" | "update" | "removeForBot"> | null;
   webhooks(): Pick<WebhookManager, "list" | "update"> | null;
-  appEvents(): Pick<AppTriggerManager, "list" | "update"> | null;
+
   waits(): Pick<WaitManager, "all" | "cancel"> | null;
   /** A turn or a routine run of this bot is going. */
   busy(botId: string): boolean;
@@ -42,13 +42,13 @@ export function createBotMoves(deps: BotMovesDeps) {
   const automations = (botId: string) => [
     ...(deps.routines()?.listRoutines() ?? []).filter((routine) => routine.botId === botId).map((routine) => ({ key: `routine:${routine.id}`, on: routine.enabled })),
     ...(deps.webhooks()?.list() ?? []).filter((hook) => hook.botId === botId).map((hook) => ({ key: `webhook:${hook.id}`, on: hook.enabled })),
-    ...(deps.appEvents()?.list() ?? []).filter((trigger) => trigger.botId === botId).map((trigger) => ({ key: `app-event:${trigger.id}`, on: trigger.enabled })),
+
   ];
   async function switchTo(key: string, on: boolean): Promise<void> {
     const [kind, id] = key.split(":") as [string, string];
     if (kind === "routine") deps.routines()?.update(id, { enabled: on });
     else if (kind === "webhook") deps.webhooks()?.update(id, { enabled: on });
-    else if (kind === "app-event") await deps.appEvents()?.update(id, { enabled: on });
+    else if (kind === "app-event") { throw Object.assign(new Error("App-event watches are not available."), { status: 400 }); };
   }
   const movedOf = (bot: BotRecord | null | undefined): Held | undefined => (bot as (BotRecord & { movedTo?: Held }) | null | undefined)?.movedTo;
   const cancelWaits = (botId: string) => {

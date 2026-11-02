@@ -16,7 +16,7 @@ import { createLendingIndicator, indicatorText } from "./lending-indicator.mjs";
 import { createLendingTarget } from "./lending-target.mjs";
 import { WORDS } from "./lending-words.mjs";
 
-const HOME = "https://omb-u-fixture.fly.dev", OTHER = "https://omb-c-client-a.fly.dev", TEAM = "https://omb-t-acme.fly.dev";
+const HOME = "https://omb-u-fixture.server.example.test", OTHER = "https://omb-c-client-a.server.example.test", TEAM = "https://omb-t-acme.server.example.test";
 const myCloud = { id: "my-cloud", name: "My Cloud", origin: HOME, home: true };
 const clientA = { id: "client-a", name: "Client A", origin: OTHER, cloud: { id: "c-a", role: "owner" } };
 const acme = { id: "acme", name: "Acme team", origin: TEAM, team: { id: "t-acme", role: "owner" } };

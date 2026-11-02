@@ -13,7 +13,7 @@ import { createLendingTarget } from "./lending-target.mjs";
 import { autostartEntry, createOpenAtLogin, HIDDEN_ARG } from "./open-at-login.mjs";
 import { createAllWindowsClosedQuit } from "./window-all-closed.mjs";
 
-const ORIGIN = "https://omb-u-fixture.fly.dev";
+const ORIGIN = "https://omb-u-fixture.server.example.test";
 const env = { id: "my-cloud", name: "My Cloud", origin: ORIGIN };
 
 const until = async (check, what, ms = 5000) => {
@@ -105,7 +105,7 @@ test("the internet connection alone is lent: it registers with My Cloud and open
   assert.equal(home.connects.length, 1);
   assert.deepEqual({ folders: home.connects[0].folders, computer: home.connects[0].computer, internet: home.connects[0].internet }, { folders: [], computer: false, internet: true });
   const [socket] = sockets.made;
-  assert.equal(socket.url, `wss://omb-u-fixture.fly.dev/api/shared-computers/${home.connects[0].id}/link`);
+  assert.equal(socket.url, `wss://omb-u-fixture.server.example.test/api/shared-computers/${home.connects[0].id}/link`);
   assert.equal(socket.headers.cookie, "omb_session_fixture=token");
   assert.match(socket.headers["x-omb-computer-secret"], /^[a-f0-9]{64}$/);
   assert.equal(socket.headers["x-omb-background"], "1", "the link never counts as the person using My Cloud");
@@ -354,7 +354,7 @@ test("nothing is lent until this app is signed in to My Cloud itself, and only t
   const state = await fixture(t, { myCloud: true, signIn: { status: "restoring", accountId: null, origin: null } });
   state.sharing.start();
   for (const signIn of [{ status: "signed-out", accountId: null, origin: null }, { status: "reauth-required", accountId: "acct_1", origin: null },
-    { status: "connected", accountId: null, origin: ORIGIN }, { status: "connected", accountId: "acct_1", origin: "https://omb-u-other.fly.dev" }]) state.signIn(signIn);
+    { status: "connected", accountId: null, origin: ORIGIN }, { status: "connected", accountId: "acct_1", origin: "https://omb-u-other.server.example.test" }]) state.signIn(signIn);
   await delay(150);
   assert.deepEqual(state.home.calls, [], "nothing called My Cloud");
   await assert.rejects(readFile(state.file, "utf8"), { code: "ENOENT" }, "and nothing was kept");
@@ -450,7 +450,7 @@ test("when My Cloud restarts and forgets this computer, lending registers again 
 test("a person whose only Cloud is a Team Cloud lends nothing: lending is personal", async (t) => {
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-team-cloud-")));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const team = { id: "team-cloud", name: "Acme", origin: "https://omb-t-acme.fly.dev" };
+  const team = { id: "team-cloud", name: "Acme", origin: "https://omb-t-acme.server.example.test" };
   const account = { status: "connected", account: { id: "acct_1" }, teams: [{ id: "team-acme", name: "Acme", role: "member", machine: { status: "ready", origin: team.origin } }] };
   const target = createLendingTarget({ account: () => ({ state: () => account }), environments: () => [team] });
   const calls = [];
@@ -472,7 +472,7 @@ test("a person whose only Cloud is a Team Cloud lends nothing: lending is person
 test("another Cloud of the person's own going to sleep holds only its own link: My Cloud's keeps lending, and the sleeping one isn't dialled again at once", async (t) => {
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-use-my-mac-")));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const OTHER = "https://omb-c-a.fly.dev";
+  const OTHER = "https://omb-c-a.server.example.test";
   const mine = env, other = { id: "client-a", name: "Client A", origin: OTHER, cloud: { id: "c-a", role: "owner" } };
   const homes = { [ORIGIN]: cloudHome(), [OTHER]: cloudHome() };
   const sockets = fakeSockets((url) => { const at = new URL(url.replace(/^wss:/, "https:")); return homes[at.origin].registered.has(at.pathname.split("/")[3]); });
@@ -497,7 +497,7 @@ test("another Cloud of the person's own going to sleep holds only its own link: 
 test("another Cloud of the person's own that the Admin says is asleep is never dialled, even after its own hold ends, and lends once the Admin says it is awake", async (t) => {
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-use-my-mac-")));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const OTHER = "https://omb-c-b.fly.dev";
+  const OTHER = "https://omb-c-b.server.example.test";
   const mine = env, other = { id: "client-b", name: "Client B", origin: OTHER, cloud: { id: "c-b", role: "owner" } };
   const homes = { [ORIGIN]: cloudHome(), [OTHER]: cloudHome() };
   const sockets = fakeSockets((url) => { const at = new URL(url.replace(/^wss:/, "https:")); return homes[at.origin].registered.has(at.pathname.split("/")[3]); });

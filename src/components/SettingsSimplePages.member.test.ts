@@ -24,7 +24,7 @@ const remoteAccess = { client: null, domain: null, pairing: null, companion: nul
 const pages = () => [
   renderToStaticMarkup(createElement(SimpleAiPage, { has, disclose, connections: "KEYS" })),
   renderToStaticMarkup(createElement(SimpleComputerPage, { has, disclose, remoteAccess, servers: null })),
-  renderToStaticMarkup(createElement(SimpleBillingPage, { has, disclose, cloudAccount: null })),
+  renderToStaticMarkup(createElement(SimpleBillingPage, { has, disclose })),
 ].join("\n");
 
 beforeEach(() => { fixture.admin = false; });

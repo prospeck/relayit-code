@@ -174,8 +174,8 @@ it("offers no Forget for the environment this app is on", async () => {
 
 it("a Cloud of the person's own has no lending control here, since this computer is lent to it by itself; other servers keep Computer access", async () => {
   config.value = { features: { sharedComputers: true } };
-  const cloud = { id: "cloud", name: "My Cloud", origin: "https://omb-u-1.fly.dev", home: true };
-  const other = { id: "a", name: "Client A", origin: "https://omb-c-a.fly.dev", cloud: { id: "c-a", role: "owner" } };
+  const cloud = { id: "cloud", name: "My Cloud", origin: "https://omb-u-1.server.example.test", home: true };
+  const other = { id: "a", name: "Client A", origin: "https://omb-c-a.server.example.test", cloud: { id: "c-a", role: "owner" } };
   stub({ computerSharing: { state: vi.fn() } });
   vi.mocked((globalThis.window as unknown as { ogb: { environments: { state: ReturnType<typeof vi.fn> } } }).ogb.environments.state)
     .mockResolvedValue({ localOrigin: "http://127.0.0.1:1", remote: false, activeId: "local", environments: [VPS, cloud, other] });

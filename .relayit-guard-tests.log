@@ -1,0 +1,11 @@
+✔ detects upstream hosts and releases, including escaped literals (5.103ms)
+✔ leaves brand identifiers and independent direct-key services alone (8.830209ms)
+✔ scans shipped roots and permits only explicit legal paths (43.577042ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 907.468084

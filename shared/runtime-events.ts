@@ -186,12 +186,11 @@ export type RuntimeEvent = RuntimeEventBase &
     // `setup`: fixed by installing or configuring something, not by retrying.
     // `terminal`: the complete turn failed, not a transient error.
     // `claudeUpdate`: this Claude Code is too old for the model.
-    // `trialCredit`: the trial's Claude credit refused the call.
     // `stalled`: the engine went silent and the turn was stopped as stuck.
     // `limitResetsAt`: epoch ms when the usage limit refusing this account resets, when the engine says.
     // `limit`: a usage limit refused this turn: the account's on this engine ("engine"), one model's own window
     // ("model"), or that model's extra usage credits ("credits"); the engine's other models still work for the last two.
-    | { type: "runtime.error"; message: string; setup?: boolean; terminal?: boolean; claudeUpdate?: boolean; trialCredit?: "used_up" | "ended" | "paused" | "too_low";
+    | { type: "runtime.error"; message: string; setup?: boolean; terminal?: boolean; claudeUpdate?: boolean;
         stalled?: boolean; limitResetsAt?: number; limit?: "engine" | "model" | "credits" }
     /** Something the person should know that did not fail the turn — for
      * example, a saved model the engine no longer offers was replaced. */

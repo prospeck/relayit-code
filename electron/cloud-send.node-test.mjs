@@ -1,17 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+
+
+
 import test from "node:test";
-import vm from "node:vm";
+
 
 import { BOT_PARTS, differenceSignature, itemKey, parseSendSummary, pendingRows, planSend } from "./cloud-send-parts.mjs";
 import { botPatch, CloudSendError, createCloudSend, parseSendState, sendNotice, unanswered } from "./cloud-send.mjs";
-import { installCloudSend, openOwnerSession } from "./cloud-send-main.mjs";
-import { installTeamMove } from "./team-move-main.mjs";
+
+
 
 const LOCAL = "http://127.0.0.1:4100";
-const CLOUD = "https://omb-u-1.fly.dev";
+const CLOUD = "https://omb-u-1.server.example.test";
 const summary = (items) => ({ v: 1, appVersion: "0.1.117", items });
 const bot = (id, parts, extra = {}) => ({ key: itemKey.bot(id), kind: "bot", label: id, id, parts, ...extra });
 
@@ -145,91 +145,15 @@ test("My Cloud's page is told names of bots and counts, with an opaque signature
   assert.ok(!JSON.stringify(notice).includes("bank.example"));
 });
 
-test("an owner session is made only at the person's own Cloud, and nothing is sent to an origin a grant names instead", async () => {
-  const fetched = [];
-  const fetchImpl = async (url, init) => { fetched.push([url, init?.headers?.authorization ?? null]); return new Response(JSON.stringify({ token: "omb_sess_fake" }), { status: 200 }); };
-  await assert.rejects(openOwnerSession({ origin: CLOUD, grant: async () => ({ origin: "https://attacker.example", code: "C" }) }, fetchImpl), /not ready/);
-  assert.deepEqual(fetched, []);
-  const session = await openOwnerSession({ origin: CLOUD, grant: async () => ({ origin: CLOUD, code: "C" }) }, fetchImpl);
-  await session.call("GET", "/api/cloud-send");
-  await session.close();
-  assert.deepEqual(fetched.map(([url, auth]) => [url.replace(CLOUD, ""), auth]), [["/api/auth/pair", null], ["/api/cloud-send", "Bearer omb_sess_fake"], ["/api/auth/logout", "Bearer omb_sess_fake"]]);
-});
 
-test("either page asks only for the move's line, its Try again and closing it; nothing else of a send is left", async () => {
-  const handlers = new Map();
-  installCloudSend({
-    ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
-    cloudPage: (event) => event.page ?? null,
-    server: () => null, local: async () => new Response("{}", { status: 503 }), home: () => null,
-    cookieFetch: async () => new Response("", { status: 401 }), reconnect: async () => false, power: { asleep: () => false },
-    file: () => "/nonexistent/cloud-send.json", window: () => null, localOrigin: () => LOCAL,
-  });
-  assert.deepEqual([...handlers.keys()], ["cloud-send:notice", "cloud-send:dismiss", "cloud-send:move-retry"]);
-  for (const channel of handlers.keys()) assert.throws(() => handlers.get(channel)({ page: null }), /only available/, channel);
-  for (const page of ["local", "cloud"]) {
-    assert.deepEqual(await handlers.get("cloud-send:notice")({ page }), { ready: false, bots: [], updatedBots: [], skills: 0, logins: 0, onePassword: false, settings: 0, signature: "", dismissed: false, running: false, last: null,
-      whole: null, arrived: { bots: 0, updatedBots: 0, skills: 0, logins: 0, settings: 0, onePassword: false, chats: { conversations: 0, messages: 0 } } }, page);
-  }
-});
 
-test("cloud-send:teams returns empty teams outside My Cloud without throwing", async () => {
-  const handlers = new Map();
-  installTeamMove({
-    ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
-    cloudPage: (event) => event.page ?? null,
-    home: () => ({ origin: CLOUD, grant: async () => ({ origin: CLOUD, code: "C" }) }),
-    account: () => ({ state: () => ({ status: "connected", teams: [{ id: "team-acme", name: "Acme Corp", machine: { origin: CLOUD, status: "ready" } }] }) }),
-    file: () => "/nonexistent/cloud-send.json",
-    journalFile: () => "/nonexistent/team-move.json",
-  });
-  assert.deepEqual(await handlers.get("cloud-send:teams")({ page: "local" }), { teams: [] }, "local page gets empty teams");
-  assert.deepEqual(await handlers.get("cloud-send:teams")({ page: null }), { teams: [] }, "no page context gets empty teams");
-  assert.deepEqual(await handlers.get("cloud-send:teams")({ page: "cloud" }), { teams: [{ id: "team-acme", name: "Acme Corp", ready: true }] }, "My Cloud page gets actual teams");
-});
 
-function preload({ remote = false, activation = false } = {}) {
-  let bridge; const invoked = [];
-  vm.runInNewContext(readFileSync(new URL("./preload.cjs", import.meta.url), "utf8"), {
-    process: { platform: "darwin", argv: [`--omb-local-origin=${LOCAL}`, "--omb-company-desktop=1"] },
-    location: { origin: remote ? CLOUD : LOCAL }, navigator: { userActivation: { isActive: activation } },
-    TextEncoder, localStorage: { getItem: () => null },
-    require: () => ({ webUtils: {}, contextBridge: { exposeInMainWorld: (_name, value) => { bridge = value; } },
-      ipcRenderer: { on() {}, removeListener() {}, send() {}, sendSync: () => false, invoke: (...args) => { invoked.push(args); return Promise.resolve({}); } } }),
-  });
-  return { bridge, invoked };
-}
 
-test("the bridge: either page gets only the move's line and the switch that keeps this computer's bots here; its Try again, moving a bot into a team, and turning that switch go only from the person's click on My Cloud's page", async () => {
-  const keys = ["notice", "dismiss", "moveRetry", "teams", "moveToTeam", "teamRetry", "openTeam", "keepHere", "setKeepHere", "onNotice"];
-  const local = preload();
-  assert.equal(local.bridge.cloudSend, undefined);
-  assert.equal(local.bridge.cloudLogins, undefined);
-  assert.deepEqual(Object.keys(local.bridge.cloudSendPage), keys);
-  const page = preload({ remote: true });
-  assert.equal(page.bridge.cloudSend, undefined);
-  assert.equal(page.bridge.cloudLogins, undefined);
-  assert.deepEqual(JSON.parse(JSON.stringify(Object.keys(page.bridge.cloudSendPage))), keys);
-  await assert.rejects(page.bridge.cloudSendPage.moveRetry(), /Try again/);
-  await assert.rejects(page.bridge.cloudSendPage.moveToTeam("scout", "team-acme", "Scout"), /Choose Move/);
-  await assert.rejects(page.bridge.cloudSendPage.teamRetry(), /Try again/);
-  await assert.rejects(page.bridge.cloudSendPage.setKeepHere(true), /Turn the switch/);
-  await page.bridge.cloudSendPage.keepHere();
-  assert.deepEqual(page.invoked.filter(([channel]) => channel.startsWith("cloud-send") || channel === "one-home:keep-set"), []);
-  assert.deepEqual(page.invoked, [["one-home:keep"]], "reading the switch needs no click");
-  const clicked = preload({ remote: true, activation: true });
-  await clicked.bridge.cloudSendPage.moveRetry();
-  await clicked.bridge.cloudSendPage.dismiss({ toString: () => "one-home" });
-  await clicked.bridge.cloudSendPage.moveToTeam({ toString: () => "scout" }, "team-acme", "Scout");
-  await clicked.bridge.cloudSendPage.teamRetry();
-  await clicked.bridge.cloudSendPage.teams();
-  await clicked.bridge.cloudSendPage.openTeam("team-acme");
-  await clicked.bridge.cloudSendPage.setKeepHere("yes");
-  assert.deepEqual(JSON.parse(JSON.stringify(clicked.invoked.filter(([channel]) => channel.startsWith("cloud-send") || channel.startsWith("one-home")))), [["cloud-send:move-retry"], ["cloud-send:dismiss", "one-home"],
-    ["cloud-send:team-move", "scout", "team-acme", "Scout"], ["cloud-send:team-retry"], ["cloud-send:teams"], ["cloud-send:team-open", "team-acme"], ["one-home:keep-set", false]]);
-  await local.bridge.cloudSendPage.setKeepHere(true);
-  assert.deepEqual(local.invoked, [["one-home:keep-set", true]], "this computer's own page needs no click check: main checks the sender");
-});
+
+
+
+
+
 
 test("replacing a skill whose text changed here puts My Cloud's copy back when the new one is refused", async () => {
   const skill = { key: itemKey.skill("ember", "notes"), kind: "skill", label: "notes", id: "notes", bot: "ember", parts: { text: "new", on: "on" } };
@@ -561,41 +485,4 @@ test("nothing answering on the way to My Cloud is told from a refusal", () => {
   assert.equal(unanswered(Object.assign(new Error("Too many connection links."), { status: 429 })), false);
   assert.equal(unanswered(new TypeError("session.call is not a function")), false);
   assert.equal(unanswered(new Error("My Cloud is not ready.")), false);
-});
-
-test("an owner session that could not open says whether nothing answered or My Cloud refused", async () => {
-  const opening = (grant, status) => openOwnerSession({ origin: CLOUD, grant }, async () => new Response(JSON.stringify({ error: "no" }), { status })).catch((error) => error);
-  assert.equal(unanswered(await opening(async () => { throw Object.assign(new Error("Cloud request failed."), { status: 503 }); }, 200)), true);
-  assert.equal(unanswered(await opening(async () => ({ origin: CLOUD, code: "C" }), 504)), true);
-  assert.equal(unanswered(await opening(async () => ({ origin: CLOUD, code: "C" }), 401)), false);
-  assert.equal(unanswered(await opening(async () => { throw Object.assign(new Error("Cloud request failed."), { status: 429 }); }, 200)), false);
-});
-
-
-test("closing the move's done line closes the move's own send result with it, so My Cloud's page says it once", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "omb-move-line-"));
-  const file = join(dir, "cloud-send.json");
-  const result = { bots: ["Ember"], updatedBots: [], skills: 0, logins: 0, onePassword: false, settings: [], chats: null, failed: [], notes: [] };
-  writeFileSync(file, JSON.stringify({ v: 1, clouds: { [CLOUD]: { sent: {}, off: {}, dismissed: "", last: { at: 7, reason: "move", result }, whole: null, chats: {}, created: {}, release: [], files: {}, on: {} } } }));
-  const handlers = new Map();
-  let seen = 0;
-  let line = { phase: "done", phone: false, held: [] };
-  installCloudSend({
-    ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
-    cloudPage: () => "cloud",
-    server: () => null, local: async () => new Response("{}", { status: 503 }),
-    home: () => ({ origin: CLOUD, grant: async () => ({ origin: CLOUD, code: "C" }) }),
-    cookieFetch: async () => new Response("", { status: 503 }), reconnect: async () => false, power: { asleep: () => false },
-    file: () => file, window: () => null, localOrigin: () => LOCAL,
-    move: () => ({ view: () => line, seen: () => { seen++; line = null; }, retry: async () => {} }),
-  });
-  try {
-    const before = await handlers.get("cloud-send:dismiss")({}, "elsewhere");
-    assert.equal(before.move.phase, "done");
-    assert.equal(before.last.seen, false);
-    const after = await handlers.get("cloud-send:dismiss")({}, "one-home");
-    assert.equal(seen, 1);
-    assert.equal(after.move, undefined);
-    assert.equal(after.last.seen, true, "the move's own result is not said again after the done line");
-  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

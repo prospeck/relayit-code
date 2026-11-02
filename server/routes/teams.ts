@@ -1,13 +1,13 @@
-import { z } from "zod";
+
 import { MAX_TEAM_BACKUP_BYTES } from "../../shared/team-backup.ts";
 import type { BotVisibility, WireBot, WireGroup } from "../../shared/wire.ts";
 import { validateBotCwd } from "../bot-cwd.ts";
-import { fetchBotDirectory, matchDirectoryBots, type MatchedDirectoryBot } from "../bot-directory.ts";
+
 import { isBotPackage, packageSummary, parsePackageDocument, renderBotPackageMarkdown, type PackageDocument } from "../bot-package.ts";
 import { parseVisibility } from "../bot-visibility.ts";
 import type { AppConfig } from "../config.ts";
 import type { ModelSelection } from "../contracts.ts";
-import type { OrgLibrary } from "../org-library.ts";
+
 import {
   TeamExportError,
   createBotPackageExport,
@@ -30,7 +30,7 @@ import type { RoutineManager } from "../routines.ts";
 import { readSectionContext } from "../section-context.ts";
 import { sectionKey, type BotRecord, type GroupRecord, type Store } from "../store.ts";
 import { createTeamBackup, importTeamBackup } from "../team-backup.ts";
-import { fetchGithubTeam, fetchGrokTemplateCard, fetchLibraryTeam, fetchTeamCatalog } from "../team-library.ts";
+import { fetchGithubTeam, fetchGrokTemplateCard } from "../team-library.ts";
 import { createTeamManifest, parseTeamManifest } from "../team-manifest.ts";
 import { CursorFallback, defaultCursorSession, type CursorSession } from "../cursor-session.ts";
 import type { RequestAuth } from "../request-auth.ts";
@@ -42,7 +42,7 @@ export interface TeamRouteDeps {
   /** The exporting person's name, as a package's author: the server's profile's, or on a Team Cloud the person's own. */
   authorName(auth: RequestAuth): string | undefined;
   routines(): RoutineManager | null;
-  orgLibrary(): Pick<OrgLibrary, "list" | "preview" | "add" | "offeredSkills" | "addOfferedSkill"> | null;
+
   broadcast(payload: Record<string, unknown>): void;
   publicBot(bot: BotRecord): WireBot;
   publicGroupState(record: GroupRecord): WireGroup;
@@ -64,14 +64,14 @@ export interface TeamRouteDeps {
 
 export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
   const {
-    store, cfg, broadcast, publicBot, publicGroupState, groupWithThread, defaultSelection, defaultsPresetFor,
+    store, cfg, broadcast, publicBot, groupWithThread, defaultSelection, defaultsPresetFor,
     packageImportDeps, starterNotes, checkedExportSkillNames, collectExportSkills, collectTeamSkills,
   } = deps;
   const cursorSession = deps.cursor ?? defaultCursorSession;
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
-    let m: RegExpMatchArray | null = null;
+
     const routines = deps.routines();
-    const orgLibrary = deps.orgLibrary();
+
     if (method === "POST" && path === "/api/teams/export") {
       const body = await readBody(req, 8 * 1024 * 1024);
       const profileName = deps.authorName(auth);
@@ -198,22 +198,8 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
         return json(res, 400, { error: error instanceof Error ? error.message : "Team could not be exported" });
       }
     }
-    if (method === "GET" && path === "/api/team-library/catalog") {
-      try {
-        return json(res, 200, await fetchTeamCatalog());
-      } catch (error) {
-        return json(res, 502, { error: error instanceof Error ? error.message : "The team library is unavailable" });
-      }
-    }
-    m = path.match(/^\/api\/team-library\/teams\/([a-z0-9][a-z0-9-]*)$/);
-    if (m && method === "GET") {
-      try {
-        return json(res, 200, await fetchLibraryTeam(m[1]));
-      } catch (error) {
-        const status = (error as { status?: number }).status === 404 ? 404 : 502;
-        return json(res, status, { error: error instanceof Error ? error.message : "The team could not be loaded" });
-      }
-    }
+
+
     if (method === "POST" && path === "/api/team-library/github") {
       const body = await readBody(req);
       if (typeof body.url !== "string" || !body.url.trim()) {
@@ -270,65 +256,12 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
       const profile = scoutProject(validated.cwd);
       return json(res, 200, { profile, suggestion: suggestTeam(profile) });
     }
-    if (method === "GET" && path === "/api/teams/scout/directory") {
-      const validated = validateBotCwd(url.searchParams.get("cwd"));
-      if (!validated.ok) return json(res, 400, { error: validated.error });
-      if (!validated.cwd) return json(res, 400, { error: "scout needs a folder to read" });
-      let directory: MatchedDirectoryBot[] = [];
-      try {
-        directory = matchDirectoryBots(scoutProject(validated.cwd), await fetchBotDirectory());
-      } catch (error) {
-        console.warn("bot directory lookup failed:", error instanceof Error ? error.message : String(error));
-      }
-      return json(res, 200, { directory });
-    }
-    if (method === "GET" && path === "/api/org-library") {
-      return json(res, 200, orgLibrary?.list() ?? { organization: null, packages: [] });
-    }
-    m = path.match(/^\/api\/org-library\/packages\/([a-f0-9-]{36})$/);
-    if (m && method === "GET") {
-      const outcome = orgLibrary?.preview(m[1]!);
-      if (!outcome) return json(res, 404, { error: "This package is not in your organization's library.", code: "not_listed" });
-      return outcome.ok ? json(res, 200, outcome.value) : json(res, outcome.status, { error: outcome.error, code: outcome.code });
-    }
-    if (method === "POST" && path === "/api/org-library/add") {
-      const body = await readBody(req);
-      const packageId = typeof body?.packageId === "string" && /^[a-f0-9-]{36}$/.test(body.packageId) ? body.packageId : null;
-      if (!packageId) return json(res, 400, { error: "Choose a package from your organization's library." });
-      if (!orgLibrary) return json(res, 404, { error: "This package is not in your organization's library.", code: "not_listed" });
-      const outcome = orgLibrary.add(packageId, packageImportDeps(await defaultSelection()));
-      if (!outcome.ok) return json(res, outcome.status, { error: outcome.error, code: outcome.code });
-      if (outcome.value.alreadyAdded) return json(res, 200, outcome.value);
-      const imported = outcome.value.result;
-      return json(res, 201, {
-        alreadyAdded: false,
-        installId: imported.installId,
-        name: imported.name,
-        section: imported.section,
-        bots: imported.bots.map((bot) => publicBot(store.bot(bot.id) ?? bot)),
-        groups: imported.groups.map((created) => ({ ...publicGroupState(store.group(created.id) ?? created), messages: [] })),
-        routines: imported.routines,
-        offeredSkills: imported.offeredSkills,
-        connections: imported.connections,
-        skipped: imported.skipped,
-        brief: imported.brief,
-        notes: imported.notes,
-        presets: imported.presets ?? [],
-      });
-    }
-    if (method === "GET" && path === "/api/org-library/skills") {
-      const botId = url.searchParams.get("botId") ?? undefined;
-      return json(res, 200, orgLibrary?.offeredSkills(botId) ?? { organization: null, skills: [] });
-    }
-    if (method === "POST" && path === "/api/org-library/skills") {
-      const body = await readBody(req);
-      const parsed = z.object({ botId: z.string().min(1).max(128), installId: z.string().regex(/^[a-f0-9]{32}$/), name: z.string().min(1).max(64) })
-        .safeParse(body);
-      if (!parsed.success) return json(res, 400, { error: "Choose a bot and a skill from your organization's library." });
-      if (!orgLibrary) return json(res, 404, { error: "This package is not in your organization's library.", code: "not_listed" });
-      const outcome = orgLibrary.addOfferedSkill(parsed.data.botId, parsed.data.installId, parsed.data.name);
-      return outcome.ok ? json(res, 201, { skill: outcome.value }) : json(res, outcome.status, { error: outcome.error, code: outcome.code });
-    }
+
+
+
+
+
+
     if (method === "POST" && path === "/api/teams/import") {
       // Additive-only: a manifest is untrusted, so every member becomes a NEW bot and none can name an existing bot or room.
       const importMode = url.searchParams.get("mode") ?? "add";

@@ -1,0 +1,21 @@
+
+ RUN  v4.1.11 /Users/work/relayit-next
+
+ ❯ server/composio.test.ts (38 tests) 147ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/composio.test.ts > a connector tools/list that fails
+Error: No test found in suite a connector tools/list that fails
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  server/composio.test.ts > connector tool inventory
+Error: No test found in suite connector tool inventory
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  97 passed (97)
+   Start at  23:14:06
+   Duration  3.18s (transform 773ms, setup 749ms, import 632ms, tests 947ms, environment 0ms)
+

@@ -454,9 +454,9 @@ export function placeRowText(row: PlaceRow, server?: ServerKind): string {
 }
 
 
-const MONTH = "(January|February|March|April|May|June|July|August|September|October|November|December)";
-const HOURS_USED = new RegExp(`Your (.+?) plan's (\\d+) cloud computer hours for \\w+ are used up\\. They reset on 1 ${MONTH}`);
-const AT_ONCE = /Your (.+?) plan includes (\d+) cloud computers? at once/;
+
+
+
 const PASSING_WORDS = [
   /cloud computers are busy right now/i, /temporarily unavailable/i, /can't be checked right now/i, /could not be reached/i,
   /returned an unexpected answer/i, /could not complete that request/i, /started too often/i, /woken too often/i,
@@ -472,27 +472,13 @@ const CLEARING_WORDS = [/is being deleted/i, /previous cloud computer deletion/i
 /** The Admin's own codes come first; until every refusal has one, its English
  * is read. `included`: the plan's computers, not the person's own Boat key,
  * whose provider's words are shown as they are. */
-export function cloudRefusal(failure: { message: string; code?: string; status?: number }, included: boolean): { state: PlaceState; params: PlaceParams } {
+export function cloudRefusal(failure: { message: string; code?: string; status?: number }): { state: PlaceState; params: PlaceParams } {
   const message = failure.message.trim();
-  const code = failure.code;
-  const hours = HOURS_USED.exec(message);
-  if (code === "hours_used" || hours) {
-    return { state: "cc-no-hours", params: hours ? { plan: hours[1], hours: Number(hours[2]), month: hours[3] } : {} };
-  }
-  const atOnce = AT_ONCE.exec(message);
-  if (code === "at_once" || atOnce) {
-    return { state: "cc-at-once", params: atOnce ? { plan: atOnce[1], max: Number(atOnce[2]) } : {} };
-  }
-  if (code === "subscription_inactive") return { state: "cc-ended", params: {} };
-  if (code === "too_many_starts" || code === "rate_limited" || code === "usage_unavailable" || code === "service_unavailable"
-    || code === "upstream_unavailable" || code === "invalid_response" || code === "upstream_error") {
-    return { state: "cc-unavailable", params: {} };
-  }
   // A start that failed and left its new computer still being removed
   // didn't start; the next attempt meets the removal.
   if (NO_START_WORDS.some((words) => words.test(message))) return { state: "cc-no-start", params: {} };
   if (CLEARING_WORDS.some((words) => words.test(message))) return { state: "cc-clearing", params: {} };
   if ((failure.status ?? 0) >= 500 || PASSING_WORDS.some((words) => words.test(message))) return { state: "cc-unavailable", params: {} };
-  if (!included && message) return { state: "cc-provider", params: { words: message.replace(/[\s.]+$/, "") + "." } };
+  if (message) return { state: "cc-provider", params: { words: message.replace(/[\s.]+$/, "") + "." } };
   return { state: "cc-no-start", params: {} };
 }

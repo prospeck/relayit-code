@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
 import type { RailPlace, RailState } from "../../electron/cloud-rail.mjs";
 import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
-import type { CloudRemoveOutcome } from "../../electron/cloud-account.mjs";
-import { ipcErrorText } from "@/lib/cloud-send";
+import type { PlaceRemoveOutcome } from "../../electron/cloud-rail.mjs";
+import { ipcErrorText } from "@/lib/ipc-error";
 import { t } from "@/lib/i18n";
 
 const NONE: RailState = { places: [], add: { cloud: false, link: false, address: false } };
@@ -59,7 +59,7 @@ export async function recolorPlace(id: string, swatch: CloudSwatch | null): Prom
 
 /** Remove from list, from a circle's menu once the person said yes: main takes that Cloud off their list on the Admin, and
  * the circle goes with main's next list. An older app (no such channel) answers `unsupported`. */
-export async function removePlace(id: string): Promise<CloudRemoveOutcome> {
+export async function removePlace(id: string): Promise<PlaceRemoveOutcome> {
   const remove = bridge()?.remove;
   if (!remove) return "unsupported";
   const answer = await remove(id).catch(() => null);

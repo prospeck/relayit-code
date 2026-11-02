@@ -112,7 +112,7 @@ function workspaceSenderAllowed(event, contents, state, localOrigin) {
 /** Native menu choices, never renderer-supplied destinations or callbacks. `iconFor`: a saved colour's small dot, when main can draw one.
  * `places`: the one line saying which side has which bots, shown first; `copyToCloud`: the send line under the list. `foldSublabels`: where menus show no sublabels (Windows, Linux), My Cloud's status line
  * joins its name instead of vanishing. */
-function workspaceMenuTemplate(state, { onSwitch, onConnect, onForget, onAddCloud, sublabels = {}, iconFor = null, places = null, copyToCloud = null, foldSublabels = false, homeOrigin = null }) {
+function workspaceMenuTemplate(state, { onSwitch, onConnect, onForget, sublabels = {}, iconFor = null, places = null, copyToCloud = null, foldSublabels = false, homeOrigin = null }) {
   const active = activeEnvironment(state);
   if (homeOrigin) return homeMenuTemplate(state, { onSwitch, onForget, sublabels, iconFor, foldSublabels, homeOrigin });
   return [
@@ -128,7 +128,6 @@ function workspaceMenuTemplate(state, { onSwitch, onConnect, onForget, onAddClou
       };
     }),
     ...(copyToCloud ? [{ id: "workspace-copy-to-cloud", label: copyToCloud.label, click: copyToCloud.click }] : []),
-    ...(onAddCloud ? [{ id: "workspace-add-cloud", label: "Add a Cloud…", sublabel: "Keeps your bots running 24/7", click: onAddCloud }] : []),
     { type: "separator" },
     { id: "workspace-connect", label: "Connect to a server…", click: onConnect },
     ...(active && !listedPlace(active) ? [{ id: "workspace-forget", label: `Forget “${active.name}”…`, click: () => onForget(active.id) }] : []),
@@ -332,6 +331,7 @@ function parseEnvironments(raw) {
   const seen = new Set();
   const environments = [];
   for (const entry of list) {
+    if (entry?.home === true || entry?.cloud || entry?.team) continue;
     const id = cleanId(entry);
     if (!id || seen.has(id)) continue;
     const dataDir = cleanDataDir(entry?.dataDir);

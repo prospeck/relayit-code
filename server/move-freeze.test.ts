@@ -27,7 +27,7 @@ describe("this computer's copy, frozen at the move", () => {
     freeze.hold(calls.start, calls.stop);
     expect([routines.log, calls.log]).toEqual([["start"], ["start"]]);
 
-    freeze.freeze("https://omb-t-1.fly.dev");
+    freeze.freeze("https://omb-t-1.server.example.test");
     expect(freeze.frozen()).toBe(true);
     expect(existsSync(join(dir, "moved.json"))).toBe(true);
     expect([routines.log, calls.log]).toEqual([["start", "stop"], ["start", "stop"]]);
@@ -66,11 +66,11 @@ describe("this computer's copy, frozen at the move", () => {
     const freeze = createMoveFreeze({ dataDir: dir });
     for (const path of ["/", "/home", "/settings", "/assets/index-1a2b.js"]) expect(freeze.screen(path), path).toBeNull();
     expect(freeze.cloud()).toBeNull();
-    freeze.freeze("https://omb-t-1.fly.dev");
+    freeze.freeze("https://omb-t-1.server.example.test");
     for (const path of ["/", "/settings", "/desktop-viewer", "/pair", "/chats/b1"]) expect(freeze.screen(path), path).toBe(HOME_SCREEN);
     for (const path of [HOME_SCREEN, RAIL_PAGE, "/assets/index-1a2b.js", "/favicon.svg", "/manifest.webmanifest"]) expect(freeze.screen(path), path).toBeNull();
-    expect(freeze.cloud()).toBe("https://omb-t-1.fly.dev");
-    expect(createMoveFreeze({ dataDir: dir }).cloud(), "after a restart too").toBe("https://omb-t-1.fly.dev");
+    expect(freeze.cloud()).toBe("https://omb-t-1.server.example.test");
+    expect(createMoveFreeze({ dataDir: dir }).cloud(), "after a restart too").toBe("https://omb-t-1.server.example.test");
     freeze.unfreeze();
     expect([freeze.screen("/"), freeze.cloud()]).toEqual([null, null]);
     expect(createMoveFreeze({ dataDir: dataDir(), exportOnly: true }).screen("/"), "an ended Cloud's own page is never this computer's screen").toBeNull();
@@ -112,7 +112,7 @@ describe("switching this computer's automations off for a move", () => {
     await waits.tick();
     expect(waits.all().map((wait) => [wait.label, wait.ending?.status])).toEqual([["the report", undefined], ["the build", "fired"]]);
 
-    const automations: MoveAutomations = { routines: () => null, calls: () => null, webhooks: () => null, appEvents: () => null, waits: () => waits };
+    const automations: MoveAutomations = { routines: () => null, calls: () => null, webhooks: () => null,  waits: () => waits };
     expect(await switchAutomationsOff(automations, new Set(["routine:r1"])), "only what is named").toEqual([]);
     expect(waits.all()).toHaveLength(2);
     expect(await switchAutomationsOff(automations)).toEqual([`wait:${report}`, `wait:${build}`]);
@@ -140,13 +140,13 @@ describe("/api/move/freeze", () => {
     const freeze = createMoveFreeze({ dataDir: dataDir() });
     const route = createMoveFreezeRoutes({ freeze, busy: () => busy, restart() {} });
     expect(await ask(route, "GET")).toEqual({ status: 200, body: { frozen: false, busy: "Scout", what: "bot" } });
-    expect(await ask(route, "POST", undefined, { cloud: "https://omb-t-1.fly.dev" })).toMatchObject({ status: 409, body: { busy: "Scout", what: "bot" } });
+    expect(await ask(route, "POST", undefined, { cloud: "https://omb-t-1.server.example.test" })).toMatchObject({ status: 409, body: { busy: "Scout", what: "bot" } });
     expect(freeze.frozen()).toBe(false);
     busy = { name: "", what: "sign-in" };
-    expect(await ask(route, "POST", undefined, { cloud: "https://omb-t-1.fly.dev" }), "no name: what it is").toMatchObject({ status: 409, body: { busy: "", what: "sign-in" } });
+    expect(await ask(route, "POST", undefined, { cloud: "https://omb-t-1.server.example.test" }), "no name: what it is").toMatchObject({ status: 409, body: { busy: "", what: "sign-in" } });
     busy = null;
-    expect(await ask(route, "POST", undefined, { cloud: "https://omb-t-1.fly.dev" })).toEqual({ status: 200, body: { frozen: true } });
-    expect(await ask(route, "GET"), "the desktop learns which Cloud, even with its journal lost").toEqual({ status: 200, body: { frozen: true, cloud: "https://omb-t-1.fly.dev" } });
+    expect(await ask(route, "POST", undefined, { cloud: "https://omb-t-1.server.example.test" })).toEqual({ status: 200, body: { frozen: true } });
+    expect(await ask(route, "GET"), "the desktop learns which Cloud, even with its journal lost").toEqual({ status: 200, body: { frozen: true, cloud: "https://omb-t-1.server.example.test" } });
     expect(await ask(route, "POST", "/api/bots/b1/messages")).toEqual({ status: 409, body: { error: MOVED_REFUSAL, code: "moved" } });
     expect(await ask(route, "GET", "/api/bots")).toBe("pass");
     busy = { name: "Scout", what: "bot" };
@@ -192,7 +192,7 @@ describe("POST /api/move/forget", () => {
     };
     expect(await forget(), "a computer that never moved keeps everything").toMatchObject({ status: 409 });
     expect(readdirSync(dir)).toContain("config.json");
-    freeze.freeze("https://omb-t-1.fly.dev");
+    freeze.freeze("https://omb-t-1.server.example.test");
     expect(await forget("session")).toMatchObject({ status: 403 });
     expect(await forget()).toEqual({ status: 200, body: { forgot: true } });
     expect(readdirSync(dir).sort()).toEqual(["environment-id", "moved.json", "sync", "tools"]);

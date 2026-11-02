@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { AppWindow, CalendarClock, Send, Share2, X } from "lucide-react";
+import { CalendarClock, Send, Share2, X } from "lucide-react";
 
 import { useModalDialog } from "@/hooks/use-modal-dialog";
 import { cn } from "@/lib/cn";
@@ -8,7 +8,7 @@ import { imeComposing } from "@/lib/send-key";
 import { useStore, type Bot } from "@/state/store";
 import { Select } from "../Select";
 
-export type SetUpKind = "schedule" | "webhook" | "app";
+export type SetUpKind = "schedule" | "webhook";
 
 /** The bot "+ New" talks to: the one open now, else the one most recently talked to. */
 export function defaultBot(bots: readonly Bot[], selectedId: string): Bot | undefined {
@@ -61,7 +61,6 @@ export function NewAutomation({ initialText = "", onClose, onSetUpYourself }: {
           <>
             <div role="radiogroup" aria-label={t("automations.newBox.when")} className="mt-4 space-y-2">
               {choice("schedule", t("automations.newBox.onSchedule"), CalendarClock)}
-              {choice("app", t("automations.newBox.whenAppEvent"), AppWindow)}
               {choice("webhook", t("automations.newBox.whenApp"), Share2)}
             </div>
             <div className="mt-5 flex items-center justify-between gap-2">

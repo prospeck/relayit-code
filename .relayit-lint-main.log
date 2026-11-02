@@ -1,0 +1,17 @@
+electron/main.mjs:491:5: warning eslint(no-unused-vars): Variable 'companionDesiredThisLaunch' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+electron/main.mjs:571:40: warning eslint(no-unused-vars): Parameter 'waitForHosted' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+electron/main.mjs:672:7: warning eslint(no-unused-vars): Variable 'menuDate' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:1022:88: warning eslint(no-unused-vars): Variable 'otherPlaces' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:1022:191: warning eslint(no-unused-vars): Variable 'withEnvironmentLook' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:1022:286: warning eslint(no-unused-vars): Variable 'withOwnCloud' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:1022:300: warning eslint(no-unused-vars): Variable 'withTeam' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:1050:155: warning eslint(no-unused-vars): Parameter 'origin' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+electron/main.mjs:2036:7: warning eslint(no-unused-vars): Variable 'cloudPageSender' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:2156:50: warning eslint(no-unused-vars): Parameter 'event' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+electron/main.mjs:2159:64: warning eslint(no-unused-vars): Parameter 'from' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+electron/main.mjs:1271:11: warning eslint(no-constant-binary-expression): Unexpected constant truthiness on the left-hand side of a "&&" expression help: This expression always evaluates to the constant on the left-hand side
+electron/main.mjs:2156:102: warning unicorn(no-useless-spread): Using a spread operator here creates a new object unnecessarily. help: Consider removing the spread operator.
+electron/main.mjs:2560:3: warning eslint(no-unused-expressions): Expected expression to be used help: Consider using this expression or removing it
+electron/main.mjs:2561:3: warning eslint(no-unused-expressions): Expected expression to be used help: Consider using this expression or removing it
+electron/main.mjs:2562:3: warning eslint(no-unused-expressions): Expected expression to be used help: Consider using this expression or removing it
+electron/main.mjs:2563:3: warning eslint(no-unused-expressions): Expected expression to be used help: Consider using this expression or removing it

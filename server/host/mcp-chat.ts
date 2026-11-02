@@ -60,9 +60,9 @@ export function createMcpChat(deps: McpChatDeps) {
   const mcpSignInCards = createMcpSignInCards({
     store, cfg: () => cfg, mcpOAuth,
     personal: () => teamConnections.personMcp(),
-    turnPerson: (threadId) => teamConnections.turnPerson(threadId),
+    turnPerson: (_threadId) => null,
     oauthFor: (person) => teamConnections.people.oauth(person),
-    personName: (person) => teamConnections.nameOf(person),
+    personName: (_person) => "",
     publicOrigins: deps.publicOrigins,
     language: threadLanguage,
     answer: answerCardNode,
@@ -79,20 +79,20 @@ export function createMcpChat(deps: McpChatDeps) {
 
   /** The mcp_server route for one bot in one conversation. `generation` is the live turn's; absent when the person's answer
    * to a card applies the change. */
-  function mcpServerDeps(sender: BotRecord, threadId: string, generation?: string): Omit<InternalMcpDeps, "readBody"> {
+  function mcpServerDeps(sender: BotRecord, threadId: string, _generation?: string): Omit<InternalMcpDeps, "readBody"> {
     const from = store.groupByThread(threadId) ? { botId: sender.id, name: sender.name, color: sender.color } : undefined;
     return {
       sender, threadId,
       fullAccess: () => fullAccessForSource(sender.id, threadId),
       guestDriven: () => cloudGuestDriven(threadId),
-      teamAdmin: () => teamConnections.actsForAdmin(threadId, generation),
+      teamAdmin: () => true,
       canUse: (name) => canUseMcpServer(sender.toolScope, name),
       config: deps.mcpConfig(), cfg: () => cfg, personal: () => teamConnections.personMcp(),
       authState: (name, url) => mcpOAuth.authState(name, url),
       managedBy: mcpManagedBy, policyRefusal: mcpPolicyRefusal, addRefusal: () => managedPolicy.botMcpRefusal(),
       signOut: async (name, url) => { await mcpOAuth.signOut(name, url); broadcast({ kind: "mcp.changed" }); },
       testAs: (name, url) => {
-        const person = teamConnections.turnPerson(threadId, generation);
+        const person = null;
         return person ? teamConnections.people.connection(person, name, url) : null;
       },
       redeem: (body) => deps.secretCards().redeemMcpServer(body, sender.id, threadId),

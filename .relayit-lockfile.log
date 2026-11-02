@@ -1,0 +1,9 @@
+Scope: all 2 workspace projects
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 313, reused 0, downloaded 0, added 0
+Progress: resolved 1010, reused 0, downloaded 0, added 0
+Progress: resolved 1017, reused 0, downloaded 0, added 0
+ WARN  17 deprecated subdependencies found: @xmldom/xmldom@0.8.13, @yuku-analyzer/binding-android-arm64@0.8.7, @yuku-analyzer/binding-darwin-arm64@0.8.7, @yuku-analyzer/binding-darwin-x64@0.8.7, @yuku-analyzer/binding-freebsd-x64@0.8.7, @yuku-analyzer/binding-linux-arm-gnu@0.8.7, @yuku-analyzer/binding-linux-arm-musl@0.8.7, @yuku-analyzer/binding-linux-arm64-gnu@0.8.7, @yuku-analyzer/binding-linux-arm64-musl@0.8.7, @yuku-analyzer/binding-linux-x64-gnu@0.8.7, @yuku-analyzer/binding-linux-x64-musl@0.8.7, @yuku-analyzer/binding-win32-arm64@0.8.7, @yuku-analyzer/binding-win32-x64@0.8.7, boolean@3.2.0, glob@7.2.3, inflight@1.0.6, rimraf@2.6.3
+Progress: resolved 1018, reused 0, downloaded 0, added 0, done
+
+Done in 3.8s using pnpm v10.33.0

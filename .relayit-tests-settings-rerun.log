@@ -1,0 +1,32 @@
+
+ RUN  v4.1.11 /Users/work/relayit-next
+
+(node:20526) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ src/components/SidebarProfileMenu.test.ts (23 tests | 1 failed) 19ms
+     × names the account button after the person and whatever its dot is raised for 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/SidebarProfileMenu.test.ts > Simple mode's account menu > names the account button after the person and whatever its dot is raised for
+AssertionError: expected 'Ada · Automations need you' to be 'Ada · Automations need you · Update f…' // Object.is equality
+
+Expected: "Ada · Automations need you · Update failed. Try again."
+Received: "Ada · Automations need you"
+
+ ❯ src/components/SidebarProfileMenu.test.ts:161:65
+    159|   it("names the account button after the person and whatever its dot i…
+    160|     expect(accountLabel("You", { automationsNeedYou: false,  })).toBe(…
+    161|     expect(accountLabel("Ada", { automationsNeedYou: true,  })).toBe("…
+       |                                                                 ^
+    162|   });
+    163|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 68 passed (69)
+   Start at  23:28:50
+   Duration  4.73s (transform 2.11s, setup 782ms, import 2.06s, tests 1.00s, environment 0ms)
+

@@ -1,0 +1,5 @@
+
+> openmausbot@0.1.139 check:no-upstream /Users/work/relayit-next
+> node scripts/check-no-upstream.mjs
+
+check-no-upstream: PASS (4327 files scanned)

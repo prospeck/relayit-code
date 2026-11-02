@@ -1,7 +1,7 @@
 // /api/sync: Files with the owner's desktop, on a Cloud home only. Listed in ROUTES (table.ts): the service is built from
 // the data folder on first use; index.ts only says when a bot's turn ends (`noteSyncBotTurn`).
 import { createReadStream } from "node:fs";
-import { cloudHomeConfigured } from "../cloud-home.ts";
+
 import { DATA_DIR } from "../config.ts";
 import { SyncError, createCloudSync, type CloudSync } from "../cloud-sync.ts";
 import { createLentCopies, type LentCopies } from "../lent-copies.ts";
@@ -135,5 +135,5 @@ type FolderFilter = (auth: RequestAuth) => (folderId: string) => boolean;
 
 /** Lent folders' copies, for the sync routes and for bots' shared_computer while a lending computer is away. */
 export const lentCopies = createLentCopies({ dataDir: DATA_DIR });
-export const cloudSyncRoutes = createCloudSyncRoutes({ dataDir: DATA_DIR, cloudHome: () => cloudHomeConfigured(), power: cloudPowerNow, lent: lentCopies });
+export const cloudSyncRoutes = createCloudSyncRoutes({ dataDir: DATA_DIR, cloudHome: () => false, power: cloudPowerNow, lent: lentCopies });
 export const noteSyncBotTurn = (botId: string, threadId: string) => cloudSyncRoutes.noteBotTurn(botId, threadId);

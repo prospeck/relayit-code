@@ -1,0 +1,98 @@
+✔ moves keys first, then MCP servers with their secrets, HighLevel and connected apps, each over My Cloud's own routes (9.02475ms)
+✔ a server that needs this computer goes marked as running on it, and a server already on My Cloud is replaced (2.208583ms)
+✔ a sign-in moves and this computer lets go of it; one that refreshed meanwhile goes again first (2.077375ms)
+✔ My Cloud keeps a sign-in of its own; with release off the result lists what this computer still holds, for later (2.206292ms)
+✔ one connection failing never stops the others; a refusal trying again can't fix is final (1.383583ms)
+✔ waits for My Cloud to run the engines whose keys went, before anything that follows them (525.261292ms)
+✖ connected apps: the same account already, the person's own project, a Cloud not ready, and one that keeps its own (10.67975ms)
+✔ a Cloud too old for connections says so; one that does not answer, too; this computer must list its own (5.804875ms)
+✔ a server's list keeps only connections of the known shape (4.333541ms)
+✔ a move carries everything: what was once kept here goes, what was removed on My Cloud stays removed, and apps and keys go before the bots (101.112417ms)
+✔ a move goes only to a Cloud that says it takes one, and touches nothing on one that doesn't (0.925542ms)
+✔ the first pass leaves a sign-in that refreshes itself here; the final pass carries it, and this computer lets go of its copy (1.994708ms)
+✔ a bot a move made on My Cloud has all its fields sent again when the move was cut short before they were recorded (3.510459ms)
+✔ each item is recorded from My Cloud's own answer as soon as it went, so a send cut short later never takes it for My Cloud's own change (2.0225ms)
+✔ a bot My Cloud made as this computer stopped, before the answer came, is the move's own: all its fields go when it goes on (3.732959ms)
+✔ a move keeps My Cloud's version of a part both sides hold otherwise with nothing recorded, and records it, so its check never calls it missing (1.293333ms)
+✔ Settings learns how many conversations are still to go, and a pass says how many did not all go (1.788625ms)
+✔ an app or key that could not move is said with My Cloud's reason, counted, and never stops the bots (2.067625ms)
+✔ a move has My Cloud keep as its owner's the lines it already held of this computer's bots and rooms, by row id only, and Send everything never asks (24.79575ms)
+✔ a move names at most 200 of the conversations My Cloud held a request, never one removed there, and says it when My Cloud refuses (65.089084ms)
+✔ a move sends what only it carries last, after the chats and their settings, switched off there; an app event only in the final pass, which this computer then lets go of (6.258917ms)
+✔ what a move carries last is never taken for removed on My Cloud, so a routine changed here before the final pass still goes (2.172583ms)
+✔ a routine on both sides whose only difference is its runs goes in a move, so the runs made here reach My Cloud; one changed on both keeps My Cloud's (12.590208ms)
+✔ a bot's fields only a move carries go over My Cloud's move route, absent ones as cleared; any other send never carries them (2.30275ms)
+✔ while the chats go, the move's progress counts chats only: the automations after them never add to it (1.496916ms)
+✔ a part goes when it changed here and not there; My Cloud's own change is kept; what was removed there stays removed (4.502042ms)
+✔ a bot's skills go with the bot, follow its switch, and a removed bot's skills read as removed (0.831459ms)
+✔ a server's answer is kept only in the shape main relies on (1.21575ms)
+✔ a bot's fields reach My Cloud without Custom approval and without naming bots My Cloud lacks (1.671458ms)
+✔ a send adds a bot with its own id over one session, says what My Cloud refused, and always signs out (36.6535ms)
+✔ My Cloud's page is told names of bots and counts, with an opaque signature, and never a login's site (2.656833ms)
+✖ the bridge: either page gets only the move's line and the switch that keeps this computer's bots here; its Try again, moving a bot into a team, and turning that switch go only from the person's click on My Cloud's page (7.24075ms)
+✔ replacing a skill whose text changed here puts My Cloud's copy back when the new one is refused (4.673125ms)
+✔ a send asked while another runs waits for it, then runs as it was asked (3.342375ms)
+✔ a send that stops as a whole is that send's outcome, so the strip and Settings say why instead of an earlier result (2.457458ms)
+✔ My Cloud's notice says what did not go, by kind, with each reason: logins only counted, never a site (2.029958ms)
+✔ 1Password refused on My Cloud is told in words for this computer, not My Cloud's own paste-it-here (1.134916ms)
+✔ chats by row: the cursor moves only past what My Cloud took; one removed there is never sent again; one being answered waits (3.262166ms)
+✔ 1Password refusing the token on My Cloud is final: My Cloud's page is told not to offer Try again; any other failure keeps it (0.251417ms)
+✔ a conversation split over two requests: its later page says it went before, so one removed on My Cloud in between stays removed (3.341792ms)
+✔ once My Cloud does not take a page, the conversation's later pages wait too, and the next send starts it where My Cloud stopped (4.066541ms)
+✔ a conversation this computer never sent is never kept as removed, so it goes again (1.997458ms)
+✔ more attachments than My Cloud checks at once go in several checks, so the chats still go (6.8605ms)
+✔ My Cloud's page is told the latest whole send, which a later one-login send never replaces, and all that ever arrived (2.756834ms)
+✔ a room's chats go with the room, whatever bots My Cloud has, and never as a bot's (1.514542ms)
+✔ a room nobody wrote in yet goes once as its thread with no rows, so My Cloud makes it; one with no bot never goes (2.37725ms)
+✔ nothing answering on the way to My Cloud is told from a refusal (0.357625ms)
+✔ skips build folders, system litter, lock and temporary files, and sync's own downloads (2.117042ms)
+✔ a wire path is relative, slash-separated and NFC (3.992708ms)
+✔ wire paths reject unpaired surrogates and accept Unicode scalar values (0.204167ms)
+✔ names a Windows PC cannot hold (0.437833ms)
+✔ case and Unicode form fold together (0.174167ms)
+✔ a clash copy is named for the PC and the day, then numbered (6.44725ms)
+✔ folder names both Windows and macOS hold, without clashing (0.405458ms)
+✔ never brings down an agent's or tool's config, or what sync skips, from My Cloud; refuses direction overrides (0.779625ms)
+✔ My Cloud keeps at least 2 GB or 15% of its disk free (0.204708ms)
+✔ a choice is kept only whole: the server's address, identity and name (2.48ms)
+✔ only a server connected by hand can be made home: never This computer, My Cloud or a team's Cloud (0.594375ms)
+✔ a server's circle offers Make my home only once it said it is this person's alone, while that word is fresh and nothing moves (101.545417ms)
+✔ starting asks the server once more, and keeps this computer's bots here when it isn't theirs alone, isn't signed in or is too old (7.068542ms)
+✔ each pass goes over the window's sign-in only to the server chosen, while it is still that person's alone, and never signs it out (3.115917ms)
+✔ while the move goes, this computer's screen names the server; once home is there, This computer is no place of its own (0.769625ms)
+✔ a server that does not say who owns it is asked once at a time, and again only after OWNER_RETRY_MS (68.103292ms)
+ℹ tests 63
+ℹ suites 0
+ℹ pass 61
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3430.385875
+
+✖ failing tests:
+
+test at electron/cloud-connections.node-test.mjs:184:1
+✖ connected apps: the same account already, the person's own project, a Cloud not ready, and one that keeps its own (10.67975ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/work/relayit-next/electron/cloud-connections.node-test.mjs:190:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at electron/cloud-send.node-test.mjs:166:1
+✖ the bridge: either page gets only the move's line and the switch that keeps this computer's bots here; its Try again, moving a bot into a team, and turning that switch go only from the person's click on My Cloud's page (7.24075ms)
+  TypeError [Error]: Cannot convert undefined or null to object
+      at Object.keys (<anonymous>)
+      at TestContext.<anonymous> (file:///Users/work/relayit-next/electron/cloud-send.node-test.mjs:171:27)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)

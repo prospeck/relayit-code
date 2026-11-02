@@ -23,8 +23,8 @@ export function useWindowPlace(): WorkspaceState | null {
 
 /** What the window's top bar calls the place: This computer, My Cloud while it is the window's only home (a team's name
  * on a team's Cloud), else the name it was saved under. */
-export function windowPlaceName(place: WorkspaceState, team: string | undefined): string {
-  if (place.home) return team || t("cloudSetup.myCloud");
+export function windowPlaceName(place: WorkspaceState, _team: string | undefined): string {
+
   if (place.local && !place.localPath) return t("rail.thisComputer");
   return place.name;
 }

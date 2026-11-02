@@ -54,7 +54,7 @@ describe("what a move asks of a server", () => {
     const route = createCloudSendRoutes({ appVersion: "0.1.120", bots: () => [{ id: "bot-00000001", threadId: "thread-0001", name: "Yuki", soul: "Be brief.", pinned: true } as never],
       messagesTail: () => ({ messages: [], hasMore: false }), skills: () => [], logins: { changes: () => [], get: () => null, onePasswordConnectedAt: () => null, onePasswordGrants: () => ({}), onePasswordToken: () => null },
       config: () => ({}), move: { dataDir: "/data", store: { bots: [], bot: () => undefined } as never, routines: () => ({ listRoutines: () => [routine], listRuns: () => [], adopt() {} }) as never,
-        calls: () => null, webhooks: () => null, appEvents: () => null, claudeCodeSkills: () => [], instanceExists: () => true, owner: () => null,
+        calls: () => null, webhooks: () => null,  claudeCodeSkills: () => [], instanceExists: () => true, owner: () => null,
         teamMemory: { list: () => [], adopt: () => 0 } as never, aboutMe: () => "", saveAboutMe() {} } });
     const sent = (await ask(route, "/api/cloud-send")).body.items;
     expect(sent.map((item: { key: string }) => item.key)).not.toContain("routine:r1");

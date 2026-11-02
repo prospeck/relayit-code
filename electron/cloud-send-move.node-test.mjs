@@ -4,9 +4,9 @@ import test from "node:test";
 import { EMPTY, itemKey } from "./cloud-send-parts.mjs";
 import { createCloudSend, sendNotice } from "./cloud-send.mjs";
 import { manifestGaps, noGaps } from "./cloud-send-check.mjs";
-import { installCloudSend, openOwnerSession } from "./cloud-send-main.mjs";
 
-const CLOUD = "https://omb-u-1.fly.dev";
+
+const CLOUD = "https://omb-u-1.server.example.test";
 const LOCAL = "http://127.0.0.1:4100";
 const summary = (items, extra = {}) => ({ v: 1, appVersion: "0.1.120", items, chats: 1, ...extra });
 const bot = (id, parts) => ({ key: itemKey.bot(id), kind: "bot", label: id, id, parts });
@@ -227,37 +227,7 @@ test("Settings learns how many conversations are still to go, and a pass says ho
   assert.deepEqual(send.snapshot().chats, { waiting: 2 });
 });
 
-test("a move's session counts as someone using My Cloud, so it stays awake; any other session main opens never does", async () => {
-  const headers = [];
-  const fetchImpl = async (url, init) => { headers.push([String(url).replace(CLOUD, ""), init.headers["x-omb-background"] ?? null, init.body]); return json({ token: "omb_sess_fake" }); };
-  const target = { origin: CLOUD, grant: async () => ({ origin: CLOUD, code: "C" }) };
-  const moving = await openOwnerSession(target, fetchImpl, { label: "Move to My Cloud", background: false });
-  await moving.call("GET", "/api/cloud-send");
-  await moving.close();
-  const sending = await openOwnerSession(target, fetchImpl);
-  await sending.call("GET", "/api/cloud-send");
-  assert.deepEqual(headers.map(([route, background]) => [route, background]), [
-    ["/api/auth/pair", null], ["/api/cloud-send", null], ["/api/auth/logout", null], ["/api/auth/pair", "1"], ["/api/cloud-send", "1"],
-  ]);
-  assert.equal(JSON.parse(headers[0][2]).label, "Move to My Cloud");
 
-  const paired = [];
-  const handlers = new Map();
-  const listing = { computer: { environmentId: "env", label: "Mac" }, connections: [], engines: [], commands: [] };
-  const main = installCloudSend({
-    ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) }, cloudPage: () => "local", server: () => null,
-    local: async (route) => json(route === "/api/cloud-send" || route === "/api/cloud-send?move=1" ? summary([]) : route === "/api/cloud-connections" ? listing : { v: 1, dataDir: "/d", conversations: [] }),
-    home: () => target, cookieFetch: async () => json({}, 401), reconnect: async () => false, power: { asleep: () => false },
-    file: () => "/nonexistent/cloud-send.json", window: () => null, localOrigin: () => LOCAL,
-    fetch: async (url, init) => {
-      const route = String(url).replace(CLOUD, "");
-      if (route === "/api/auth/pair") { paired.push([JSON.parse(init.body).label, init.headers["x-omb-background"] ?? null]); return json({ token: "omb_sess_fake" }); }
-      return json(route === "/api/cloud-send" || route === "/api/cloud-send?move=1" ? summary([]) : route === "/.well-known/openmausbot/environment" ? { capabilities: { move: 1 } } : route === "/api/cloud-connections" ? listing : {});
-    },
-  });
-  assert.equal((await main.move()).reason, "move");
-  assert.deepEqual(paired, [["Move to My Cloud", null]]);
-});
 
 test("an app or key that could not move is said with My Cloud's reason, counted, and never stops the bots", async () => {
   const move = sides({ here: [bot("ember", { soul: "s1" })], bots: { ember: { soul: "s1" } },

@@ -18,7 +18,7 @@ function kinds(): MoveKindsDeps {
     routines: () => ({ listRoutines: () => [routine("r-scout", "scout"), routine("r-goal", "scout", "room-goal"), routine("r-pip", "pip")], listRuns: () => [] }) as never,
     calls: () => list([{ id: "c1", name: "Standup", botIds: ["scout"] }]) as never,
     webhooks: () => list([{ id: "w1", name: "Hook", botId: "scout" }]) as never,
-    appEvents: () => list([{ id: "a1", name: "Mail", botId: "scout" }]) as never,
+
     claudeCodeSkills: () => [{ name: "my-own-skill", entry: { description: "", source: "claudeCode", root: "/r", origin: "/o", label: "x", sha256: "a".repeat(64), warnings: [] }, skillMd: "---\nname: my-own-skill\n---\n", files: [] }] as never,
     instanceExists: () => true, owner: () => null,
   };
@@ -41,7 +41,7 @@ describe("a move of one bot into a team", () => {
     expect(Object.keys(items[0]!.parts), "never someone's Chief of Staff in the team").not.toContain("chief");
     expect(Object.keys(items[0]!.parts)).toEqual(expect.arrayContaining(["library", "projects", "soul"]));
     const whole = cloudSendSummary(sources, { move: true }).items.map((item) => item.key);
-    expect(whole).toEqual(expect.arrayContaining(["login:example.test|ada", "1password", "setting:profile", "call:c1", "webhook:w1", "app-event:a1", "imported-skill:my-own-skill"]));
+    expect(whole).toEqual(expect.arrayContaining(["login:example.test|ada", "1password", "setting:profile", "call:c1", "webhook:w1", "imported-skill:my-own-skill"]));
     expect(cloudSendSummary({ ...sources, bots: () => [bot("quiet")] }, { move: true, bot: "quiet" }).items.map((item) => item.key), "a bot chosen to move goes even if never used").toEqual(["bot:quiet"]);
     expect(cloudSendSummary(sources, { move: true, bot: "nobody" }).items).toEqual([]);
   });

@@ -4,7 +4,7 @@ import test from "node:test";
 import { EMPTY, itemKey } from "./cloud-send-parts.mjs";
 import { createCloudSend } from "./cloud-send.mjs";
 
-const TEAM = "https://omb-u-acme.fly.dev";
+const TEAM = "https://omb-u-acme.server.example.test";
 const OWNER = "p_mycloudownerkeyxxxxxxx";
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
 const reply = (status, body) => ({ status, ok: status < 400, body });

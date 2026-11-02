@@ -4,7 +4,7 @@ import { api } from "@/state/store";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import { Card, SIMPLE_CARD } from "./SettingsPrimitives";
-import { UsageSummaryCard } from "./CloudUsageMeter";
+import { UsageSummaryCard } from "./UsageSummaryCard";
 import { formatPlanSpend, type PlanSpend } from "@/lib/plan-spend";
 
 interface PlanWindow {

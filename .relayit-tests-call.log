@@ -1,0 +1,35 @@
+
+ RUN  v4.1.11 /Users/work/relayit-next
+
+(node:89462) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89468) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89473) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ src/components/CallView.panel.test.ts (3 tests | 1 failed) 24ms
+     × starts the call and then hangs it up, as the other call buttons do 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/CallView.panel.test.ts > the bot panel's Call button > starts the call and then hangs it up, as the other call buttons do
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'call_started', …(1) ]
+
+Number of calls: 0
+
+ ❯ src/components/CallView.panel.test.ts:72:19
+     70|     flushSync(() => panelButton().click());
+     71|     expect(currentCall()).toBe("atlas");
+     72|     expect(track).toHaveBeenCalledWith("call_started", expect.objectCo…
+       |                   ^
+     73|     expect(panelButton().getAttribute("aria-label")).toBe("Hang up on …
+     74|     flushSync(() => panelButton().click());
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 22 passed (23)
+   Start at  20:02:51
+   Duration  3.30s (transform 1.41s, setup 815ms, import 1.43s, tests 273ms, environment 213ms)
+

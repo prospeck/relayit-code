@@ -1,15 +1,12 @@
-// ＋ at the end of the rail: one sheet of choices. A new organization on the Team plan the person pays for (when they run
-// one), buy a Cloud (the buying sheet: another Cloud right here, or the first one on this computer's own sheet), or add a
-// server of the person's own by pasting its pairing link.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Building2, Cloud, Loader2, Server, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import type { RailAddChoices } from "../../electron/cloud-rail.mjs";
 
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
-import { AddCloudFlow } from "./cloud-buy/AddCloudFlow";
-import { NewOrganization } from "./cloud-buy/NewOrganization";
-import { BackLink, Heading } from "./cloud-buy/parts";
+
+
+import { BackLink, Heading } from "./workspace-parts";
 
 /** A server's pairing link, pasted here: main checks it and asks "Connect to <host>?" itself, then opens it. The sheet
  * stays open when the person cancels, and says so when the link isn't one. `connect`: a server of theirs that signed in
@@ -48,14 +45,6 @@ export function OwnServerLink({ onBack, onConnected, connect = null }: { onBack:
   </form>;
 }
 
-function Choice({ icon, title, sub, onClick, kind }: { icon: ReactNode; title: string; sub: string; onClick: () => void; kind: string }) {
-  return <button type="button" data-place-add-choice={kind} onClick={onClick}
-    className="flex min-w-0 flex-1 flex-col items-start gap-2 rounded-2xl border border-hairline bg-card p-5 text-start transition-colors hover:border-accent/60 hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
-    <span aria-hidden="true" className="grid size-9 place-items-center rounded-[10px] bg-accent/12 text-accent-text">{icon}</span>
-    <span className="text-[15px] font-semibold text-ink">{title}</span>
-    <span className="text-[13px] leading-snug text-ink-secondary">{sub}</span>
-  </button>;
-}
 
 const FOCUSABLE = "button:not([disabled]):not([tabindex='-1']), input:not([disabled]):not([tabindex='-1']), [href], [tabindex='0']";
 
@@ -89,28 +78,8 @@ export function RailSheet({ wide = false, focusKey, onClose, children }: { wide?
   </div>;
 }
 
-export function PlaceAddSheet({ choices, connect = null, onClose }: { choices: RailAddChoices; connect?: { name: string } | null; onClose: () => void }) {
-  const server = choices.link, organization = choices.organization === true;
-  const several = [organization, choices.cloud, server].filter(Boolean).length > 1;
-  const [view, setView] = useState<"choose" | "cloud" | "server" | "organization">(connect ? "server" : several ? "choose" : organization ? "organization" : choices.cloud ? "cloud" : "server");
-  const [wide, setWide] = useState(false);
-  const workspaces = window.ogb?.workspaces;
-  const firstCloud = () => {
-
-    onClose();
-    void workspaces?.add?.("cloud").catch(() => {});
-  };
-  return <RailSheet wide={view === "cloud" && wide} focusKey={view} onClose={onClose}>
-    {view === "choose" && <div data-place-add="choose" className="flex flex-col gap-5 px-[30px] pb-[26px] pt-7">
-      <Heading title={t("rail.add")} />
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {organization && <Choice kind="organization" icon={<Building2 size={19} />} title={t("rail.org")} sub={t("rail.orgSub")} onClick={() => setView("organization")} />}
-        {choices.cloud && <Choice kind="cloud" icon={<Cloud size={19} />} title={t("rail.buy")} sub={t("rail.buySub")} onClick={() => setView("cloud")} />}
-        {server && <Choice kind="server" icon={<Server size={19} />} title={t("rail.own")} sub={t("rail.ownSub")} onClick={() => setView("server")} />}
-      </div>
-    </div>}
-    {view === "server" && <OwnServerLink onBack={several && !connect ? () => setView("choose") : null} onConnected={onClose} connect={connect} />}
-    {view === "cloud" && <AddCloudFlow onClose={onClose} onFirstCloud={firstCloud} onWide={setWide} onBack={several ? () => setView("choose") : null} />}
-    {view === "organization" && <NewOrganization onClose={onClose} onBack={several ? () => setView("choose") : null} />}
+export function PlaceAddSheet({ connect = null, onClose }: { choices: RailAddChoices; connect?: { name: string } | null; onClose: () => void }) {
+  return <RailSheet focusKey="server" onClose={onClose}>
+    <OwnServerLink onBack={null} onConnected={onClose} connect={connect} />
   </RailSheet>;
 }

@@ -160,26 +160,6 @@ export function cloudOwnerOf(session: unknown): string | null {
   return record.cloudHome === true && typeof record.owner === "string" && record.owner ? record.owner : null;
 }
 
-async function postAuth(path: string, body: Record<string, unknown>, fetchImpl: typeof fetch): Promise<{ ok: true } | { ok: false; error: string }> {
-  let res: Response;
-  try {
-    res = await fetchImpl(path, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  } catch (error) {
-    return { ok: false, error: `could not reach the server (${error instanceof Error ? error.message : String(error)})` };
-  }
-  const parsed: unknown = await res.json().catch(() => ({}));
-  if (res.ok) return { ok: true };
-  const error = Reflect.get(Object(parsed), "error");
-  return { ok: false, error: typeof error === "string" ? error : `${res.status} ${res.statusText}` };
-}
-
-export function startEmailSignIn(email: string, fetchImpl: typeof fetch = fetch): Promise<{ ok: true } | { ok: false; error: string }> {
-  return postAuth("/api/auth/email/start", { email }, fetchImpl);
-}
-
-export function verifyEmailSignIn(input: { email: string; code: string; label: string }, fetchImpl: typeof fetch = fetch): Promise<{ ok: true } | { ok: false; error: string }> {
-  return postAuth("/api/auth/email/verify", { email: input.email, code: input.code, label: input.label }, fetchImpl);
-}
 
 export function reasonWorthShowing(reason: string | undefined): string | null {
   if (!reason) return null;

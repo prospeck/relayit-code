@@ -3,8 +3,8 @@
 // awake (one this computer's bots can go to while the person keeps them here: its one tap lets them move, as anyone's first
 // move); a server is one while it says it is theirs alone (and one to go to while nothing moves yet). Never a team's
 // Cloud, nor a server others sign in to.
-import { BACKGROUND_HEADERS } from "./cloud-power.mjs";
-import { awayIn, parseJournal } from "./one-home.mjs";
+
+
 import { handSaved, serverRequests } from "./own-home-main.mjs";
 import { createTwoPlaces, installTwoPlaces } from "./two-places.mjs";
 
@@ -37,19 +37,10 @@ async function sent(response, what) {
  * }} deps `guard`: this computer's own page only. `cloud()`: My Cloud's address while it is ready, and whether it sleeps
  * now (a sleeping Cloud is never asked). `tell()`: the suggestion changed, so this computer's page asks again.
  */
-export function installTwoPlacesMain({ ipcMain, guard, localRequest, fetch: fetchImpl, environments, cloud, oneHome, ownHome, dismissed, tell, log = () => {} }) {
+export function installTwoPlacesMain({ ipcMain, guard, localRequest, fetch: fetchImpl, environments, ownHome, dismissed, tell, log = () => {} }) {
   const put = (payload) => ({ method: "PUT", body: JSON.stringify(payload), signal: AbortSignal.timeout(10_000) });
   const places = () => {
     const out = [];
-    const mine = cloud(), keep = oneHome.keep.state();
-    if (mine.origin && !mine.asleep) {
-      const request = (route, init = {}) => fetchImpl(`${mine.origin}${route}`, { credentials: "include", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(10_000), ...init,
-        headers: { accept: "application/json", origin: mine.origin, ...BACKGROUND_HEADERS, ...init.headers } });
-      out.push({ key: `cloud:${mine.origin}`, name: "My Cloud", kind: "cloud",
-        read: async () => (cloud().asleep ? null : json(await request("/api/cloud-send?move=1"))),
-        tell: async (payload) => sent(await request(ROUTE, { ...put(payload), headers: { "content-type": "application/json" } }), "My Cloud"),
-        ...(keep.on && !keep.moved ? { bring: () => oneHome.keep.set(false) } : {}) });
-    }
     for (const place of environments().filter((entry) => handSaved(entry) && ownHome.owns(entry))) {
       const server = serverRequests(place, fetchImpl);
       out.push({ key: `server:${place.origin}`, name: place.name, kind: "server",
@@ -59,10 +50,9 @@ export function installTwoPlacesMain({ ipcMain, guard, localRequest, fetch: fetc
     }
     return out;
   };
-  const journal = () => parseJournal(oneHome.journal());
   /** This computer's bots moved: to My Cloud, or to a server of the person's own. */
-  const moved = () => awayIn(journal()) || ownHome.away();
-  const settled = () => !ownHome.active() && (!journal() || journal().phase === "back");
+  const moved = () => ownHome.away();
+  const settled = () => !ownHome.active();
   let label = null;
   const twoPlaces = createTwoPlaces({
     local: async () => (moved() ? null : json(await localRequest("/api/cloud-send?move=1", { signal: AbortSignal.timeout(10_000) }))),

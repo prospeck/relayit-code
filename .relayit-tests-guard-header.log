@@ -1,0 +1,13 @@
+✔ detects upstream hosts and releases, including escaped literals (2.538709ms)
+✔ leaves brand identifiers and independent direct-key services alone (1.052458ms)
+✔ scans shipped roots and permits only explicit legal paths (7.084459ms)
+✔ recognizes the native targets used by browser packaging (0.680167ms)
+✔ rejects 32-bit, big-endian, unsupported and truncated ELF headers (0.142708ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 274.159667

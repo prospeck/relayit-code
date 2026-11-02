@@ -1,36 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CompanionAccountState } from "../types/ogb";
-import {
-  claimPhonePairingAttempt,
-  closePhonePairingIfOwned,
-  completePhonePairingAttempt,
-  companionPairingOpenFailure,
-  companionStartFailure,
-  derivePhoneSetupPhase,
-  initialPhoneSetupFlowState,
-  keepPhonePairingIfCurrent,
-  newlyPairedDevice,
-  newlyPairedDeviceForFlow,
-  normalizePhoneSetupActionError,
-  phonePairingGate,
-  phoneSetupBaseline,
-  phoneSetupReducer,
-  preparePhonePairingRoute,
-  invalidatePhonePairingAttempt,
-  queuePhonePairingAttempt,
-  releasePhonePairingAttempt,
-  secureAddressRequestLapsed,
-  shouldArmPhoneSetupProvisioningTimeout,
-  shouldPrepareSecureAddress,
-  startNonOverlappingPhoneSetupPoll,
-  type PhonePairingAttemptLock,
-  type PhonePairingAttemptQueue,
-} from "./phone-setup";
 
-const account = (status: CompanionAccountState["status"]): CompanionAccountState => ({
-  available: true,
-  status,
-});
+import { claimPhonePairingAttempt, closePhonePairingIfOwned, completePhonePairingAttempt, companionPairingOpenFailure, companionStartFailure, derivePhoneSetupPhase, initialPhoneSetupFlowState, keepPhonePairingIfCurrent, newlyPairedDevice, newlyPairedDeviceForFlow, normalizePhoneSetupActionError, phoneSetupBaseline, phoneSetupReducer, preparePhonePairingRoute, invalidatePhonePairingAttempt, queuePhonePairingAttempt, releasePhonePairingAttempt, shouldArmPhoneSetupProvisioningTimeout, startNonOverlappingPhoneSetupPoll, type PhonePairingAttemptLock, type PhonePairingAttemptQueue } from "./phone-setup";
+
 
 describe("phone setup flow", () => {
   it("refreshes Tailscale before validating an explicit tailnet route", async () => {
@@ -107,8 +78,8 @@ describe("phone setup flow", () => {
     });
     expect(
       derivePhoneSetupPhase(started, {
-        accountStatus: "signed-out",
-        accountBusy: false,
+
+
         provisioning: false,
         pairingOpen: false,
       }),
@@ -118,8 +89,8 @@ describe("phone setup flow", () => {
     expect(stopped.active).toBe(false);
     expect(
       derivePhoneSetupPhase(stopped, {
-        accountStatus: "signed-out",
-        accountBusy: false,
+
+
         provisioning: false,
         pairingOpen: false,
       }),
@@ -136,24 +107,24 @@ describe("phone setup flow", () => {
     });
     expect(
       derivePhoneSetupPhase(started, {
-        accountStatus: "error",
-        accountBusy: false,
+
+
         provisioning: true,
         pairingOpen: false,
       }),
     ).toBe("sign-in");
     expect(
       derivePhoneSetupPhase(started, {
-        accountStatus: "unavailable",
-        accountBusy: false,
+
+
         provisioning: true,
         pairingOpen: false,
       }),
     ).toBe("sign-in");
     expect(
       derivePhoneSetupPhase(started, {
-        accountStatus: "connecting",
-        accountBusy: false,
+
+
         provisioning: true,
         provisioningTimedOut: true,
         pairingOpen: false,
@@ -161,112 +132,6 @@ describe("phone setup flow", () => {
     ).toBe("sign-in");
   });
 
-  it("waits for hosted HTTPS even when Tailscale is already available", () => {
-    const companion = {
-      enabled: true,
-      endpoints: [{
-        kind: "tailnet" as const,
-        url: "http://mac.tail1234.ts.net:8810",
-        priority: 0,
-      }],
-    };
-    expect(phonePairingGate(account("connecting"), companion, false)).toBe("wait");
-    expect(phonePairingGate(account("ready"), companion, false)).toBe("wait");
-    expect(phonePairingGate(account("signed-out"), companion, false)).toBe("account-required");
-    expect(
-      phonePairingGate({ available: false, status: "signed-out" }, companion, false),
-    ).toBe("account-required");
-  });
-
-  it("tells the desktop about automatic pairing, which keeps or creates the secure address", () => {
-    const waiting = { enabled: true, endpoints: [] };
-    const gate = phonePairingGate(account("ready"), waiting, false);
-    expect(gate).toBe("wait");
-    expect(shouldPrepareSecureAddress("automatic", gate, account("ready"))).toBe(true);
-    expect(shouldPrepareSecureAddress("automatic", "wait", account("connecting"))).toBe(true);
-    expect(shouldPrepareSecureAddress("automatic", "open", account("ready"))).toBe(true);
-    expect(shouldPrepareSecureAddress("automatic", "open", null)).toBe(true);
-    for (const explicit of ["local", "tailscale"] as const) {
-      for (const any of ["wait", "open"] as const) {
-        expect(shouldPrepareSecureAddress(explicit, any, account("ready"))).toBe(false);
-      }
-    }
-    for (const other of ["start", "account-required"] as const) {
-      expect(shouldPrepareSecureAddress("automatic", other, account("ready"))).toBe(false);
-    }
-    for (const unusable of [
-      null,
-      account("error"),
-      account("signed-out"),
-      { ...account("ready"), available: false },
-    ]) {
-      expect(shouldPrepareSecureAddress("automatic", "wait", unusable)).toBe(false);
-    }
-  });
-
-  it("sees when nothing is creating the secure address a pairing waits for", () => {
-    const waiting = { enabled: true, endpoints: [] };
-    expect(secureAddressRequestLapsed(account("ready"), waiting)).toBe(true);
-    expect(secureAddressRequestLapsed(account("connecting"), waiting)).toBe(false);
-    expect(secureAddressRequestLapsed(account("error"), waiting)).toBe(false);
-    expect(secureAddressRequestLapsed(
-      { ...account("ready"), endpoint: "https://c-opaque.openmausbot.com" },
-      waiting,
-    )).toBe(false);
-    expect(secureAddressRequestLapsed(account("ready"), {
-      enabled: true,
-      endpoints: [{ kind: "hosted", url: "https://c-opaque.openmausbot.com", priority: 0 }],
-    })).toBe(false);
-    expect(secureAddressRequestLapsed(account("ready"), { enabled: false })).toBe(false);
-    expect(secureAddressRequestLapsed(null, waiting)).toBe(false);
-    expect(secureAddressRequestLapsed({ ...account("ready"), available: false }, waiting)).toBe(false);
-  });
-
-  it("opens local pairing only after the explicit Wi-Fi fallback", () => {
-    expect(
-      phonePairingGate(
-        { available: false, status: "signed-out" },
-        { enabled: true, endpoints: [] },
-        false,
-      ),
-    ).toBe("account-required");
-    expect(
-      phonePairingGate(
-        { available: false, status: "signed-out" },
-        { enabled: true, endpoints: [] },
-        true,
-      ),
-    ).toBe("open");
-  });
-
-  it("opens pairing immediately when the hosted route is ready", () => {
-    expect(
-      phonePairingGate(
-        account("ready"),
-        {
-          enabled: true,
-          endpoints: [{ kind: "hosted", url: "https://phone.example", priority: 0 }],
-        },
-        false,
-      ),
-    ).toBe("open");
-  });
-
-  it("opens Tailscale only after the explicit fallback is selected", () => {
-    const tailnet = {
-      enabled: true,
-      endpoints: [{
-        kind: "tailnet" as const,
-        url: "http://mac.tail1234.ts.net:8810",
-        priority: 100,
-      }],
-    };
-    expect(phonePairingGate(account("signed-out"), tailnet, false)).toBe("account-required");
-    expect(
-      phonePairingGate({ available: false, status: "signed-out" }, tailnet, false),
-    ).toBe("account-required");
-    expect(phonePairingGate(account("signed-out"), tailnet, true)).toBe("open");
-  });
 
   it("arms the timeout during account IPC and explicit local setup", () => {
     const local = phoneSetupReducer(
@@ -278,8 +143,8 @@ describe("phone setup flow", () => {
       provisioningTimedOut: false,
     })).toBe(true);
     expect(derivePhoneSetupPhase(local, {
-      accountStatus: "connecting",
-      accountBusy: true,
+
+
       provisioning: true,
       provisioningTimedOut: true,
       pairingOpen: false,
@@ -402,8 +267,8 @@ describe("phone setup flow", () => {
     });
     expect(
       derivePhoneSetupPhase(success, {
-        accountStatus: "ready",
-        accountBusy: false,
+
+
         provisioning: false,
         pairingOpen: false,
       }),
@@ -440,8 +305,8 @@ describe("phone setup flow", () => {
     });
     expect(
       derivePhoneSetupPhase(success, {
-        accountStatus: "ready",
-        accountBusy: false,
+
+
         provisioning: false,
         pairingOpen: false,
       }),

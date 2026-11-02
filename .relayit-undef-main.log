@@ -1,0 +1,8 @@
+electron/main.mjs:487:5: warning eslint(no-unused-vars): Variable 'companionDesiredThisLaunch' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+electron/main.mjs:632:7: warning eslint(no-unused-vars): Variable 'menuDate' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:958:88: warning eslint(no-unused-vars): Variable 'otherPlaces' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:958:191: warning eslint(no-unused-vars): Variable 'withEnvironmentLook' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:958:286: warning eslint(no-unused-vars): Variable 'withOwnCloud' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:958:300: warning eslint(no-unused-vars): Variable 'withTeam' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:1092:5: warning eslint(no-unused-vars): Variable 'rememberedHome' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+electron/main.mjs:2044:103: warning unicorn(no-useless-spread): Using a spread operator here creates a new object unnecessarily. help: Consider removing the spread operator.

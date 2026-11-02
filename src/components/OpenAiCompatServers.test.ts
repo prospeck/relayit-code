@@ -94,7 +94,7 @@ describe("adding another OpenAI-compatible server", () => {
   it.each([
     ["unverified", () => fixture.api.mockResolvedValueOnce({ instances: [] })],
     ["error", () => fixture.api.mockRejectedValueOnce(new store.ApiError(`unreachable https://ada.example.com/v1 ${KEY}`, 502, {}))],
-  ])("reports one custom endpoint key save (%s), with no name, address or key", async (result, answer) => {
+  ])("reports one custom endpoint key save (%s), with no name, address or key", async (_result, answer) => {
     fixture.values = [];
 
     fixture.api.mockReset();

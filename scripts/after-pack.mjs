@@ -1,10 +1,7 @@
-import { chmod, lstat, readFile, readdir } from "node:fs/promises";
+import { chmod, lstat, readdir } from "node:fs/promises";
 import path from "node:path";
 import { LICENSE_FILES } from "./cua-linux-release.mjs";
-import {
-  executableTarget,
-  verifyCloudflaredExecutable,
-} from "./prepare-cloudflared.mjs";
+
 import { fileURLToPath } from "node:url";
 import { verifyBrowserBundle } from "./prepare-browser.mjs";
 import { pinnedDuckdbVersion, pinnedOnePasswordVersion, pinnedResvgVersion, verifyDuckdbTree } from "./prepare-duckdb.mjs";
@@ -28,47 +25,7 @@ async function requireRegularFile(file, mode) {
   if (mode !== undefined) await chmod(file, mode);
 }
 
-async function validateCloudflared(resources, platform, required) {
-  const root = path.join(resources, "cloudflared");
-  try {
-    await lstat(root);
-  } catch (error) {
-    // Unit fixtures for the older CUA-only hook do not carry every packaged
-    // resource. A real electron-builder context must fail closed because its
-    // copier only warns when an extraResources `from` path is missing.
-    if (error?.code === "ENOENT" && !required) return;
-    throw error;
-  }
 
-  const unixMode = platform === "win32" ? undefined : 0o755;
-  await requireRealDirectory(root, unixMode);
-  const executable = path.join(root, platform === "win32" ? "cloudflared.exe" : "cloudflared");
-  if (JSON.stringify(await readdir(root)) !== JSON.stringify([path.basename(executable)])) {
-    throw new Error(`Unexpected entries in packaged cloudflared resource: ${root}`);
-  }
-  await requireRegularFile(executable, unixMode);
-  const target = executableTarget(await readFile(executable));
-  const allowed = {
-    darwin: new Set(["darwin-arm64", "darwin-x64"]),
-    linux: new Set(["linux-x64"]),
-    win32: new Set(["win32-x64"]),
-  }[platform];
-  if (!allowed?.has(target)) {
-    throw new Error(`Packaged ${platform} app contains the wrong cloudflared target: ${target}`);
-  }
-  verifyCloudflaredExecutable(executable, target);
-
-  const licenses = path.join(resources, "licenses");
-  await requireRealDirectory(licenses, unixMode);
-  await requireRegularFile(
-    path.join(licenses, "cloudflared-LICENSE.txt"),
-    platform === "win32" ? undefined : 0o644,
-  );
-  await requireRegularFile(
-    path.join(licenses, "cloudflared-README.md"),
-    platform === "win32" ? undefined : 0o644,
-  );
-}
 
 // The DuckDB binding the server requires at runtime (server/data/engine.ts):
 // the pinned packages, the native binding beside its library, and on macOS
@@ -116,7 +73,6 @@ export default async function afterPack(context) {
       ? path.join(context.appOutDir, "OpenMausBot.app", "Contents", "Resources")
       : path.join(context.appOutDir, "resources")
   );
-  await validateCloudflared(resources, context.electronPlatformName, Boolean(context.packager));
   const browserRoot = path.join(resources, "browser-engine");
   const hasBrowser = await lstat(browserRoot).then(() => true, (error) => {
     if (error?.code === "ENOENT") return false;

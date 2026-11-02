@@ -3,11 +3,6 @@
   "private": true,
   "version": "0.1.139",
   "description": "A local-first chat app for running a team of AI agents.",
-  "homepage": "https://github.com/milind-soni/OpenMausBot",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/milind-soni/OpenMausBot.git"
-  },
   "author": {
     "name": "Milind Soni",
     "email": "46266943+milind-soni@users.noreply.github.com"
@@ -37,10 +32,10 @@
     "mcp": "node --experimental-strip-types scripts/mcp-server.ts",
     "control:omb": "node --experimental-strip-types scripts/control-omb.ts",
     "eval": "node --experimental-strip-types evals/runners/run-evals.ts",
-    "dev:desktop": "node scripts/prepare-cloudflared.mjs --current && electron .",
+    "dev:desktop": "electron .",
     "build": "tsc -b && tsc -p tsconfig.server.json && vite build",
     "typecheck": "tsc -b && tsc -p tsconfig.server.json",
-    "test": "vitest run && pnpm broker:test && pnpm test:electron && pnpm test:packaged-server",
+    "test": "pnpm check:no-upstream && vitest run && pnpm test:electron && pnpm test:packaged-server",
     "test:electron": "node --test \"electron/*.node-test.mjs\"",
     "bench:observation": "node --experimental-strip-types scripts/bench-observation.ts",
     "bench:persistence": "node --experimental-strip-types scripts/bench-persistence.ts",
@@ -62,13 +57,12 @@
     "smoke:cua-win": "node scripts/smoke-cua-win-embedded.mjs",
     "smoke:cua-win-lend": "node scripts/smoke-cua-win-lend.mjs",
     "build:android-tools": "node scripts/prepare-android-tools.mjs",
-    "build:cloudflared": "node scripts/prepare-cloudflared.mjs",
     "build:browser": "node scripts/prepare-browser.mjs",
     "build:duckdb": "node scripts/prepare-duckdb.mjs",
     "smoke:browser": "node scripts/smoke-browser-bundle.mjs",
     "build:cua:linux": "node scripts/prepare-cua-linux.mjs",
     "build:cua:linux:offline": "node scripts/prepare-cua-linux.mjs --offline",
-    "package:prepare": "pnpm build && pnpm build:server && pnpm build:companion && pnpm build:android-tools && pnpm build:cloudflared && pnpm build:browser && pnpm build:duckdb",
+    "package:prepare": "pnpm build && pnpm build:server && pnpm build:companion && pnpm build:android-tools && pnpm build:browser && pnpm build:duckdb",
     "package:mac": "pnpm package:prepare && pnpm build:speech && pnpm build:cua && electron-builder --mac --publish never",
     "package:win": "pnpm package:prepare && pnpm build:cua:win && electron-builder --win --publish never",
     "package:linux": "pnpm package:prepare && pnpm build:cua:linux && electron-builder --linux --x64 --publish never",
@@ -78,14 +72,7 @@
     "package:linux:dir": "pnpm package:prepare && pnpm build:cua:linux && electron-builder --linux dir --x64 --publish never",
     "package": "pnpm package:mac",
     "test:packaged-server": "pnpm build:server && node scripts/smoke-packaged-server.mjs",
-    "broker:types": "wrangler types --config cloudflare/composio-broker/wrangler.jsonc cloudflare/composio-broker/worker-configuration.d.ts",
-    "broker:check": "pnpm broker:types && tsc -p cloudflare/composio-broker/tsconfig.json",
-    "broker:test": "vitest run --config cloudflare/composio-broker/vitest.config.ts",
-    "broker:deploy": "wrangler deploy --config cloudflare/composio-broker/wrangler.jsonc",
-    "control-plane:types": "pnpm --filter @openmausbot/control-plane types",
-    "control-plane:check": "pnpm --filter @openmausbot/control-plane check",
-    "control-plane:test": "pnpm --filter @openmausbot/control-plane test",
-    "control-plane:dry-run": "pnpm --filter @openmausbot/control-plane dry-run"
+    "check:no-upstream": "node scripts/check-no-upstream.mjs"
   },
   "dependencies": {
     "@1password/sdk": "0.5.0",
@@ -162,7 +149,6 @@
     "typebox": "1.3.7",
     "typescript": "^5.8.3",
     "vite": "^7.1.0",
-    "vitest": "^4.1.11",
-    "wrangler": "4.123.0"
+    "vitest": "^4.1.11"
   }
 }

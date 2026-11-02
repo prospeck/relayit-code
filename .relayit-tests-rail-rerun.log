@@ -1,0 +1,11 @@
+✔ lists this computer beside a user-saved server, without exposing its address (1.051417ms)
+✔ does not restore entries owned by the retired account control plane (0.091208ms)
+✔ native server actions require a listed trusted window and a current place (0.633792ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.66875

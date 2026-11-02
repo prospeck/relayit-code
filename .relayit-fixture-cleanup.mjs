@@ -1,0 +1,7 @@
+import {fs,ts,edit,cleanImports} from './.relayit-edit.mjs';
+const p='server/cli.test.ts';edit(p,(n,c)=>{if(ts.isExpressionStatement(n)&&ts.isCallExpression(n.expression)&&n.expression.arguments[0]?.text==='serve --tunnel'){c(n);return false;}});cleanImports(p);
+for(const p of ['server/hosted-access.test.ts','server/people-invite.test.ts','server/email-signin.test.ts','server/app-events.e2e.test.ts','server/app-events.ui.e2e.test.ts'])if(fs.existsSync(p))fs.rmSync(p);
+let s=fs.readFileSync('server/postiz/service.ts','utf8').replace('  /** Plain http','  team: { forgetServer(name: string): void };\n  /** Plain http').replace('scope: team ? deps.team.scopes.scope("mcp", POSTIZ_SERVER) : "team" as const','scope: "team" as const');fs.writeFileSync('server/postiz/service.ts',s);
+// Remove assertions about blocking a migration against a retired hosted-cloud journal.
+s=fs.readFileSync('electron/own-home-main.node-test.mjs','utf8');let a=s.index('  const moving = install('),b=s.index('  moving.own.close();',a);if(a>=0)s=s.slice(0,a)+s.slice(b+'  moving.own.close();'.length);a=s.index('  const cloud = install(');b=s.index('  cloud.own.close();',a);if(a>=0)s=s.slice(0,a)+s.slice(b+'  cloud.own.close();'.length);s=s.replace('answers, cloudJournal = null, journal','answers, journal').replace('    cloudJournal: () => cloudJournal,\n','');fs.writeFileSync('electron/own-home-main.node-test.mjs',s);
+console.log('Removed retired service fixtures and hosted-only migration cases');

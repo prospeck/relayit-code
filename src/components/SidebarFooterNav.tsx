@@ -1,9 +1,9 @@
-import { FolderOpen, Globe, Puzzle, UsersRound, Zap } from "lucide-react";
+import { Globe, Puzzle, UsersRound, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { useAppTriggers } from "@/lib/app-triggers";
+
 import { cn } from "@/lib/cn";
-import { useCloudFilesReady } from "@/lib/cloud-files";
+
 import { t } from "@/lib/i18n";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { useWebPanels } from "@/lib/web-panel-preferences";
@@ -86,8 +86,8 @@ export function SidebarAppsButton() {
 /** An unseen failed run, or an app trigger in trouble. */
 export function useAutomationsNeedYou(): boolean {
   const { state } = useStore();
-  const appTriggers = useAppTriggers();
-  return state.routineRuns.some((run) => isRoutineProblemRun(run) && !run.seenAt) || appTriggers.triggers.some((trigger) => trigger.enabled && trigger.problem);
+
+  return state.routineRuns.some((run) => isRoutineProblemRun(run) && !run.seenAt);
 }
 
 export function SidebarBottomButtons() {
@@ -129,15 +129,7 @@ export function SidebarFooterNav({
     icon={(active) => <Zap size={iconSize} className={tone(active)} />}
     onClick={() => dispatch({ type: "showRoutines", view: "list" })}
   />;
-  const filesRow = useCloudFilesReady() && <NavRow
-    id="files"
-    label={t("sidebar.nav.files")}
-    iconsOnly={iconsOnly}
-    rail={rail}
-    active={state.activeView === "files"}
-    icon={(active) => <FolderOpen size={iconSize} className={tone(active)} />}
-    onClick={() => dispatch({ type: "showFiles" })}
-  />;
+  const filesRow = false;
   if (!advanced && !iconsOnly) return null;
   const appsRow = iconsOnly && <NavRow
     id="apps"

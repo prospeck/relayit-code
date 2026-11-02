@@ -13,6 +13,7 @@ const record = (value) => value !== null && typeof value === "object" && !Array.
 const sentence = (value) => (typeof value === "string" && value.trim() ? value.trim().slice(0, 300) : null);
 const pick = (source, names) => Object.fromEntries(names.filter((name) => source[name] !== undefined && source[name] !== null).map((name) => [name, source[name]]));
 const ID = /^(?:mcp:[a-z][a-z0-9_-]{0,31}|key:\w{1,40}|composio|highlevel)$/u;
+
 const INSTALLATION = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const ENVIRONMENT = /^[\w-]{1,128}$/u;
 const SLUG = /^[a-z0-9_][a-z0-9_-]{0,80}$/u;
@@ -43,19 +44,18 @@ export function parseConnections(value) {
   if (typeof environmentId !== "string" || !ENVIRONMENT.test(environmentId) || typeof label !== "string" || !label.trim()) return null;
   const strings = (list, pattern, max) => (Array.isArray(list) ? [...new Set(list.filter((entry) => typeof entry === "string" && pattern.test(entry)))].slice(0, max) : []);
   const connections = value.connections.filter((item) => record(item) && typeof item.id === "string" && ID.test(item.id) && KINDS.has(item.kind)
-    && item.id.split(":")[0] === item.kind && typeof item.label === "string" && item.label.trim())
+    && (item.kind !== "composio" || item.mode === "own") && item.id.split(":")[0] === item.kind && typeof item.label === "string" && item.label.trim())
     .slice(0, 200).map((item) => ({
       id: item.id, kind: item.kind, label: item.label.trim().slice(0, 120),
       ...(item.runsHere === true ? { runsHere: true } : {}),
       ...(typeof item.launcher === "string" && LAUNCHER.test(item.launcher) ? { launcher: item.launcher } : {}),
       ...(Array.isArray(item.for) ? { for: strings(item.for, ENGINE, 20) } : {}),
       ...(item.signIn === true ? { signIn: true } : {}),
-      ...(item.mode === "managed" || item.mode === "own" ? { mode: item.mode } : {}),
+      ...(item.mode === "own" ? { mode: item.mode } : {}),
       ...(typeof item.account === "string" && item.account.length <= 120 ? { account: item.account } : {}),
       ...(typeof item.installationId === "string" && INSTALLATION.test(item.installationId) ? { installationId: item.installationId } : {}),
     }));
-  return { computer: { environmentId, label: label.trim().slice(0, 120) }, connections, engines: strings(value.engines, ENGINE, 200), commands: strings(value.commands, LAUNCHER, 40),
-    ...(value.managedApps === false ? { managedApps: false } : {}) };
+  return { computer: { environmentId, label: label.trim().slice(0, 120) }, connections, engines: strings(value.engines, ENGINE, 200), commands: strings(value.commands, LAUNCHER, 40) };
 }
 
 /** This computer's connections, by name only, and the computer they are on. */
@@ -118,21 +118,14 @@ async function letGo(local, target, item, digest) {
  * are connected keeps them, and says which apps connected here it lacks (`missing`).
  * `here` and `there`: the "composio" connection of this computer and of My Cloud (null when My Cloud has none yet).
  */
-export async function adoptComposioId(target, { local, here, there, managedApps = true }) {
+export async function adoptComposioId(target, { local, here, there }) {
   if (here.account && there?.account === here.account) return { shared: true };
-  if (here.mode === "managed" && !managedApps) {
-    throw new ConnectionMoveError("no_service", "Your connected apps stay on this computer: that server has no connected-apps service of its own. Connect them again there in Apps.", true);
-  }
+
   const listed = await local.json("/api/connectors/connected").catch(() => null);
   const apps = Object.entries(record(listed?.services) ? listed.services : {}).filter(([slug, state]) => SLUG.test(slug) && record(state) && state.connected === true)
     .map(([slug]) => slug).slice(0, 200);
   let body;
-  if (here.mode === "managed") {
-    if (!there?.installationId) throw new ConnectionMoveError("not_ready", "My Cloud's connected apps are not ready yet. Try again in a moment.");
-    const code = (await local.handoff({ kind: "composio-share", for: there.installationId }).catch(() => null))?.share?.code;
-    if (typeof code !== "string") throw new ConnectionMoveError("local", "This computer's connected apps could not be shared.");
-    body = { share: code, apps };
-  } else {
+  {
     const own = (await secrets(local, here)).connection.composio;
     if (!record(own) || typeof own.apiKey !== "string" || typeof own.userId !== "string") throw new ConnectionMoveError("local", "This computer's connected apps could not be read.");
     body = { apiKey: own.apiKey, userId: own.userId, apps };
@@ -180,12 +173,12 @@ export async function sendConnections(collected, target, { local, release = true
     async key(item) {
       const { connection } = await secrets(local, item);
       if (!record(connection.config)) throw new ConnectionMoveError("local", `${item.label} could not be read on this computer.`);
-      const holding = await target.call("PUT", "/api/cloud-connections/held-keys", { for: item.for ?? [] }).catch(() => null);
+
       const saved = await target.call("PATCH", "/api/config", connection.config);
       if (!saved.ok) throw refused(saved, `My Cloud did not take the ${item.label} key.`);
-      if (holding?.ok && holding.body?.held === true) result.held.push({ id: item.id, label: item.label });
+
       done(item);
-      return holding?.ok && holding.body?.held === true;
+      return false;
     },
     async mcp(item) {
       const { connection, digest } = await secrets(local, item);
@@ -220,7 +213,7 @@ export async function sendConnections(collected, target, { local, release = true
       if (result.kept.length === kept) done(item);
     },
     async composio(item) {
-      const outcome = await adoptComposioId(target, { local, here: item, there: cloud.connections.find((theirs) => theirs.id === "composio") ?? null, managedApps: cloud.managedApps !== false });
+      const outcome = await adoptComposioId(target, { local, here: item, there: cloud.connections.find((theirs) => theirs.id === "composio") ?? null,  });
       if (outcome.kept) {
         result.kept.push({ id: item.id, label: item.label });
         result.missing.push(...outcome.missing.map((slug) => ({ slug })));

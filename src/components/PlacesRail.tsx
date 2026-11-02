@@ -40,7 +40,7 @@ export function placeLabel(place: RailPlace, now = Date.now()): string {
   const status = place.offline
     ? place.lastSeenAt ? t("rail.lastSeen", { name, when: localizedRelativeTime(place.lastSeenAt, activeLocale(), now) }) : t("rail.offline", { name })
     : place.pairs ? t("rail.notConnected", { name }) : name;
-  return [status, place.update && t("rail.update", place.update), place.ownNetwork && t("rail.ownNetwork")].filter(Boolean).join(" · ");
+  return [status, null, place.ownNetwork && t("rail.ownNetwork")].filter(Boolean).join(" · ");
 }
 
 /** Whether a tile does anything: opens its place, or, for a server of the person's own not connected yet, shows how
@@ -124,7 +124,7 @@ function PlaceTile({ place, canPair, onOpen, onMenu }: { place: RailPlace; canPa
     <PlaceMark place={place} />
     {place.progress !== undefined && <ProgressRing value={place.progress} waiting={place.waiting === true} />}
     {place.attention && <span aria-hidden="true" data-rail-dot className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-(--rail-surface) bg-danger" />}
-    {place.update && !place.attention && <span aria-hidden="true" data-rail-update className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-(--rail-surface) bg-accent" />}
+
     {place.server && <span aria-hidden="true" data-rail-server className="absolute -bottom-1 -right-1 grid size-3 place-items-center rounded-full border border-hairline bg-(--rail-surface) text-ink-secondary">
       <Server size={7} strokeWidth={2.25} />
     </span>}
@@ -310,7 +310,7 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
         <MoreHorizontal size={13} aria-hidden="true" />
       </button>}
       {more && <MorePlaces places={state.places} canPair={canPair} onOpen={open} onMenu={openMenu} onClose={() => setMore(false)} />}
-      {canAdd && <button type="button" aria-label={t("rail.add")} title={t("rail.add")} aria-haspopup="dialog" data-rail-add onClick={() => {  setAdding(true); }}
+      {canAdd && <button type="button" aria-label={t("rail.own")} title={t("rail.own")} aria-haspopup="dialog" data-rail-add onClick={() => {  setAdding(true); }}
         className="grid size-6 place-items-center rounded-[7px] border border-dashed border-ink/25 text-ink-secondary hover:border-ink/40 hover:bg-ink/[0.04] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
         <Plus size={13} aria-hidden="true" />
       </button>}

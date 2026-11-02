@@ -19,41 +19,38 @@ const state: CompanionState = {
 const noop = () => {};
 const controller = (over: Partial<PhoneSetupController>): PhoneSetupController => ({
   state,
-  account: null,
+
   phase: "qr",
-  email: "",
-  code: "",
-  codeSent: false,
+
+
   busy: false,
-  accountBusy: false,
+
   error: null,
-  accountError: null,
+
   pairingLink: "openmausbot://pair?address=192.168.1.34%3A8810",
   secondsLeft: 120,
   address: "192.168.1.34",
   pairingPort: 8810,
   addressText: "192.168.1.34:8810",
-  hostedReady: false,
+
   localFallback: true,
   tailscaleFallback: false,
   tailscaleAvailable: false,
   pairingExpired: false,
   setupTimedOut: false,
-  setEmail: noop,
-  setCode: noop,
-  changeEmail: noop,
+
+
   start: noop,
   useLocal: noop,
   useTailscale: noop,
   refreshTailscale: noop,
-  requestCode: noop,
-  verifyCode: noop,
-  retryAccount: noop,
+
+
   cancel: noop,
   refreshCode: noop,
   finish: noop,
   act: async () => {},
-  accountAct: async () => {},
+
   ...over,
 });
 
