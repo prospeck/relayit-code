@@ -688,12 +688,13 @@ export const CodexDriver: ProviderDriver<CodexConfig> = {
           // servers use the proxy's tool directory.
           const directory = plan && "url" in server;
           const apps = appMountFor(name, turn);
-          if (turn.toolScope === undefined && !("url" in server) && !apps) return server;
+          const refuseOutbound = turn.approvalMode === "full" && name in (turn.integrations?.custom ?? {});
+          if (turn.toolScope === undefined && !("url" in server) && !apps && !refuseOutbound) return server;
           const hash = createHash("sha256").update(mountName).digest("hex");
           // Codex starts MCP children with only a few env names.
-          const proxy = turn.toolScope === undefined && "url" in server
+          const proxy = turn.toolScope === undefined && "url" in server && !refuseOutbound
             ? mcpStdioServer(server, { nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(directory ? { directory: { name } } : {}), configEnvName: `OMB_REMOTE_MCP_CONFIG_${hash}`, sourceEnv: env, apps })
-            : gateServer({ name, server, threadId, budget: 0, toolScope: turn.toolScope, nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, configEnvName: `OMB_GATE_CONFIG_${hash}`, directory, sourceEnv: env, apps });
+            : gateServer({ name, server, threadId, budget: 0, toolScope: turn.toolScope, nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, configEnvName: `OMB_GATE_CONFIG_${hash}`, directory, sourceEnv: env, apps, refuseOutbound });
           if (proxy && directory) directoryMounts.add(mountName);
           if (!proxy) return null;
           const shared = { ...proxy.env };

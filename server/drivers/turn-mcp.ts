@@ -42,7 +42,10 @@ export function turnStdioMcpServers(turn: SendTurnInput, options: { schemaProfil
     if (servers.some((existing) => existing.name === name)) continue;
     const apps = appMountFor(name, turn);
     if (apps && !("url" in server)) observedCommands.set(name, apps);
-    const stdio = "url" in server ? mcpStdioServer(server, { nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(apps ? { apps } : {}) })
+    const refuseOutbound = turn.approvalMode === "full";
+    const stdio = refuseOutbound && turn.toolScope === undefined
+      ? gateServer({ name, server, threadId: turn.threadId, budget: 0, nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(apps ? { apps } : {}), schemaProfile, refuseOutbound })
+      : "url" in server ? mcpStdioServer(server, { nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(apps ? { apps } : {}) })
       : (apps || schemaProfile) && turn.toolScope === undefined
         ? gateServer({ name, server, threadId: turn.threadId, budget: 0, nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(apps ? { apps } : {}), schemaProfile })
       : server;
@@ -54,7 +57,8 @@ export function turnStdioMcpServers(turn: SendTurnInput, options: { schemaProfil
   const fitted = turn.toolScope === undefined ? servers.map(profiled) : servers.filter((server) => canUseMcpServer(turn.toolScope, server.name)).map((server) => {
     const apps = observedCommands.get(server.name);
     const gated = gateServer({ name: server.name, server: { command: server.command, args: server.args, env: server.env },
-      threadId: turn.threadId, budget: 0, toolScope: turn.toolScope, nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(apps ? { apps } : {}), schemaProfile });
+      threadId: turn.threadId, budget: 0, toolScope: turn.toolScope, nodeEnv: { ELECTRON_RUN_AS_NODE: "1" }, ...(apps ? { apps } : {}), schemaProfile,
+      refuseOutbound: turn.approvalMode === "full" && server.name in (turn.integrations?.custom ?? {}) });
     if (!gated) throw new Error("Tool selection requires an MCP gate.");
     return profiled({ name: server.name, command: gated.command, args: gated.args, env: gated.env });
   });

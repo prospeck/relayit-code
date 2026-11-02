@@ -166,4 +166,12 @@ describe("the gate's own query tool", () => {
       .toEqual(["mcp__shop__query_result"]);
     expect(gateQueryTools({ files: privateTrimming, broken: { args: trimming.args, env: {} } })).toEqual(["mcp__files__query_result"]);
   });
+
+  it("puts a gate in front of remote and local servers on a Full access turn", () => {
+    for (const server of [remote, { command: "node", args: ["server.js"] }]) {
+      const gated = gateServer({ name: "shop", server, threadId: "t1", budget: 0, refuseOutbound: true });
+      expect(gated?.env.OMB_GATE_REFUSE_OUTBOUND).toBe("1");
+    }
+    expect(gateServer({ name: "shop", server: { command: "node", args: [] }, threadId: "t1", budget: 0 })).toBeNull();
+  });
 });

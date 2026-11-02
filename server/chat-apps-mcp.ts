@@ -305,7 +305,7 @@ export function createChatAppsMcp(deps: ChatAppsMcpDeps): ChatAppsMcp {
     const annotations = isRecord(tool.annotations) ? tool.annotations : {};
     const runs = annotations.readOnlyHint === true
       || (!visibility.includes("model") && annotations.destructiveHint !== true)
-      || (approvalOf(bot.id, request.threadId) === "full" && !isOutboundTool(tool.name));
+      || (approvalOf(bot.id, request.threadId) === "full" && typeof tool.name === "string" && !isOutboundTool(tool.name));
     if (!runs) return rpcError(403, -32000, APP_WRITE_DECLINED);
     const result = await connections.request(name, server, "tools/call", { name: tool.name, arguments: callArgs }, AbortSignal.timeout(RPC_CALL_MS), extension);
     return { status: 200, body: isRecord(result) ? result : { content: [] } };

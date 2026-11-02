@@ -259,6 +259,16 @@ describe("mcp-gate", () => {
 
   const selected = { OMB_GATE_TOOL_SCOPE: JSON.stringify({ allow: ["mcp:shop:read"] }), OMB_GATE_BUDGET: "0" };
 
+  it("refuses sends and money on a Full access turn before they reach the server", async () => {
+    start({}, { OMB_GATE_REFUSE_OUTBOUND: "1" }, SCOPED_UPSTREAM);
+    for (const [i, tool] of ["place_order", "checkout_cart", "book_ticket", "send_message"].entries()) {
+      expect((await call(tool, i + 1)).error).toMatchObject({ code: -32602, message: expect.stringContaining("switch this chat to Ask") });
+    }
+    expect(existsSync(join(scratch, "reply.json.calls"))).toBe(false);
+    expect((await call("search_restaurants", 9)).result.content[0].text).toBe("executed");
+    expect(readFileSync(join(scratch, "reply.json.calls"), "utf8")).toBe("search_restaurants\n");
+  });
+
   it("filters each catalog page and rejects a withheld call before upstream execution", async () => {
     start({}, selected, SCOPED_UPSTREAM);
     send({ jsonrpc: "2.0", id: 1, method: "tools/list" });

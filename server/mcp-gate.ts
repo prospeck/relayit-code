@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
+import { isOutboundTool } from "../shared/outbound.ts";
 import { allowsTool, parseToolScope, type ToolScope } from "../shared/tool-scope.ts";
 
 import { bridgedCallTarget } from "./drivers/agents-bridge.ts";
@@ -27,7 +28,7 @@ function gateEnvironment(): NodeJS.ProcessEnv {
     const value = JSON.parse(process.env[key] ?? "");
     if (!value || typeof value !== "object" || Array.isArray(value)
       || !["OMB_GATE_NAME", "OMB_GATE_UPSTREAM"].every(name => typeof value[name] === "string")
-      || (typeof value.OMB_GATE_TOOL_SCOPE !== "string" && typeof value[GATE_APPS_ENV] !== "string")
+      || (typeof value.OMB_GATE_TOOL_SCOPE !== "string" && typeof value[GATE_APPS_ENV] !== "string" && value.OMB_GATE_REFUSE_OUTBOUND !== "1")
       || !Object.entries(value).every(([name, setting]) => GATE_ENV_KEYS.includes(name) && typeof setting === "string")) throw new Error();
     return value;
   } catch {
@@ -35,7 +36,7 @@ function gateEnvironment(): NodeJS.ProcessEnv {
   }
 }
 /** The gate's own settings never reach the upstream server's environment. */
-const GATE_ENV_KEYS = ["OMB_GATE_NAME", "OMB_GATE_SPILL_DIR", "OMB_GATE_BUDGET", "OMB_GATE_UPSTREAM", "OMB_GATE_SPILL_HINT", "OMB_GATE_TOOL_SCOPE", "OMB_GATE_DIRECTORY", GATE_APPS_ENV];
+const GATE_ENV_KEYS = ["OMB_GATE_NAME", "OMB_GATE_SPILL_DIR", "OMB_GATE_BUDGET", "OMB_GATE_UPSTREAM", "OMB_GATE_SPILL_HINT", "OMB_GATE_TOOL_SCOPE", "OMB_GATE_DIRECTORY", "OMB_GATE_REFUSE_OUTBOUND", GATE_APPS_ENV];
 const gateEnv = gateEnvironment();
 const NAME = gateEnv.OMB_GATE_NAME || "mcp";
 const SPILL_DIR = gateEnv.OMB_GATE_SPILL_DIR || "";
@@ -44,6 +45,8 @@ const BUDGET = Number.isFinite(rawBudget) && rawBudget >= 0 ? rawBudget : DEFAUL
 const SPILL_MAX_AGE_MS = 24 * 60 * 60_000;
 const SPILL_HINT = gateEnv.OMB_GATE_SPILL_HINT === "1";
 const DIRECTORY = gateEnv.OMB_GATE_DIRECTORY === "1";
+const REFUSE_OUTBOUND = gateEnv.OMB_GATE_REFUSE_OUTBOUND === "1";
+const OUTBOUND_REFUSAL = "RelayIt did not run this: sends, orders and payments always need the person's approval, and this chat is on Full access, which can't show them a card here. Tell them to switch this chat to Ask, then try again.";
 const SCHEMA_PROFILE = toolSchemaProfileFromEnv(process.env);
 const TOOL_LIMIT = toolLimitFromEnv(process.env);
 
@@ -301,6 +304,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   if (message?.method === "tools/call" && typeof params?.name === "string") {
     const target = callTarget(params.name, params.arguments);
     if (target !== undefined && appOnly.has(target)) return rejectRequest(message.id, -32602, APP_ONLY_REFUSAL);
+    if (REFUSE_OUTBOUND && target !== undefined && isOutboundTool(target)) return rejectRequest(message.id, -32602, OUTBOUND_REFUSAL);
   }
   if (scope && message?.method === "tools/list" && !id) {
     return rejectRequest(message.id, -32600, "Tool listing needs a request ID");

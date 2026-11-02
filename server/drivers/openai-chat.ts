@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isOutboundTool } from "../../shared/outbound.ts";
 import type {
   DriverCreateInput,
   ModelCatalog,
@@ -821,10 +822,10 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
                 tools.validate(call.function.name, args);
                 const shown = tools.view(call.function.name, args as Record<string, unknown>); title = shown.title;
                 const shownPreview = shown.input === args ? inputPreview : preview(shown.input);
-                // This runtime has no provider reviewer, so Full access is honoured here.
+                // This runtime has no provider reviewer, so Full access is honoured here, except for sends and money.
                 const full = (turn.approvalModeNow?.() ?? turn.approvalMode) === "full";
                 const floored = approval.floored({ full, threadId: turn.threadId, botId: turn.botId, shown, summary: shownPreview });
-                const allowed = !floored && (full || !shown.ask
+                const allowed = !floored && ((full ? !isOutboundTool(call.function.name) : !shown.ask)
                   || await approval.ask(shown.title, shownPreview ?? "This tool has no arguments.", shown.grant));
                 abort.signal.throwIfAborted();
                 emit({ ...base(turn.threadId, turnId), type: "item.started", itemType: "tool", itemId: call.id,
