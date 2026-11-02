@@ -10,7 +10,7 @@ const EVERYDAY_PREFIXES: Record<string, readonly string[]> = {
   ],
   "notifications and alerts": ["attention.", "notifications.", "error.", "readyBots.", "app.loading."],
   "the sidebar and the switcher": ["sidebar."],
-  "the rail of Clouds and its ＋": ["rail."],
+  "the rail of servers and its ＋": ["rail."],
   "a place's color, in Settings": ["placeLook."],
   "the bot panel": [
     "botPanel.", "botSettings.simple.", "botAccess.tools.", "botAccess.browser.", "memory.learnFromRooms.", "memory.upkeep.",
@@ -19,10 +19,10 @@ const EVERYDAY_PREFIXES: Record<string, readonly string[]> = {
     "place.", "computer.tab.", "computer.simple.", "computer.phase.", "computer.cloud.", "computer.badge.", "computer.problem.",
     "computer.screen.", "vm.cloud.", "browser.",
   ],
-  "RelayIt Cloud: buying it, setting it up, moving to it and sharing with it": [
-    "cloudBuy.", "cloudIntro.", "cloudTrial.", "cloudCancel.", "cloudSetup.", "cloudIntent.", "cloudNotice.", "cloudHowTo.", "whatsNew.",
-    "cloudCredit.", "cloudPower.", "cloudSignIn.", "cloudAdd.", "cloudHome.", "cloudPhone.", "cloudAccount.", "pro.", "lending.",
-    "files.", "usageMeter.", "roomCard.",
+  "files and shared computers": [
+            
+            "lending.",
+    "files.",  "roomCard.",
   ],
   "routines and automations": ["routines.", "automations."],
   "the team map": ["canvas.", "mapComputer.", "canvasComputers."],
@@ -45,7 +45,7 @@ const EVERYDAY_KEYS: Record<string, readonly string[]> = {
     "botSettings.replyStyle.conversationalHint", "voice.engine",
   ],
   "adding and sharing a bot": ["newBot.presetKeeps", "presetShare.never"],
-  "signing in to an AI, the Cloud's own sign-in included": [
+  "signing in to an AI": [
     "engineSetup.claude.description", "engineSetup.claude.connectedAccount", "engineSetup.device.description", "engineSetup.device.security",
     "engineSetup.device.connectedAccount", "engineSetup.device.failed", "engineSetup.device.enableHint", "engineSetup.grok.description",
     "engineSetup.grok.security", "engineSetup.grok.connectedAccount", "engineSetup.grok.failed", "engineSetup.grok.notInstalled",
@@ -84,9 +84,6 @@ const ALLOWED: Record<string, string> = {
   "sidebar.servers": "the switcher's own Servers list, renamed with the one-workspace switcher",
   "sidebar.switchServer": "the switcher's own Servers list, renamed with the one-workspace switcher",
   "sidebar.switchServerError": "points at the app menu's Server menu",
-  "sidebar.update.howOther": "a server added from the app menu's Server menu: its update is for whoever runs it, not this app",
-  "sidebar.update.howOtherRestart": "a server added from the app menu's Server menu: its update is for whoever runs it, not this app",
-  "cloudPhone.step1": "points at the app menu's Server menu, entry by entry",
   "botAccess.tools.syntax": "the tool names people type, such as mcp:SERVER:NAME",
 };
 

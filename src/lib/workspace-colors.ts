@@ -11,7 +11,7 @@ export function swatchFill(swatch: CloudSwatch): string {
 
 /** The Admin's swatches in the order the sheet offers them, each with the name of the colour this app draws it in. */
 export const CLOUD_SWATCH_LABEL = {
-  blue: "cloudBuy.color.blue", green: "cloudBuy.color.teal", amber: "cloudBuy.color.yellow", rose: "cloudBuy.color.red", violet: "cloudBuy.color.purple", slate: "cloudBuy.color.slate",
+  blue: "placeLook.color.blue", green: "placeLook.color.teal", amber: "placeLook.color.yellow", rose: "placeLook.color.red", violet: "placeLook.color.purple", slate: "placeLook.color.slate",
 } as const satisfies Record<CloudSwatch, LocaleKey>;
 export const CLOUD_SWATCH_ORDER = Object.keys(CLOUD_SWATCH_LABEL) as CloudSwatch[];
 export const DEFAULT_SWATCH: CloudSwatch = "blue";

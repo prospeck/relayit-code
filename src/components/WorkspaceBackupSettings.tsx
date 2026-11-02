@@ -28,7 +28,7 @@ export function WorkspaceBackupRestartNotice({ onRetry }: { onRetry?: () => void
   };
   return <div role="status" className="flex max-w-lg flex-col gap-4 text-[14px]">
     <p>{t(relaunch ? "backup.restartDesktop" : "backup.restart")}</p>
-    {relaunch && <button type="button" className={`${buttonClass} self-start`} disabled={restarting} onClick={() => void restart()}>{restarting ? t("settings.updates.restartingShort") : t("backup.restartAction")}</button>}
+    {relaunch && <button type="button" className={`${buttonClass} self-start`} disabled={restarting} onClick={() => void restart()}>{restarting ? t("backup.restarting") : t("backup.restartAction")}</button>}
     {!relaunch && onRetry && <button type="button" className={`${buttonClass} self-start`} onClick={onRetry}>{t("connectors.action.retry")}</button>}
     {error && <p role="alert" className="text-[13px] text-danger">{t("backup.restartFailed")}</p>}
   </div>;

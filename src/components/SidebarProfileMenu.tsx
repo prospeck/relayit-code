@@ -126,7 +126,7 @@ export function accountDot({ automationsNeedYou }: { automationsNeedYou: boolean
 }
 
 /** `besideRail`: the window's rail of places stands beside the page and switches places, so Switch to… isn't offered twice. */
-export function placeMenuItems(place: Pick<WorkspacePlace, "bridge" | "current" | "cloudHome" | "onLine" | "openMenu" | "switchable">, { owner, name, onCloudSettings, besideRail = false }: {
+export function placeMenuItems(place: Pick<WorkspacePlace, "bridge" | "current" | "cloudHome" | "onLine" | "openMenu" | "switchable">, { besideRail = false }: {
   owner: string | null;
   /** A team's name on a team's Cloud. */
   name?: string;
@@ -134,11 +134,7 @@ export function placeMenuItems(place: Pick<WorkspacePlace, "bridge" | "current" 
   besideRail?: boolean;
 }): SidebarMenuItem[] {
   const here = <Check size={15} aria-hidden="true" className="shrink-0 text-ink-secondary" />;
-  if (!place.switchable) {
-    if (!place.cloudHome && !place.current?.home) return [];
-    const subtitle = [place.onLine, owner ? t("sidebar.cloudOwner", { email: owner }) : ""].filter(Boolean).join(" · ");
-    return [{ key: "place", label: name || t("cloudSetup.myCloud"), ...(subtitle ? { subtitle } : {}), icon: <Cloud size={16} />, trailing: here, onSelect: onCloudSettings }];
-  }
+  if (!place.switchable) return [];
   const current = place.current;
   const icon = cloudColor(current?.color) ? <CloudTile color={current?.color} size={16} />
     : current?.local === false || (place.cloudHome && !current) ? <Cloud size={16} /> : <Laptop size={16} />;

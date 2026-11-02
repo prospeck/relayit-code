@@ -86,8 +86,8 @@ export function NoEngines() {
                   >
                     <KeyRound size={16} className="shrink-0 text-ink-secondary" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[14px] font-medium text-ink">{t("cloudSignIn.apiKey")}</span>
-                      <span className="block text-[12px] text-ink-secondary">{t("cloudSignIn.apiKeyHint")}</span>
+                      <span className="block text-[14px] font-medium text-ink">{t("noEngines.apiKey")}</span>
+                      <span className="block text-[12px] text-ink-secondary">{t("noEngines.apiKeyHint")}</span>
                     </span>
                     <ArrowUpRight size={14} className="shrink-0 text-ink-secondary" />
                   </button>

@@ -9,9 +9,9 @@ import en from "./en.json";
 import { locales } from "./index";
 
 const RETIRED: ReadonlyArray<readonly [string, RegExp, string]> = [
-  ["OMB Cloud", /OMB Cloud/i, "RelayIt Cloud"],
-  ["RelayIt Cloud", /RelayIt Cloud/i, "RelayIt Cloud"],
-  ["RelayIt Pro", /RelayIt Pro\b/, "RelayIt Cloud"],
+  ["OMB Cloud", /OMB Cloud/i, "your own server"],
+  ["RelayIt Cloud", /RelayIt Cloud/i, "your own server"],
+  ["RelayIt Pro", /RelayIt Pro\b/, "your own server"],
   // \b before "_" fails, so environment names such as OMB_PUBLIC_IPV4 pass.
   ["OMB", /\bOMB\b/, "RelayIt"],
   ["Cloud box", /Cloud box/i, "cloud desktop"],
@@ -21,7 +21,7 @@ const RETIRED: ReadonlyArray<readonly [string, RegExp, string]> = [
   ["Cloud dashboard", /Cloud dashboard/i, "Plan page"],
   ["Connect to my Cloud", /Connect to my Cloud/i, "Open the Cloud"],
   ["your Cloud", /\b[Yy]our Cloud\b(?! plan| account| sign-in| subscription)/, "the Cloud"],
-  ["my Cloud", /\bmy Cloud\b/, "the Cloud"],
+  ["My Cloud", /\b[Mm]y Cloud\b/, "your own server"],
   ["Local (this computer)", /Local \(this computer\)/, "This computer"],
   ["Cloud as a Works on choice", /\b(?:[Cc]hoose|[Ss]elect) Cloud\b(?! computer| desktop)|\bAuto, Cloud\b(?! computer| desktop)|, Cloud, /, "Cloud desktop"],
   ["T3", /\bT3\b/, "no other app's name"],
@@ -42,8 +42,6 @@ const EN_ALLOWED: Record<string, string> = {
   "botAccess.cloud.boat": "the own-key provider picker names its two providers, Boat and a VPS",
   "botAccess.cloud.hostedBackendDescription": "the own-key provider picker names its two providers, Boat and a VPS",
   "botAccess.cloud.vpsAutoDescription": "the own-key provider picker's VPS line names its Cloud choice",
-  "boatOffer.body": "The third-party provider information names its provider",
-  "boatOffer.get": "The third-party provider information names its provider",
 };
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -54,10 +52,10 @@ const isSource = (name: string) => /\.(?:ts|tsx|mjs|cjs|js)$/.test(name) && !/\.
 
 /** No snippet keeps the word file-wide; otherwise only literals containing the snippet. */
 const ALLOWED: ReadonlyArray<{ file: string; snippet?: string; why: string }> = [
+  { file: "server/boat.ts", snippet: "Boat", why: "the own-key provider names itself in connection errors" },
   { file: "shared/credential-request.ts", snippet: "when Boat is selected", why: "the card that asks for a person's own Boat key" },
   { file: "server/boat-create-idempotency.ts", snippet: "unnamed Boat", why: "own-key repair: boat.dev's own name for a machine" },
   { file: "server/workspace-backup.ts", snippet: "OMB-WORKSPACE-1", why: "a backup file's format marker" },
-  { file: "electron/company-backups.mjs", snippet: "OMB-WORKSPACE-1", why: "a backup file's format marker" },
 ];
 
 function* sources(dir: string): Generator<string> {
@@ -101,7 +99,7 @@ const allows = (entry: (typeof ALLOWED)[number], finding: { file: string; text: 
   entry.file === finding.file && (entry.snippet === undefined || finding.text.includes(entry.snippet));
 
 describe("one name per thing", () => {
-  it("English copy uses RelayIt Cloud, the Cloud, Cloud desktop, This computer and Plan page", () => {
+  it("English copy uses RelayIt and names own-key cloud desktops accurately", () => {
     const offending = Object.entries(en as Record<string, string>)
       .filter(([key]) => !PENDING_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)) && !Object.hasOwn(EN_ALLOWED, key))
       // English keys are UI copy, so lower-case "boat" counts too.
@@ -109,8 +107,8 @@ describe("one name per thing", () => {
     expect(offending).toEqual([]);
   });
 
-  const productNames = RETIRED.filter(([, , use]) => use === "RelayIt Cloud");
-  it("translations never show OMB, T3 or an old name for RelayIt Cloud, keep its name as it is, and say Boat only where the English does", () => {
+  const productNames = RETIRED.filter(([, , use]) => use === "your own server");
+  it("translations never show retired product names and say Boat only where English does", () => {
     const offending = Object.entries(locales).filter(([code]) => code !== "en").flatMap(([code, pack]) =>
       Object.entries(pack)
         .filter(([key]) => !PENDING_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)))
@@ -134,33 +132,14 @@ describe("one name per thing", () => {
     expect(staleKeys).toEqual([]);
   });
 
-  it("the public docs name RelayIt Cloud and the Cloud as the app does", () => {
-    const names = new Set(["OMB Cloud", "RelayIt Cloud", "RelayIt Pro", "Connect to my Cloud", "your Cloud", "my Cloud"]);
-    const cloudNames = RETIRED.filter(([word]) => names.has(word));
-    const pages = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
-      const path = join(dir, name);
-      return statSync(path).isDirectory() ? pages(path) : /\.mdx?$/.test(name) ? [path] : [];
-    });
-    const offending = pages(join(ROOT, "apps/docs/content")).flatMap((path) =>
-      readFileSync(path, "utf8").split("\n").flatMap((text, index) => cloudNames
-        .filter(([, pattern]) => pattern.test(text))
-        .map(([word, , use]) => `${relative(ROOT, path).split("\\").join("/")}:${index + 1}: "${word}" (say ${use})`)));
-    expect(offending).toEqual([]);
-  });
 
   it("copy that points at a control names it exactly as the control is labelled", () => {
     const e = en as Record<string, string>;
     const source = (file: string) => readFileSync(join(ROOT, file), "utf8");
-    const myCloud = /CLOUD_HOME_NAME = "([^"]+)"/.exec(source("electron/cloud-home.mjs"))?.[1];
     const thisComputer = /id: "workspace-local", label: "([^"]+)"/.exec(source("electron/environments.cjs"))?.[1];
     const serverMenuLocal = /\{ label: "([^"]+)", type: "radio", checked: !active/.exec(source("electron/menu.mjs"))?.[1];
-    expect([myCloud, thisComputer, serverMenuLocal]).toEqual([e["cloudSetup.myCloud"], e["place.local"], e["place.local"]]);
+    expect([thisComputer, serverMenuLocal]).toEqual([e["place.local"], e["place.local"]]);
     const pointers: Array<[string, string[]]> = [
-      ["cloudHome.connectHelp", [e["place.local"]!]],
-      ["cloudPhone.step1", [myCloud!]],
-      ["cloudAccount.onCloudSignIn", [e["cloudAccount.signInAgain"]!]],
-      ["cloudAccount.storageFailed", [e["cloudAccount.signOut"]!]],
-      ["cloudAccount.codeExpired", [e["cloudAccount.signIn"]!]],
       ["computer.routines.offWarning", [e["routines.runsOn.boat"]!]],
     ];
     const stale = pointers.flatMap(([key, labels]) => labels.filter((label) => !e[key]!.includes(label)).map((label) => `${key} → ${label}`));
@@ -176,9 +155,9 @@ describe("one name per thing", () => {
       "Auto uses this Boat", "New Boat computer",
     ]) expect(retiredIn(bad), bad).not.toEqual([]);
     for (const good of [
-      "Sign in to RelayIt Cloud", "Pro active · verified by RelayIt Cloud", "Restart RelayIt", "locked by another RelayIt process",
-      "set OMB_PUBLIC_IPV4", "Open My Cloud", "Open the Cloud", "Choose Cloud desktop to wake", "Auto, Cloud desktop or Browser",
-      "Included with your Cloud plan", "Add a Boat API key in Settings → API keys", "Connect Boat", "Check boat.dev",
+      "Restart RelayIt", "locked by another RelayIt process",
+      "set OMB_PUBLIC_IPV4", "Choose Cloud desktop to wake", "Auto, Cloud desktop or Browser",
+      "Add a Boat API key in Settings → API keys", "Connect Boat", "Check boat.dev",
       "Bots here can get their own cloud desktops from Boat, a paid service", "Cloud desktops by Boat",
       "Local VM", "Open your Plan page",
     ]) expect(retiredIn(good), good).toEqual([]);

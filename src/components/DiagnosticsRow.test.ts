@@ -50,5 +50,5 @@ it("in a browser (no desktop bridge) offers no buttons that do nothing, and says
   (window as { ogb?: unknown }).ogb = { platform: "win32" };
   await render();
   expect(host.querySelectorAll("button")).toHaveLength(0);
-  expect(host.querySelector("[data-logs-help]")!.textContent).toContain("RelayIt Cloud support can read the Cloud's.");
+  expect(host.querySelector("[data-logs-help]")!.textContent).toContain("Logs are kept on your own server.");
 });
