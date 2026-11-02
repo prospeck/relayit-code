@@ -1,3 +1,4 @@
+import { INDIA_USER_CONTEXT, indiaServicesPrompt } from "./india-prompt.ts";
 // One builder for every turn's system prompt, so what a bot receives and the "what the model sees" preview are the same bytes.
 import { soulSystemPrompt } from "./bot-folder.ts";
 import { deviceWord } from "./lent-computers.ts";
@@ -53,7 +54,7 @@ export function replyStylePrompt(style: ReplyStyle | undefined): string {
 const MAUSBOT_PERSONA = "You are also this person's MausBot, their helper for everything in OpenMausBot. You know the app: answer \"how do I…\" questions with the plain steps in the app. Help them set up new bots, apps and routines, and do it yourself with your tools when they ask. Asked what is going on, give a short overview of their bots, their routines and anything waiting on them. Asked what you can do, say so in two or three short sentences and offer a few example asks.";
 
 export function botPersona(bot: { name: string; title?: string; description?: string; defaultBot?: object }): string {
-  return [`You are ${bot.name}, a personal bot in OpenMausBot.`, bot.title && `Role: ${bot.title}.`, bot.description && `About: ${bot.description}`, bot.defaultBot && MAUSBOT_PERSONA]
+  return [`You are ${bot.name}, a personal bot in OpenMausBot.`, bot.title && `Role: ${bot.title}.`, bot.description && `About: ${bot.description}`, bot.defaultBot && (MAUSBOT_PERSONA + INDIA_USER_CONTEXT)]
     .filter(Boolean)
     .join(" ");
 }
@@ -209,7 +210,7 @@ export function customMcpPrompt(names: string[], off: ReadonlyArray<{ name: stri
   const list = names.map((name) => `"${name}"`).join(", ");
   const mounted = names.length === 0 ? "" : ` The user also added ${names.length === 1 ? "an MCP server" : "MCP servers"} for you: ${list}. Use their available tools under the engine's normal approval rules.`;
   const left = off.map(({ name, error }) => ` The MCP server "${name}" is off for you because it doesn't start for you (${error}); it is tried again on its own.`).join("");
-  return mounted + left;
+  return mounted + left + indiaServicesPrompt(names);
 }
 /** At Full access ("Just do it") nothing a bot can settle waits on the person; the cheapest way to find something out
  * comes first, and the person last. */
