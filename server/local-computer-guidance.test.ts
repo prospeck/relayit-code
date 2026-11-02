@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { localComputerCallQuery, localComputerRelay, localComputerResultLine, OWN_PROFILE_UNAVAILABLE } from "./local-computer-guidance.ts";
+import { createMoneyGuard, localComputerCallQuery, localComputerRelay, localComputerResultLine, OWN_PROFILE_UNAVAILABLE } from "./local-computer-guidance.ts";
 import type { ChildCalls } from "./mcp-bridge.ts";
 import { CLICK_SENT_UNCONFIRMED } from "./unconfirmed-click.ts";
 
@@ -110,5 +110,56 @@ describe("localComputerRelay", () => {
     const refused = { content: [{ type: "text", text: "foreground_unavailable: … no mouse input was sent" }], isError: true };
     expect(await localComputerRelay("win32")({ name: "click", arguments: {} }, child(() => refused).relayed)).toBe(refused);
     expect(localComputerRelay("win32")({ name: "get_window_state", arguments: {} }, child(() => ({})).relayed)).toBeNull();
+  });
+});
+
+describe("createMoneyGuard", () => {
+  const screen = (elements: unknown[]) => JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    result: { content: [{ type: "text", text: "tree" }], structuredContent: { elements } },
+  });
+  const click = (args: Record<string, unknown>, name = "click") => ({ name, arguments: args }) as never;
+  const CHECKOUT = screen([
+    { element_index: 1, role: "group", depth: 0, label: "Your cart" },
+    { element_index: 2, role: "button", depth: 1, parent_index: 1, label: "Pay ₹450" },
+    { element_index: 3, role: "text", depth: 2, parent_index: 2, label: "now" },
+    { element_index: 4, role: "button", depth: 1, parent_index: 1, label: "Add to cart", element_token: "t-add" },
+    { element_index: 5, role: "button", depth: 1, parent_index: 1, label: "Place order", element_token: "t-order" },
+  ]);
+
+  it("refuses a press on a money button, and on a label inside one", () => {
+    const guard = createMoneyGuard();
+    guard.remember(CHECKOUT);
+    for (const name of ["click", "double_click", "right_click"]) {
+      expect(guard.refuses(click({ element_index: 2 }, name)), name).toBe(true);
+    }
+    expect(guard.refuses(click({ element_index: 3 }))).toBe(true);
+    expect(guard.refuses(click({ element_token: "t-order" }))).toBe(true);
+  });
+
+  it("lets everything else through", () => {
+    const guard = createMoneyGuard();
+    guard.remember(CHECKOUT);
+    expect(guard.refuses(click({ element_index: 1 }))).toBe(false);
+    expect(guard.refuses(click({ element_token: "t-add" }))).toBe(false);
+    expect(guard.refuses(click({ element_index: 2 }, "scroll"))).toBe(false);
+    expect(guard.refuses(click({ x: 10, y: 20 }))).toBe(false);
+  });
+
+  it("reads the screen it last saw, and survives frames it can't read", () => {
+    const guard = createMoneyGuard();
+    expect(guard.refuses(click({ element_index: 2 }))).toBe(false);
+    guard.remember(CHECKOUT);
+    guard.remember('{"elements": not json');
+    expect(guard.refuses(click({ element_index: 2 }))).toBe(true);
+    guard.remember(screen([{ element_index: 2, role: "button", depth: 0, label: "Back" }]));
+    expect(guard.refuses(click({ element_index: 2 }))).toBe(false);
+  });
+
+  it("can't be looped by a tree that points at itself", () => {
+    const guard = createMoneyGuard();
+    guard.remember(screen([{ element_index: 1, role: "button", depth: 0, parent_index: 1, label: "Back" }]));
+    expect(guard.refuses(click({ element_index: 1 }))).toBe(false);
   });
 });

@@ -4,6 +4,8 @@
 import { typeOneCharacterAtATime, typesInOneBurst } from "../electron/paced-typing.mjs";
 import { describeComputerCall } from "../shared/your-computer.ts";
 import type { ChildCalls, ToolCall } from "./mcp-bridge.ts";
+import { slimResponse, type WireElement } from "./saved-steps/driver-wire.ts";
+import { namesMoneyAction } from "./saved-steps/screen-words.ts";
 import { CLICK_TOOLS, unconfirmedClickResult } from "./unconfirmed-click.ts";
 
 type JsonObject = Record<string, unknown>;
@@ -59,5 +61,45 @@ export function localComputerRelay(platform: string) {
     }
     if (!CLICK_TOOLS.has(call.name)) return null;
     return child.call(call.name, call.arguments).then((result) => unconfirmedClickResult(result) ?? result);
+  };
+}
+
+export const MONEY_CLICK_REFUSAL =
+  "RelayIt did not press this: it spends money, and only the person presses that. Stop here, tell them the screen is ready, and ask them to check the details and press it themselves.";
+
+/** Refuses a press on anything the screen's last reading names as spending money. Reads only labels the driver gave: a
+ * press by coordinates names no element, so this can't see it. */
+export function createMoneyGuard() {
+  let elements = new Map<number, WireElement>();
+  let tokens = new Map<string, WireElement>();
+
+  return {
+    /** Keeps the labels of the screen a response just read. */
+    remember(line: string): void {
+      if (!line.includes('"elements"')) return;
+      let frame: unknown;
+      try {
+        frame = JSON.parse(line);
+      } catch {
+        return;
+      }
+      const read = slimResponse(frame).structured?.elements;
+      if (!read) return;
+      elements = new Map(read.map((element) => [element.element_index, element]));
+      tokens = new Map(read.flatMap((element) => element.element_token ? [[element.element_token, element] as const] : []));
+    },
+    refuses(call: ToolCall): boolean {
+      if (!CLICK_TOOLS.has(call.name)) return false;
+      const { element_index: index, element_token: token } = call.arguments as { element_index?: unknown; element_token?: unknown };
+      let element = typeof token === "string" ? tokens.get(token) : typeof index === "number" ? elements.get(index) : undefined;
+      // A press on a label inside a button presses the button.
+      const seen = new Set<number>();
+      while (element && !seen.has(element.element_index)) {
+        if (namesMoneyAction(element.label)) return true;
+        seen.add(element.element_index);
+        element = element.parent_index === undefined ? undefined : elements.get(element.parent_index);
+      }
+      return false;
+    },
   };
 }

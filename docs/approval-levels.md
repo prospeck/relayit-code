@@ -32,10 +32,13 @@ is refused and the bot is told to ask the person to switch the chat to Ask. In t
 the press that spends money (Pay, Place order, Buy now, Book now and their like) belongs to the
 person: the bot stops, and they press it themselves in the browser panel.
 
+When a bot controls the person's own computer, the same rule covers a press on any element whose
+label names spending money.
+
 Tool names and button labels are read by word lists, so a tool or button with an unusual name can
-get past them. A bot with shell access at Full access can also run commands that nothing here
-reads, and control of the person's own computer is outside the browser rule. Keep Full access for
-bots you trust with that.
+get past them. A press by screen coordinates or a keyboard shortcut on the person's own computer
+names no element, so the rule can't see it. A bot with shell access at Full access can also run
+commands that nothing here reads. Keep Full access and computer control for bots you trust with that.
 
 | Level | Behavior |
 | --- | --- |

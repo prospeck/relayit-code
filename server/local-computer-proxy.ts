@@ -1,7 +1,7 @@
 // The descriptor and turn token travel in environment variables, never argv or logs.
 import { runMcpBridge } from "./mcp-bridge.ts";
 import { augmentedPath } from "./env-path.ts";
-import { localComputerCallQuery, localComputerRelay, localComputerResultLine } from "./local-computer-guidance.ts";
+import { createMoneyGuard, localComputerCallQuery, localComputerRelay, localComputerResultLine, MONEY_CLICK_REFUSAL } from "./local-computer-guidance.ts";
 import { journalUrl } from "./saved-steps/journal-tap.ts";
 
 const {
@@ -30,6 +30,9 @@ try {
   process.exit(2);
 }
 
+const money = createMoneyGuard();
+const relay = localComputerRelay(platform ?? process.platform);
+
 runMcpBridge({
   command: command!,
   args,
@@ -37,6 +40,11 @@ runMcpBridge({
   label: "Local Cua Driver",
   gate: { url: url!, token: token!, describe: localComputerCallQuery },
   ...(journal === "1" ? { journal: { url: journalUrl(url!), token: token! } } : {}),
-  rewriteResponse: localComputerResultLine,
-  relay: localComputerRelay(platform ?? process.platform),
+  rewriteResponse: (line) => {
+    money.remember(line);
+    return localComputerResultLine(line);
+  },
+  relay: (call, child) => money.refuses(call)
+    ? Promise.resolve({ isError: true, content: [{ type: "text", text: MONEY_CLICK_REFUSAL }] })
+    : relay(call, child),
 });
