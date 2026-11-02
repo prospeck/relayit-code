@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { isOutboundTool } from "../../shared/outbound.ts";
+import { localModelRedirect } from "./local-model-guard.ts";
 import type {
   DriverCreateInput,
   ModelCatalog,
@@ -753,6 +754,21 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
               }
               stopReason = "tool_error";
               throw new ChatProtocolError(toolFailureMessage(failedCalls, denials.filter((name) => name !== ASK_USER_TOOL)));
+            }
+            if (options.localModel && tools.definitions.length && !turnEntry.ending) {
+              const toolResults = messages.flatMap((message) => message.role === "tool" && typeof message.content === "string" ? [message.content] : []);
+              const toolsCalled = messages.flatMap((message) => message.role === "assistant" ? (message.tool_calls ?? []).map((call) => call.function.name) : []);
+              const redirect = localModelRedirect(completion.text, toolResults, toolsCalled);
+              if (redirect && nudges < MAX_ANNOUNCEMENT_NUDGES) {
+                nudges += 1;
+                callsAtNudge = seenCalls.size;
+                messages.push(assistantReply(model, completion, completion.text), { role: "user", content: redirect.message });
+                continue;
+              }
+              if (redirect?.mustHold) {
+                stopReason = "incomplete_action";
+                throw new ChatProtocolError("The local model kept stating prices it hadn't looked up, so its reply was held back. Try again, or use a stronger model.");
+              }
             }
             if (options.nudgeAnnouncedAction && tools.definitions.length && announcesAction(completion.text)) {
               if (nudges >= MAX_ANNOUNCEMENT_NUDGES || turnEntry.ending) {

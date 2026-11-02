@@ -55,6 +55,7 @@ async function fixture(script: Script, driver: "local" | "hosted" = "local") {
   const requests: ChatRequest[] = [];
   const server = createServer(async (request, response) => {
     if (request.url === "/v1/models") { response.setHeader("content-type", "application/json"); response.end('{"data":[]}'); return; }
+    if (request.url?.startsWith("/api/")) { response.statusCode = 404; response.end(); return; }
     let data = "";
     for await (const part of request) data += part.toString();
     const body = JSON.parse(data) as ChatRequest;
