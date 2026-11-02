@@ -244,6 +244,10 @@ export class FakeChrome implements CdpTransport {
     if (expression === "[innerWidth, innerHeight]") return [viewport.width, viewport.height];
     if (expression === "devicePixelRatio") return this.dpr;
     if (expression.includes('root.querySelectorAll("input, textarea, [contenteditable]")')) return page.elements.filter((element) => element.editable).map((element) => ({ type: "text", hints: [element.name, element.selector] }));
+    if (expression.includes('field.localName.includes')) {
+      const element = page.focused === null ? null : page.elements[page.focused];
+      return element ? { type: "text", hints: [element.name, element.selector] } : null;
+    }
     if (expression === "document.readyState") return "complete";
     if (expression === "document.title") return page.title;
     if (expression.startsWith("({ url: location.href")) return { url: page.url, title: page.title, text: page.text };

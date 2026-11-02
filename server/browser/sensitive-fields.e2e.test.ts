@@ -27,6 +27,8 @@ import { hostTimeout } from "../testing/host-timeout.ts";
     }
     expect((await real.call(target, "agent_browser_eval", { expression: "document.querySelector('#password').value='fixture'" })).isError).toBe(true);
     expect(await real.peek(target, `[...document.querySelectorAll("input")].every(field => field.value === "")`)).toBe(true);
+    await real.call(target, "agent_browser_click", { selector: "#password" });
+    await expect(real.service.loginDeps(target).insertText("blocked-saved-secret")).rejects.toThrow("person to enter");
     const tab = real.service.profiles().find((profile) => profile.key === target.key)!.active()!;
     await tab.page.fill({ selector: "#password" }, "human-fixture-entry");
     expect(await real.peek(target, `document.querySelector("#password").value`)).toBe("human-fixture-entry");
