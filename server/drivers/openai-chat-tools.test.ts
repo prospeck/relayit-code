@@ -1,4 +1,6 @@
 // Real HTTP + stdio MCP contract tests; tools write only in a fresh temporary directory.
+// Use the hosted driver by default: loopback OpenAI-compatible URLs deliberately enable local-model guards,
+// which have their own suite. Explicit provider cases below still cover OpenAI-compatible transport.
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
@@ -92,7 +94,7 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
 });
 
-async function fixture(script: Script, provider: Provider = "openai-compat", apiKey = API_KEY_CANARY) {
+async function fixture(script: Script, provider: Provider = "grok", apiKey = API_KEY_CANARY) {
   const directory = mkdtempSync(join(tmpdir(), "omb-chat-tools-"));
   const requests: ChatRequest[] = [];
   const rpcStarted = deferred<{ name: string; args: Record<string, unknown> }>();
@@ -987,7 +989,7 @@ describe("structured tool execution boundaries", () => {
       chunk({ content: "Before " }),
       ...pieces.map((piece) => chunk({ content: piece })),
       chunk({ content: " after." }, "stop"),
-    ]), "openai-compat", "zqxzqx");
+    ]), "grok", "zqxzqx");
     await f.start({ integrations: undefined });
     expect(await f.completed()).toMatchObject({ ok: true });
     const combined = f.recorder.events.filter((event) => event.type === "content.delta").map((event) => event.delta).join("");
