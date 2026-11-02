@@ -81,33 +81,33 @@ const FULL = "skills+shared+voice+escalations+x+team";
  * either: lock a saving in by lowering the number. A Chief's list is longer
  * than another bot's only by the Chief-only names in find_tool's description. */
 const BUDGET_BASELINE: Record<string, number> = {
-  "default": 16688,
-  "voice": 17469,
-  "shared": 16728,
-  "shared+voice": 17509,
-  "skills": 16715,
-  "skills+voice": 17496,
-  "skills+shared": 16755,
-  "skills+shared+voice": 17550,
-  "non-chief": 16571,
-  "voice+non-chief": 17352,
-  "shared+non-chief": 16611,
-  "shared+voice+non-chief": 17392,
-  "skills+non-chief": 16598,
-  "skills+voice+non-chief": 17379,
-  "skills+shared+non-chief": 16638,
-  "skills+shared+voice+non-chief": 17419,
-  "skills+shared+voice+cloud-home": 17552,
-  "skills+shared+voice+non-chief+cloud-home": 17417,
-  "skills+shared+voice+escalations": 17568,
-  "skills+shared+voice+escalations+x": 17629,
-  "skills+shared+voice+escalations+x+team": 17645,
-  "default+legacy-switches": 16688,
-  "default+mausbot": 16740,
-  "skills+shared+voice+mausbot": 17602,
-  "default+no-computer-pick": 15455,
-  "default+room": 15415,
-  "non-chief+room": 15298,
+  "default": 15835,
+  "voice": 16616,
+  "shared": 15875,
+  "shared+voice": 16656,
+  "skills": 15862,
+  "skills+voice": 16643,
+  "skills+shared": 15902,
+  "skills+shared+voice": 16683,
+  "non-chief": 15737,
+  "voice+non-chief": 16518,
+  "shared+non-chief": 15777,
+  "shared+voice+non-chief": 16558,
+  "skills+non-chief": 15764,
+  "skills+voice+non-chief": 16545,
+  "skills+shared+non-chief": 15804,
+  "skills+shared+voice+non-chief": 16585,
+  "skills+shared+voice+cloud-home": 16699,
+  "skills+shared+voice+non-chief+cloud-home": 16601,
+  "skills+shared+voice+escalations": 16701,
+  "skills+shared+voice+escalations+x": 16762,
+  "skills+shared+voice+escalations+x+team": 16778,
+  "default+legacy-switches": 15835,
+  "default+mausbot": 15887,
+  "skills+shared+voice+mausbot": 16735,
+  "default+no-computer-pick": 14623,
+  "default+room": 14562,
+  "non-chief+room": 14464
 };
 
 type RpcAnswer = { id: number; result?: { tools?: unknown[]; content?: Array<{ text: string }>; isError?: boolean }; error?: { code: number; message: string } };
@@ -160,7 +160,8 @@ async function toolsListWire(entry: string, env: Record<string, string>): Promis
 
 async function bridgedWireForEveryProfile(entry: string): Promise<Record<string, string>> {
   const names = Object.keys(PROFILES);
-  const all = await Promise.all(names.map((name) => toolsListWire(entry, { ...PROFILES[name]!, ...BRIDGE_ON })));
+  const all: string[] = [];
+  for (const name of names) all.push(await toolsListWire(entry, { ...PROFILES[name]!, ...BRIDGE_ON }));
   return Object.fromEntries(names.map((name, index) => [name, all[index]!]));
 }
 
@@ -276,7 +277,7 @@ describe("agents proxy tools/list golden with the tool bridge on", () => {
   it("keeps the same hot tools whatever the role and features, except the ones a profile does not have", () => {
     const hotOf = (name: string) => toolsOf(wires[name]!).slice(0, -2).map((tool) => tool.name);
     const base = hotOf("default");
-    expect(base).toEqual(["tool_result_read", "list_room_targets", "coordinate_bots", "list_bots", "list_rooms", "select_computer", "attach_file", "publish_page", "post_to_room", "request_credential", "request_sign_in", "fill_login", "memory_update"]);
+    expect(base).toEqual(["tool_result_read", "list_room_targets", "coordinate_bots", "list_bots", "list_rooms", "select_computer", "attach_file", "post_to_room", "request_credential", "request_sign_in", "fill_login", "memory_update"]);
     for (const name of Object.keys(PROFILES)) {
       const selects = PROFILES[name]!.OMB_COMPUTER_SELECTION === "1";
       expect(hotOf(name).filter((tool) => tool !== "send_voice_note"), name).toEqual(selects ? base : base.filter((tool) => tool !== "select_computer"));

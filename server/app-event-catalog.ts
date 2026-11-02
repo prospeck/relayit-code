@@ -2,7 +2,7 @@
 // types from the connected-apps service. Apps it may not use are left out entirely, never listed as refused.
 import { botMayWatchApp, type AppEventCatalog, type AppEventType } from "../shared/app-triggers.ts";
 import type { ConnectorToolGrant } from "../shared/wire.ts";
-import type { AppTriggerBroker, BrokerTriggerType } from "./app-trigger-broker.ts";
+import type { AppTriggerBroker, BrokerTriggerType } from "./app-event-contract.ts";
 
 /** Asked about most often; shown as "not connected yet" so the bot can offer to connect one. */
 const POPULAR = ["gmail", "slack", "googlecalendar", "outlook", "github", "hubspot", "notion", "googlesheets"];

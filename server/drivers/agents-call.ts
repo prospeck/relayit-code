@@ -18,9 +18,9 @@ import { callUsageLimitsTool, USAGE_LIMITS_TOOL } from "./agents-usage-tool.ts";
 import { callWaitTool, WAIT_TOOL_NAMES } from "./agents-wait-tools.ts";
 import { callComputerAskTool, COMPUTER_ASK_TOOL_NAMES } from "./agents-computer-ask-tool.ts";
 import { callMausBotTool, MAUSBOT_TOOL_NAMES } from "./agents-mausbot-tools.ts";
-import { callPageTool, PAGE_TOOL_NAMES } from "./agents-pages-tools.ts";
+
 import { callPersonTool, PERSON_TOOL_NAMES } from "./agents-person-tools.ts";
-import { callDevsTool, DEVS_TOOL_NAMES } from "./agents-devs-tools.ts";
+
 
 export interface ToolCallContext {
   botId: string;
@@ -216,9 +216,9 @@ export async function callTool(called: string, input: Json, context: ToolCallCon
   if (RESEARCH_TOOL_NAMES.has(name)) return callResearchTool(name, args, context);
   if (HELPER_TOOL_NAMES.has(name)) return callHelperTool(name, args, context);
   if (MAUSBOT_TOOL_NAMES.has(name)) return callMausBotTool(name, args, context);
-  if (PAGE_TOOL_NAMES.has(name)) return callPageTool(name, args, context);
+
   if (PERSON_TOOL_NAMES.has(name)) return callPersonTool(name, args, context);
-  if (DEVS_TOOL_NAMES.has(name)) return callDevsTool(name, args, context);
+
   if (TRIGGER_TOOL_NAMES.has(name)) return callTriggerTool(name, args, context);
   if (WAIT_TOOL_NAMES.has(name)) return callWaitTool(name, args, context);
   if (name === USAGE_LIMITS_TOOL) return callUsageLimitsTool(context);
@@ -437,9 +437,7 @@ export async function callTool(called: string, input: Json, context: ToolCallCon
   if (name === "list_team_setup") {
     return { text: JSON.stringify(await api("/api/internal/team-setup-catalog")) };
   }
-  if (name === "list_team_library") {
-    return { text: JSON.stringify(await api("/api/internal/team-library")) };
-  }
+
   if (name === "propose_team_setup" || name === "propose_bot_deletion") {
     const deleting = name === "propose_bot_deletion";
     const result = await api(deleting ? "/api/internal/bot-deletion-requests" : "/api/internal/team-setup-requests", {
