@@ -11,6 +11,7 @@ export class CredentialStorageError extends Error {
 }
 const failure = () => new CredentialStorageError();
 const validKey = value => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+const decryptedText = value => typeof value === "string" ? value : value?.result;
 
 function durableWrite(file, value) {
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
@@ -67,13 +68,18 @@ export async function desktopMasterKey(dataDir, safe) {
       return fallbackMasterKey(dataDir);
     }
     let key;
-    if (existsSync(wrapped)) key = await safe.decrypt(readFileSync(wrapped));
+    if (existsSync(wrapped)) {
+      const decrypted = await safe.decrypt(readFileSync(wrapped));
+      key = decryptedText(decrypted);
+      if (!validKey(key)) throw failure();
+      if (decrypted?.shouldReEncrypt) durableWrite(wrapped, await safe.encrypt(key));
+    }
     else {
       if (!existsSync(fallback) && existsSync(home) && readdirSync(home).some(name => name.endsWith(".enc"))) throw failure();
       key = existsSync(fallback) ? fallbackMasterKey(dataDir).key : randomBytes(32).toString("hex");
       durableWrite(wrapped, await safe.encrypt(key));
     }
-    if (!validKey(key) || await safe.decrypt(readFileSync(wrapped)) !== key) throw failure();
+    if (!validKey(key) || decryptedText(await safe.decrypt(readFileSync(wrapped))) !== key) throw failure();
     rmSync(fallback, { force: true });
     return { key, protection: "os-keychain" };
   } catch { throw failure(); }

@@ -102,6 +102,17 @@ test("fallback promotion verifies wrapping before removing key file", async () =
   assert.deepEqual(new EncryptedCredentialStore(dir, () => promoted).read("fixture"), { token: "fixture token" });
 });
 
+test("supports Electron 43 async decryption results and rewrap requests", async () => {
+  const dir = temp(), fake = fakeKeychain();
+  let rewrap = false;
+  const safe = { ...fake, decrypt: async buffer => ({ result: await fake.decrypt(buffer), shouldReEncrypt: rewrap }) };
+  const master = await desktopMasterKey(dir, safe);
+  const before = readFileSync(join(dir, ".credentials/master-key.os"));
+  rewrap = true;
+  assert.deepEqual(await desktopMasterKey(dir, safe), master);
+  assert.notDeepEqual(readFileSync(join(dir, ".credentials/master-key.os")), before);
+});
+
 test("failed wrapping and locked keychain preserve credentials and never downgrade", async () => {
   const dir = temp(), master = fallbackMasterKey(dir), safe = fakeKeychain();
   await assert.rejects(desktopMasterKey(dir, { ...safe, decrypt: async () => { throw new Error("Locked"); } }));
