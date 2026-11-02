@@ -26,7 +26,7 @@ import {
 } from "./ChatMarkdown";
 import { getSnippetFileName, parseFenceInfo } from "@/lib/code-block";
 import { markdownImageName, markdownImageOpenUrl } from "@/lib/markdown-image";
-import { BotEditorStore, initialState, StoreProvider } from "@/state/store";
+import { StoreProvider } from "@/state/store";
 import { setLocale } from "@/lib/i18n";
 import { ThreadRefsContext } from "./ThreadRefs";
 import * as AttachmentPreview from "./AttachmentPreview";

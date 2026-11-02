@@ -22,7 +22,7 @@ const EVERYDAY_PREFIXES: Record<string, readonly string[]> = {
   "files and shared computers": [
             
             "lending.",
-    "files.",  "roomCard.",
+      "roomCard.",
   ],
   "routines and automations": ["routines.", "automations."],
   "the team map": ["canvas.", "mapComputer.", "canvasComputers."],
@@ -50,7 +50,7 @@ const EVERYDAY_KEYS: Record<string, readonly string[]> = {
     "engineSetup.device.connectedAccount", "engineSetup.device.failed", "engineSetup.device.enableHint", "engineSetup.grok.description",
     "engineSetup.grok.security", "engineSetup.grok.connectedAccount", "engineSetup.grok.failed", "engineSetup.grok.notInstalled",
     "engineSetup.serverInstall", "engineSetup.serverUpdate", "engineSetup.serverInstalling", "engineSetup.sendRedirect",
-    "engineSetup.sameMachine", "engineSetup.invalidStatus", "engines.account.signInHint", "engines.trialCredit", "engines.trialCreditEnded",
+    "engineSetup.sameMachine", "engineSetup.invalidStatus", "engines.account.signInHint", 
     "grokFinish.messageApps", "keys.cerebras.desc", "keys.groq.desc", "keys.meta.desc",
   ],
   "the Settings pages Simple mode shows": [

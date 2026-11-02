@@ -128,7 +128,7 @@ it("a team member sees the team's colour and picture and who may change them, an
 });
 
 it("the Admin's refusal, an Admin without the route, and a failure: said plainly, and the colour stays", async () => {
-  for (const [outcome, words] of [["refused", "Only its admins can change its color."], ["unsupported", "This Cloud's color can't be changed from the app yet."], ["failed", "The color wasn't saved. Try again."]] as const) {
+  for (const [outcome, words] of [["refused", "Only its admins can change its color."], ["unsupported", "Its color can't be changed from the app yet."], ["failed", "The color wasn't saved. Try again."]] as const) {
     await act(async () => root?.unmount());
     await page(look(), { answer: () => ({ outcome, look: look() }) });
     await click(swatch("rose"));
@@ -139,7 +139,7 @@ it("the Admin's refusal, an Admin without the route, and a failure: said plainly
 
 it("a disconnected server locks its color and explains how to reconnect", async () => {
   await page(look({ change: null, reason: "signed-out" }));
-  expect(host.querySelector('[data-place-look="locked"]')?.textContent).toContain("Reconnect to your server to change its color.");
+  expect(host.querySelector('[data-place-look="locked"]')?.textContent).toContain("Reconnect to your own server to change its color.");
   expect(swatch("rose").disabled).toBe(true);
 });
 
