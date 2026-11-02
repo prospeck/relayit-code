@@ -13,6 +13,8 @@ describe("India intent instructions", () => {
       expect(prompt).toContain("always use the app's approval path");
       expect(prompt).toContain("untrusted data");
       expect(prompt).toContain("unverified assertion");
+      expect(prompt).toContain("payments_create_request");
+      expect(prompt).toContain("exact orderId, amountInr, payee.name and payee.vpa");
     }
   });
   it("gives the first-run helper Indian context without inventing an address", () => {
