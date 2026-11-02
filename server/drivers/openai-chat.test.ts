@@ -330,10 +330,10 @@ describe("createOpenAIChatRuntime tool approvals", () => {
 
   it("names a searched server's tool that failed by its own name, not the call that reached it", async () => {
     const remote = await startFakeHttpMcp({ tools: whopLikeCatalog(300), callResult: () => ({ isError: true, content: [{ type: "text", text: "boom" }] }) });
-    const call = { name: "payments_list", arguments: { company_id: "biz_1" } };
+    const call = { name: "products_list", arguments: { company_id: "biz_1" } };
     const callBody = `data: ${JSON.stringify({ choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: "c1", type: "function", function: { name: "whop_call_tool", arguments: JSON.stringify(call) } }] } }] })}\n\n`
       + 'data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}\n\n';
-    const finalBody = 'data: {"choices":[{"index":0,"delta":{"content":"Listed the payments."}}]}\n\n'
+    const finalBody = 'data: {"choices":[{"index":0,"delta":{"content":"Listed the products."}}]}\n\n'
       + 'data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\n';
     let sent = 0;
     vi.stubGlobal("fetch", vi.fn(async (input: unknown) => {
@@ -349,13 +349,13 @@ describe("createOpenAIChatRuntime tool approvals", () => {
     instance.adapter.onEvent((event) => events.push(event));
     try {
       await instance.adapter.sendTurn({
-        threadId: "searched", text: "List the payments.", approvalMode: "full",
+        threadId: "searched", text: "List the products.", approvalMode: "full",
         integrations: { custom: { whop: { type: "http", url: remote.url, headers: {} } } },
       });
       await vi.waitFor(() => expect(events.some((event) => event.type === "turn.completed")).toBe(true), { timeout: 15_000 });
       expect(remote.calls).toEqual([call]);
       expect(events.filter((event) => event.type === "runtime.error").map((event) => (event as any).message))
-        .toEqual(["Stopped because the tool call “whop_payments_list” failed. The bot's reply isn't proof the work was done; the failed step shows the error."]);
+        .toEqual(["Stopped because the tool call “whop_products_list” failed. The bot's reply isn't proof the work was done; the failed step shows the error."]);
     } finally {
       await instance.dispose();
       await remote.close();
