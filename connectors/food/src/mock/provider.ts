@@ -97,7 +97,8 @@ export class MockFoodProvider implements FoodProvider {
         return [{ id, name, area, rating, etaMin, costForTwoInr, cuisines, matchedDishes, score }];
       })
       .sort((a, b) => b.score - a.score || b.rating - a.rating)
-      .map(({ score: _, ...r }) => structuredClone(r));
+      .map(({ id, name, area, rating, etaMin, costForTwoInr, cuisines, matchedDishes }) =>
+        structuredClone({ id, name, area, rating, etaMin, costForTwoInr, cuisines, matchedDishes }));
   }
   async getMenu(restaurantId: string) {
     const restaurant = this.restaurant(restaurantId);

@@ -7400,5 +7400,19 @@
   "india.payment.open": "Open UPI app",
   "india.payment.checkout": "Open test checkout",
   "india.payment.qr": "UPI payment QR",
-  "india.payment.status": "Payment status: {status}"
+  "india.payment.status": "Payment status: {status}",
+  "india.builtins.added": "{name} added — use its switch below",
+  "india.payment.keys": "Optional Razorpay test keys",
+  "india.payment.keysHint": "Stored in the app’s encrypted secret store. Saving switches this connector off; test it and turn it on again below. Never use live keys.",
+  "india.payment.keyId": "Test key ID",
+  "india.payment.keySecret": "Test key secret",
+  "india.payment.saveKeys": "Save test keys",
+  "india.payment.keysSaved": "Test keys saved. Test and enable the connector below.",
+  "india.payment.demo": "Demo order — no real payment. Use only the mock checkout.",
+  "india.payment.status.pending": "Pending",
+  "india.payment.status.paid": "Paid in test checkout (no real money)",
+  "india.payment.status.user_confirmed": "You marked this paid (unverified)",
+  "india.payment.status.cancelled": "Cancelled",
+  "india.payment.status.expired": "Expired",
+  "india.payment.status.failed": "Failed"
 }

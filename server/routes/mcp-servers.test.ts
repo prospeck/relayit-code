@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { createServer, request as httpRequest, type RequestOptions, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { openCredentialBroker, type CredentialBroker } from "../bot-box/broker.ts";
 import type { BrokerPath } from "../bot-box/broker-probe.ts";
+import { LOGINS_FILE } from "../login-store.ts";
 import { DATA_DIR, type AppConfig } from "../config.ts";
 import { json, readBody } from "../harness/http.ts";
 import type { TeamConnectionsHost } from "../host/team-connections-host.ts";
@@ -260,4 +261,21 @@ describe("a bot's tool budget and a command server's Test", () => {
     expect(await (await post("/api/mcp/servers/own/test", {})).json()).toMatchObject({ ok: true });
     expect(seen).toEqual(["any bot", "ada"]);
   });
+});
+
+it("adds the shipped India tools off by default and keeps Razorpay keys out of config and listings", async () => {
+  const route = await serve();
+  expect((await route.post("/api/mcp/builtins/food", {})).status).toBe(201);
+  expect(route.cfg.mcpServers?.["india-food"]).toMatchObject({ enabled: false, command: process.execPath });
+  expect((await route.post("/api/mcp/builtins/payments", {})).status).toBe(201);
+  expect((await route.post("/api/mcp/builtins/payments/credentials", { keyId: "rzp_live_rejected", keySecret: "unused-local-placeholder" })).status).toBe(400);
+  const saved = await route.post("/api/mcp/builtins/payments/credentials", { keyId: "rzp_test_fixture", keySecret: "unused-local-placeholder" });
+  expect(saved.status).toBe(200);
+  const visible = JSON.stringify({ response: await saved.json(), config: route.cfg, listing: await (await route.get()).json() });
+  expect(visible).not.toContain("rzp_test_fixture");
+  expect(visible).not.toContain("unused-local-placeholder");
+  const encrypted = readFileSync(join(DATA_DIR, LOGINS_FILE), "utf8");
+  expect(encrypted).not.toContain("rzp_test_fixture");
+  expect(encrypted).not.toContain("unused-local-placeholder");
+  expect(route.cfg.mcpServers?.["india-payments"]).toMatchObject({ enabled: false });
 });
