@@ -4,6 +4,8 @@
 // navigate, status) and apps/server/src/mcp/PreviewAutomationBroker.ts, MIT License, Copyright (c) 2026 T3 Tools Inc.
 // (full text in third_party/t3-code/LICENSE); modified: one in-process host instead of a broker, tabs that belong to
 // the profile, the CDP driver instead of Playwright, and OpenMausBot's page-change and page-health lines.
+import { refuseSensitiveTyping, hasSensitiveFields, SENSITIVE_FIELD_REFUSAL } from "./sensitive-fields.ts";
+import { recipeHint } from "./recipes.ts";
 import { describePageChange, sanitizeUrl, type PageState } from "../browser-tool-shape.ts";
 import { namesMoneyAction } from "../saved-steps/screen-words.ts";
 import type { CdpBrowser } from "./cdp/browser.ts";
@@ -225,7 +227,7 @@ export function pictureNote(shot: Pick<Screenshot, "width" | "height" | "scale" 
 async function snapshotResult(context: ToolContext, tab: Tab, { includeImage = false, save = false }: { includeImage?: boolean; save?: boolean } = {}): Promise<ToolResult> {
   const snapshot = await tab.page.snapshot();
   await context.browser.refreshTargets().catch(() => undefined);
-  const text = snapshotText({ ...describe(tab), tree: snapshot.tree, truncated: snapshot.truncated, frames: snapshot.frames, health: context.health(tab) });
+  const text = snapshotText({ ...describe(tab), tree: snapshot.tree, truncated: snapshot.truncated, frames: snapshot.frames, health: context.health(tab) }) + recipeHint(tab.page.url());
   if (!includeImage && !save) return textResult(text);
   const shot = await context.paused(tab, () => tab.page.screenshot());
   const saved = save ? context.saveScreenshot(shot.data, tab.page.url()) : null;
@@ -338,6 +340,7 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
       const tab = tabOf(context, call.input.tab);
       const target = element(call.input, false) as { ref: string } | { selector: string };
       return act(context, tab, async () => {
+        await refuseSensitiveTyping(tab.page, target);
         await tab.page.fill(target, call.input.text);
         if (call.input.submit && namesMoneyAction(await valueInWorld<string>(tab.page.frames, tab.page.frames.mainFrameId, FOCUS_LABEL))) {
           return errorResult(MONEY_PRESS_REFUSAL);
@@ -350,6 +353,7 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
       const tab = tabOf(context, call.input.tab);
       const target = call.input.ref !== undefined || call.input.selector !== undefined ? element(call.input, false) as { ref: string } | { selector: string } : null;
       return act(context, tab, async () => {
+        await refuseSensitiveTyping(tab.page, target);
         if (call.input.clear && target) await tab.page.fill(target, "");
         await tab.page.type(target, call.input.text);
         return textResult(`Typed ${[...call.input.text].length} characters.`);
@@ -363,6 +367,7 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
           && namesMoneyAction(await valueInWorld<string>(tab.page.frames, tab.page.frames.mainFrameId, FOCUS_LABEL))) {
           return errorResult(MONEY_PRESS_REFUSAL);
         }
+        if (!/^(?:Enter|Return|Tab|Escape)$/i.test(call.input.key)) await refuseSensitiveTyping(tab.page, null);
         const pressed = await tab.page.press(chord);
         return textResult(`Pressed ${chord}${pressed.dialog ? "; it opened a dialog" : ""}.`);
       }, { observeChange: true });
@@ -436,6 +441,7 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
     case "agent_browser_eval": {
       const tab = tabOf(context, call.input.tab);
       return act(context, tab, async () => {
+        if (await hasSensitiveFields(tab.page)) return errorResult(SENSITIVE_FIELD_REFUSAL);
         if (await context.secretOnPage(tab)) return errorResult(SECRET_ON_PAGE_EVAL);
         if (PRESSES_FROM_SCRIPT.test(call.input.expression)) return errorResult(SCRIPT_PRESS_REFUSAL);
         const value = await tab.page.evaluate(call.input.expression, { world: call.input.world ?? "isolated", timeoutMs: remaining(context) });

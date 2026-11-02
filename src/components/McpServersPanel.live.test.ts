@@ -62,5 +62,5 @@ it("leaves a panel's own step alone when a change arrives in the middle of it", 
   expect(api).toHaveBeenCalledTimes(2);
   expect(button(/edit.*notes/i).disabled).toBe(true);
   await act(async () => { finish({ servers: [] }); });
-  expect(host.textContent).not.toContain("notes");
+  expect(host.querySelectorAll("[data-mcp-row]")).toHaveLength(0);
 });

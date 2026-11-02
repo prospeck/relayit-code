@@ -1,3 +1,5 @@
+import type { LoginStore } from "../login-store.ts";
+import { createIndiaServiceRoutes } from "./india-services.ts";
 import { hostedWorkspaceConfiguration } from "../enterprise.ts";
 import { runsElsewhere, type McpConfig, type McpConfigDeps, type McpConfigResult } from "../host/mcp-config.ts";
 import { McpOAuthError, McpSignInError, mcpCallbackOrigin } from "../mcp-oauth.ts";
@@ -24,12 +26,14 @@ function botMcpServers(listed: readonly ListedMcpServer[], bot: { id: string; mc
 
 export interface McpServerRouteDeps extends Pick<McpConfigDeps, "cfg" | "sessions" | "mcpOAuth" | "teamConnections" | "cloudHome" | "fallbackPublicUrl" | "savedCustomDomain" | "appCatalog"> {
   config: McpConfig;
+  logins?: Pick<LoginStore, "create" | "remove">;
   bot(id: string): { id: string; mcpServers?: readonly string[] | null } | null;
   /** Secrets as booleans, sign-in state attached. */
   mcpServerResponse(): { servers: readonly ListedMcpServer[] };
 }
 
 export function createMcpServerRoutes(deps: McpServerRouteDeps): RouteHandler {
+  const indiaRoutes = createIndiaServiceRoutes(deps);
   const withServerDetails = <T,>(body: T): T => {
     const hasApps = deps.appCatalog?.hasApps;
     const servers = (body as { servers?: unknown }).servers;
@@ -51,7 +55,9 @@ export function createMcpServerRoutes(deps: McpServerRouteDeps): RouteHandler {
   const answer = (res: Parameters<typeof json>[0], send: typeof json, result: McpConfigResult) => "body" in result
     ? send(res, result.status, withServerDetails(result.body))
     : send(res, result.status, { error: result.error, ...(result.code ? { code: result.code } : {}) });
-  return async ({ req, res, path, method, auth, json, readBody }) => {
+  return async (context) => {
+    const { req, res, path, method, auth, json, readBody } = context;
+    if (await indiaRoutes(context) !== PASS) return;
     if (method === "GET" && path === "/api/mcp/servers") {
       return json(res, 200, withServerDetails(mcpServerResponse()));
     }

@@ -5,6 +5,7 @@
 // apps/server/src/preview/ServerBrowser.ts (dropTab, adoptPopup, saveDownload, closeIdleAgentTabs), MIT License,
 // Copyright (c) 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: a Chrome per profile behind the
 // CDP driver instead of Playwright contexts, and OpenMausBot's idle close, caps and person/bot control rules.
+import { refuseSensitiveTyping } from "./sensitive-fields.ts";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -608,7 +609,10 @@ export class BrowserService {
         if (args[0] === "eval" && typeof args[1] === "string") return { result: await active.page.evaluate(args[1]) };
         return null;
       },
-      insertText: (text) => tab().page.keyboard.insertText(text),
+      insertText: async (text) => {
+        await refuseSensitiveTyping(tab().page, null);
+        await tab().page.keyboard.insertText(text);
+      },
       press: async (key) => { await tab().page.press(key); },
       click: async (selector) => { await tab().page.click({ selector }); },
     };

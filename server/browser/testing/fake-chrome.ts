@@ -243,6 +243,11 @@ export class FakeChrome implements CdpTransport {
     const viewport = page.emulated ?? { width: this.viewport.width, height: this.viewport.height - (page.bar ?? 0) };
     if (expression === "[innerWidth, innerHeight]") return [viewport.width, viewport.height];
     if (expression === "devicePixelRatio") return this.dpr;
+    if (expression.includes('root.querySelectorAll("input, textarea, [contenteditable]")')) return page.elements.filter((element) => element.editable).map((element) => ({ type: "text", hints: [element.name, element.selector] }));
+    if (expression.includes('field.localName.includes')) {
+      const element = page.focused === null ? null : page.elements[page.focused];
+      return element ? { type: "text", hints: [element.name, element.selector] } : null;
+    }
     if (expression === "document.readyState") return "complete";
     if (expression === "document.title") return page.title;
     if (expression.startsWith("({ url: location.href")) return { url: page.url, title: page.title, text: page.text };
@@ -382,6 +387,7 @@ export class FakeChrome implements CdpTransport {
   #call(page: FakePage, fn: string, objectId: string, args: Array<{ value?: unknown }>): unknown {
     const index = Number(objectId.replace("node-", "")) - 1;
     const element = page.elements[index];
+    if (fn.includes('type: this.type || ""')) return { type: "text", hints: [element?.name, element?.selector] };
     if (fn.includes("wantEnabled")) return { disabled: false, covering: null };
     if (fn.includes("nonText") && fn.includes("contenteditable")) return element?.editable ? { kind: "text" } : null;
     if (fn.includes("root.activeElement")) return page.focused === index;
