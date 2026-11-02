@@ -6,7 +6,7 @@
 
 [**openmausbot.com**](https://www.openmausbot.com) &nbsp;·&nbsp; [Download](https://www.openmausbot.com/download) &nbsp;·&nbsp; [Open source Grok Bot alternative, compared](https://www.openmausbot.com/blog/grok-bot-vs-openmausbot)
 
-<sub>OpenMausBot is an open-source Grok Bot alternative: an independent project inspired by **Grok Bot**, and the open-source alternative to **Meta Muse**, **OpenAI dots** and **Cue by Manus** — bring-your-own-agent, local-first, on the models you already have. Also known as **MausBot**; formerly **OpenGrokBot**. Not affiliated with xAI, Meta, OpenAI or Manus.</sub>
+<sub>RelayIt is a local-first app for working with your own team of AI agents. See <a href="UPSTREAM.md">UPSTREAM.md</a> and <a href="LICENSING.md">LICENSING.md</a> for source and license history.</sub>
 
 Every bot in the sidebar is a real agent — Claude or Codex running locally under the hood — with its own
 personality, its own model, its own cloud computer, and its own connected apps.
@@ -41,32 +41,12 @@ Talk to them like contacts. Watch them work. Approve what matters.
 
 <br>
 
-<a href="https://github.com/sponsors/milind-soni">
-  <img src="https://img.shields.io/badge/%E2%9D%A4%EF%B8%8F%20%20Support%20OpenMausBot-GitHub%20Sponsors-38d591?style=for-the-badge&labelColor=070707" alt="Support OpenMausBot via GitHub Sponsors" height="40">
-</a>
-
-<br>
-<br>
-
-<sub>Powered by <a href="https://boat.dev">boat.dev</a></sub>
-<br>
-<a href="https://boat.dev">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/sponsors/boat-logo-white.svg">
-    <img src="docs/assets/sponsors/boat-logo.svg" alt="Boat (boat.dev)" height="34">
-  </picture>
-</a>
-
-<br>
-<br>
-
-<img src="docs/screenshots/hero.png" alt="OpenMausBot — a Telegram-style chat app where every chat is a real AI agent" width="900">
+<img src="docs/brand-review/chat-light.png" alt="RelayIt agents and chat, with geometric Relay tokens" width="900">
 
 </div>
 
 ---
 
-> ⚠️ **No affiliation with any cryptocurrency.** OpenMausBot has no token. Any coin using the OpenMausBot, Maus, or SupaMaus name is not created, endorsed, or affiliated with this project or its maintainer. I have received no tokens, payment, or allocation from anyone, and I will not be endorsing any token.
 
 ## Why
 
@@ -115,7 +95,6 @@ and a decision guide in five questions: [Which AI agent should I use?](https://w
 A model picker with a provider rail — Claude and Codex models side by side, defaults marked, unavailable
 providers dimmed with the reason. Switch a bot's model mid-conversation.
 
-<img src="docs/screenshots/model-picker.png" alt="Model picker with provider rail" width="100%">
 
 </td>
 <td width="50%" valign="top">
@@ -125,7 +104,6 @@ providers dimmed with the reason. Switch a bot's model mid-conversation.
 Open the Computer panel and the bot's cloud desktop spins up on its own — live screen preview while it
 works, "Open desktop" to take over in your browser, or point the bot at *this Mac* instead.
 
-<img src="docs/screenshots/computer-panel.png" alt="Computer panel with live screen preview" width="100%">
 
 </td>
 </tr>
@@ -137,7 +115,6 @@ works, "Open desktop" to take over in your browser, or point the bot at *this Ma
 Shell commands, file edits, and questions surface as inline cards — Allow / Deny / answer in chat. A
 permission broker turns every risky action into a decision you make, for cloud and local computers alike.
 
-<img src="docs/screenshots/approval-card.png" alt="Approval and question cards in chat" width="100%">
 
 </td>
 <td width="50%" valign="top">
@@ -147,7 +124,6 @@ permission broker turns every risky action into a decision you make, for cloud a
 A one-click marketplace over Composio Sessions: Gmail, Slack, GitHub, Notion, Linear and hundreds more.
 OAuth once, and every bot can use them as tools.
 
-<img src="docs/screenshots/marketplace.png" alt="Connected apps marketplace" width="100%">
 
 </td>
 </tr>
@@ -159,7 +135,6 @@ OAuth once, and every bot can use them as tools.
 Right-click any bot: pin, mark unread, edit profile, duplicate, copy conversation ID, hide, delete. It's a
 messaging app — your agents behave like contacts.
 
-<img src="docs/screenshots/context-menu.png" alt="Bot context menu" width="100%">
 
 </td>
 <td width="50%" valign="top">
@@ -169,7 +144,6 @@ messaging app — your agents behave like contacts.
 Paste credentials in App Settings — they persist locally and the provider fleet hot-reloads instantly.
 Secrets are write-only: the UI only ever sees "configured" flags.
 
-<img src="docs/screenshots/app-settings.png" alt="App-level settings with API keys" width="100%">
 
 </td>
 </tr>
@@ -231,10 +205,9 @@ quality varies outside xAI’s [officially supported languages](https://docs.x.a
 This adds speech synthesis to the existing call flow; microphone transcription remains unchanged.
 
 **Also in the box:** streaming replies with tool-run activity chips · native macOS dictation from the
-composer mic (on-device Apple speech recognition — desktop app) · SupaMaus cursor mascots with role-aware
-expressions · screenshots of the bot's work folded into the transcript.
+composer mic (on-device Apple speech recognition — desktop app) · geometric Relay tokens with activity signals · screenshots of the bot's work folded into the transcript.
 
-## Powered By
+## Built with
 
 <div align="center">
 
@@ -246,11 +219,9 @@ expressions · screenshots of the bot's work folded into the transcript.
 ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-0F172A?logo=tailwindcss&logoColor=38BDF8)
 ![Composio](https://img.shields.io/badge/Composio-e6493a)
-![Boat](https://img.shields.io/badge/Boat-sponsor-111111)
 ![Cua](https://img.shields.io/badge/Cua%20Driver-1f2937)
 ![ElevenLabs](https://img.shields.io/badge/ElevenLabs-000000?logo=elevenlabs&logoColor=white)
 ![Fish Audio](https://img.shields.io/badge/Fish%20Audio-2563eb)
-![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-ea4aaa)
 
 </div>
 
@@ -259,11 +230,10 @@ expressions · screenshots of the bot's work folded into the transcript.
 | **Claude · Codex · Grok** | The agents behind every bot, run through their local CLIs |
 | **Electron** | Desktop shells for macOS, Windows, and Ubuntu |
 | **React + Vite + Tailwind CSS** | The chat app UI and its build |
-| **Boat** ([boat.dev](https://boat.dev)) | Each bot's cloud computer · our sponsor |
+| **Boat** ([boat.dev](https://boat.dev)) | Third-party cloud computers |
 | **Composio** | Connected apps — Gmail, Slack, GitHub, and more |
 | **Cua Driver** | Native computer use on your own machine |
 | **ElevenLabs · Fish Audio** | Hosted voices for bots that talk back |
-| **GitHub Sponsors** | One-time and monthly project support |
 
 ## How it works
 
@@ -465,13 +435,6 @@ see [Other model providers](apps/docs/content/docs/providers/model-providers.mdx
 Usage analytics are optional and anonymous: product events and a once-a-day count of what is set up, never keys,
 names, addresses or conversations. Turn them off in Settings → General → Usage analytics;
 [`docs/analytics.md`](docs/analytics.md) lists every event and property.
-
-## Support the project
-
-OpenMausBot is free and open source. If it does real work for you, you can
-[support its development through GitHub Sponsors](https://github.com/sponsors/milind-soni)
-with a one-time contribution or a monthly sponsorship. Your support helps fund ongoing development
-and maintenance; OpenMausBot remains free and open source.
 
 ## Run from a terminal or on a server
 

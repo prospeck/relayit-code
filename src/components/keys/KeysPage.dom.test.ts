@@ -29,7 +29,7 @@ vi.mock("@/lib/live-call-media", () => ({ dismissLiveNotice: vi.fn() }));
 
 const { KeysPage } = await import("./KeysPage");
 const { track } = await import("@/lib/analytics");
-const { BOAT_OFFER, boatClaimMailto } = await import("@/lib/boat-offer");
+const { BOAT_OFFER } = await import("@/lib/boat-offer");
 const { BOAT_OFFER_NOTICE } = await import("@/lib/notices");
 const { applyBrand, DEFAULT_BRAND } = await import("@/lib/brand");
 const { LiveKeyNeeded } = await import("../LiveKeyNeeded");
@@ -174,7 +174,7 @@ describe("the keys page", () => {
   });
 });
 
-describe("Boat's credit offer on the Boat card", () => {
+describe("third-party provider information on the provider card", () => {
   const offer = () => row("box")!.querySelector<HTMLElement>("[data-boat-offer]");
   const buttons = () => [...offer()!.querySelectorAll<HTMLButtonElement>("button")];
   const openComputers = () => flushSync(() => section("computers").querySelector<HTMLButtonElement>("button[aria-expanded]")!.click());
@@ -192,10 +192,10 @@ describe("Boat's credit offer on the Boat card", () => {
       expect(offer(), JSON.stringify(box)).not.toBeNull();
       expect(offer()!.closest("[hidden]")).toBeNull();
       const words = offer()!.textContent!;
-      for (const text of ["$50 of Boat credit for you", "Boat runs the cloud computers behind MausBot.", "You claim it yourself: it isn't automatic."]) {
+      for (const text of ["Cloud computer provider", "Boat is a third-party cloud computer provider."]) {
         expect(words).toContain(text);
       }
-      expect(buttons().map((button) => button.textContent)).toEqual(["Get Boat", "I bought it: claim my $50"]);
+      expect(buttons().map((button) => button.textContent)).toEqual(["Get Boat"]);
     }
     vi.stubGlobal("localStorage", { getItem: (key: string) => (key === BOAT_OFFER_NOTICE ? "1" : null), setItem: () => {}, removeItem: () => {} });
     page();
@@ -204,16 +204,13 @@ describe("Boat's credit offer on the Boat card", () => {
     expect(rowsShown()).toContain("box"); expect(offer()!.closest("[hidden]")).toBeNull();
   });
 
-  it("Get Boat opens boat.dev and the claim drafts the email to Boat; both stay for a later visit and save nothing", async () => {
+  it("the provider link opens boat.dev without an endorsement claim or saved change", async () => {
     const openExternal = vi.fn(async () => true);
     (window as unknown as { ogb?: unknown }).ogb = { openExternal };
     page(); openComputers();
     flushSync(() => buttons()[0]!.click());
     await vi.waitFor(() => expect(openExternal).toHaveBeenCalledWith("https://boat.dev"));
-    flushSync(() => buttons()[1]!.click());
-    await vi.waitFor(() => expect(openExternal).toHaveBeenCalledWith(boatClaimMailto()));
-    await vi.waitFor(() => expect(track).toHaveBeenCalledWith("boat_offer", { action: "claim", place: "settings" }));
-    expect(track).toHaveBeenCalledWith("boat_offer", { action: "get_boat", place: "settings" });
+    await vi.waitFor(() => expect(track).toHaveBeenCalledWith("boat_offer", { action: "get_boat", place: "settings" }));
     expect(offer()).not.toBeNull();
     expect(fx.api).not.toHaveBeenCalled();
   });
