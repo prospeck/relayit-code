@@ -10,10 +10,12 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Required by Apache-2.0 sections 4 and 6, or describing where the code came from. */
-const KEEP = [/^LICENSE$/, /^NOTICE$/, /^UPSTREAM\.md$/, /^LICENSING\.md$/, /^third_party\//, /^pnpm-lock\.yaml$/, /^scripts\/rebrand-to-relayit/, /^scripts\/check-no-upstream/];
+const KEEP = [/^LICENSE$/, /^NOTICE$/, /^UPSTREAM\.md$/, /^LICENSING\.md$/, /^third_party\//, /^pnpm-lock\.yaml$/, /^shared\/package-fixtures\//, /^scripts\/rebrand-to-relayit/, /^scripts\/check-no-upstream/];
 const BINARY = /\.(png|jpe?g|gif|webp|ico|icns|ttf|otf|woff2?|mp3|mp4|wav|webm|pdf|zip|gz|tgz|wasm|node|dylib|exe|jar)$/i;
 
 const NAMES = [
+  [/Open ?Maus ?Bot/g, "RelayIt"],
+  [/Open Maus\b/g, "RelayIt"],
   [/OPENMAUSBOT/g, "RELAYIT"],
   [/OpenMausBot/g, "RelayIt"],
   [/openmausbot/g, "relayit"],
@@ -26,10 +28,14 @@ const NAMES = [
   [/OPENGROKBOT/g, "RELAYIT"],
   [/OpenGrokBot/g, "RelayIt"],
   [/opengrokbot/g, "relayit"],
+  [/OPENMAUS/g, "RELAYIT"],
+  [/OpenMaus/g, "RelayIt"],
+  [/openMaus/g, "relayIt"],
+  [/openmaus/g, "relayit"],
 ];
 
 /** A host or repo address that still names upstream. Word lists can't tell what it should become. */
-const UPSTREAM_ADDRESS = /(?:[a-z0-9-]+\.)*(?:openmausbot|mausbot|opengrokbot|supamaus)[a-z0-9-]*\.(?:com|si|page|io|dev|net|org|ai|workers\.dev)\b|github\.com\/milind-soni\/[A-Za-z0-9._-]+|(?:[a-z0-9-]+\.)*milindsoni[0-9]*\.workers\.dev/gi;
+const UPSTREAM_ADDRESS = /(?:[a-z0-9-]+\.)*(?:openmaus|mausbot|opengrokbot|supamaus)[a-z0-9-]*\.(?:com|si|page|io|dev|net|org|ai|workers\.dev)\b|github\.com\/milind-soni\/[A-Za-z0-9._-]+|(?:[a-z0-9-]+\.)*milindsoni[0-9]*\.workers\.dev/gi;
 
 /** Marked for a person: their name and mascot are trademarks, and these need new words or art, not a swap. */
 const NEEDS_A_PERSON = /supamaus|\bmaus\b|\bmauses\b|\bmascot/i;

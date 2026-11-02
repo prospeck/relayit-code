@@ -13,6 +13,12 @@ test("renames every spelling, keeping its case", () => {
   assert.equal(renameText("mausBotId"), "relayItId");
   assert.equal(renameText("x-openmausbot-desktop-owner"), "x-relayit-desktop-owner");
   assert.equal(renameText("com.openmausbot.app"), "com.relayit.app");
+  assert.equal(renameText("OpenMaus Bot"), "RelayIt");
+  assert.equal(renameText("Open Maus"), "RelayIt");
+  assert.equal(renameText("My OpenMaus Team"), "My RelayIt Team");
+  assert.equal(renameText("x-openmaus-secret"), "x-relayit-secret");
+  assert.equal(renameText("OPENMAUS_ACP_PROMPT_IDLE_TIMEOUT_MS"), "RELAYIT_ACP_PROMPT_IDLE_TIMEOUT_MS");
+  assert.equal(renameText("openMausOwnsWorkingFolder"), "relayItOwnsWorkingFolder");
 });
 
 test("leaves other words alone", () => {
