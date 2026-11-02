@@ -60,6 +60,7 @@ suite("a passkey step in the bots' browser on real Chrome", () => {
     const session = `passkey-${bots}`;
     const spec = { command: CHROME_ENGINE, args: [key], env: {} };
     return {
+      target: { session, key },
       call: (name: string, args: Record<string, unknown> = {}) => router.agentRpc(session, spec, "tools/call", { name, arguments: args }),
       read: <T = string>(expression: string) => real.read<T>({ session, key }, expression),
     };
@@ -100,7 +101,9 @@ suite("a passkey step in the bots' browser on real Chrome", () => {
     expect(choices).toContain("Enter your password");
     expect(choices).not.toContain(passkeyNotice("google", "cloud"));
     expect(said(await bot.call("agent_browser_click", { selector: "text=Get a verification code" }))).toContain("/v3/signin/challenge/ipp/collect");
-    await bot.call("agent_browser_fill", { selector: "#code", text: "123456" });
+    expect(said(await bot.call("agent_browser_fill", { selector: "#code", text: "123456" }))).toContain("person to enter");
+    const tab = real.service.profiles().find((profile) => profile.key === bot.target.key)!.active()!;
+    await tab.page.fill({ selector: "#code" }, "123456");
     const done = said(await bot.call("agent_browser_click", { selector: "button" }));
     expect(done).toContain("/signed-in");
     expect(said(await bot.call("agent_browser_snapshot"))).toContain("Welcome, Person");
