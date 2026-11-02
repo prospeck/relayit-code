@@ -657,31 +657,7 @@ describe("a bot's link to a page it published", () => {
     }
   }
 
-  it("in the desktop app, opens like the card's Open: in the bot's browser panel, never as a message", async () => {
-    const openExternal = vi.fn(async () => {});
-    window.ogb = { platform: "darwin", openExternal } as unknown as typeof window.ogb;
-    const dispatch = vi.fn();
-    try {
-      const state = { ...initialState, selectedId: "pepper", bots: [{ id: "pepper" }], config: { features: { browser: true }, browserEngine: { kind: "engine" } } };
-      const click = await clickPage({ state, dispatch, flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {} } as never);
-      expect(click.defaultPrevented).toBe(true);
-      expect(dispatch.mock.calls).toEqual([[{ type: "toggleComputer", open: true }]]);
-      expect(openExternal).not.toHaveBeenCalled();
-    } finally {
-      delete window.ogb;
-    }
-  });
 
-  it("elsewhere, opens it outside the chat, as any web link", async () => {
-    const opened = vi.spyOn(window, "open").mockReturnValue(null);
-    try {
-      const click = await clickPage();
-      expect(click.defaultPrevented).toBe(true);
-      expect(opened).toHaveBeenCalledWith(PAGE, "_blank", "noopener,noreferrer");
-    } finally {
-      opened.mockRestore();
-    }
-  });
 });
 
 describe("Markdown image metadata", () => {

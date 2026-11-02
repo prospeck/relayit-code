@@ -20,14 +20,6 @@ export function endCloudHowTo(dispatch: (action: Action) => void): void {
 }
 
 
-/** Whether a plan sleeps when idle, from main's verified plan: an active plan whose Cloud the Admin never sleeps does not;
- * null while that isn't known. */
-
-
-/** On My Cloud's page in the app, whether its plan sleeps when idle (planSleeps; null while unknown, and always in a
- * browser); on this computer's page, whether opening My Cloud waits for it to wake. */
-
-
 export type WorkspacePlace = ReturnType<typeof useWorkspacePlace>;
 
 /**
@@ -55,10 +47,9 @@ export function useWorkspacePlace({ cloudHome: _cloudHome = false, howTo = false
     void openServerMenu(bridge, { howTo, onClosed: onMenuClosed }).catch(() => setError(t("sidebar.switchServerError")))
       .finally(() => setOpen(false));
   };
-  return { bridge, current, cloudHome: false, open, error, onLine: "", waking: "", openMenu, switchable: Boolean(bridge) && current?.home !== true };
+  return { bridge, current, cloudHome: false, open, error, onLine: "", waking: "", openMenu, switchable: Boolean(bridge) };
 }
 
-/** `place`: what this Cloud is called here, a team's name on a team's Cloud; My Cloud otherwise. */
 type SwitcherProps = {
   compact?: boolean; inline?: boolean; pill?: boolean; rail?: boolean; cloudHome?: boolean; owner?: string | null; howTo?: boolean; place?: string; onMenuClosed?: () => void;
 };
@@ -71,34 +62,11 @@ export function DesktopWorkspaceSwitcher(props: SwitcherProps) {
   return railShown(places) ? <div data-switcher-beside-rail className={places.beside ? "hidden" : "contents md:hidden"}>{switcher}</div> : switcher;
 }
 
-function Switcher({ compact = false, inline = false, pill = false, rail = false, cloudHome: _cloudHome = false, owner = null, howTo = false, place, onMenuClosed }: SwitcherProps) {
-  const cloudName = place || t("cloudSetup.myCloud");
+function Switcher({ compact = false, inline = false, pill = false, rail = false, cloudHome: _cloudHome = false, owner: _owner = null, howTo = false, place: _place, onMenuClosed }: SwitcherProps) {
   const { bridge, current, open, error, openMenu } = useWorkspacePlace({ cloudHome: false, howTo, onMenuClosed });
-  const withPower = (name: string) => ((name));
-  // This window's home is My Cloud: it opens nothing else, so there is nothing to switch.
-  if (!bridge || current?.home === true) {
-    if ((!current?.home)) return null;
-    const whose = owner ? t("sidebar.cloudOwner", { email: owner }) : "";
-    const label = `${withPower(cloudName)}${whose ? ` · ${whose}` : ""}`;
-    if (rail) return <div data-cloud-home-indicator data-workspace-switcher="rail" role="img" aria-label={label} title={label} className="flex size-9 items-center justify-center text-ink-secondary">
-      <Cloud size={18} aria-hidden="true" />
-    </div>;
-    if (inline) return <div data-cloud-home-indicator data-workspace-switcher="inline" title={label}
-      className={pill ? "flex h-8 min-w-0 items-center gap-1 rounded-full bg-raised/50 px-3 text-[13px] font-medium text-ink" : "flex min-w-0 items-center gap-1.5 px-1.5 text-[13px] font-medium text-ink"}>
-      <Cloud size={pill ? 15 : 14} aria-hidden="true" className={pill ? "hidden shrink-0 text-ink-secondary @max-[124px]/sidebar-top:block" : "shrink-0 text-ink-secondary"} />
-      <span className={pill ? "min-w-0 truncate @max-[124px]/sidebar-top:hidden" : "min-w-0 truncate"}>{cloudName}</span>
-      {((whose)) && <span className="sr-only">{("")}{whose ? ` · ${whose}` : ""}</span>}
-    </div>;
-    return <div data-cloud-home-indicator className={cn("py-1.5", compact ? "px-2" : "px-3")}>
-      <div title={label} className={cn("flex items-center gap-2 py-2 text-[13px] font-medium text-ink", compact ? "justify-center px-1" : "px-2")}>
-        <Cloud size={16} aria-hidden="true" className="shrink-0 text-ink-secondary" />
-        {compact ? <span className="sr-only">{label}</span> : <span className="min-w-0 flex-1 truncate">{cloudName}{""}
-          {whose && <span className="block truncate text-[12px] font-normal text-ink-secondary">{whose}</span>}</span>}
-      </div>
-    </div>;
-  }
+  if (!bridge) return null;
   const name = current?.name ?? ((t("sidebar.servers")));
-  const Icon = current?.local === false || (false) ? Cloud : Laptop;
+  const Icon = current?.local === false ? Cloud : Laptop;
   const shown = (name);
   const title = current?.origin ? `${shown} · ${current.origin}` : shown;
   const label = t("sidebar.switchServer", { name: shown });

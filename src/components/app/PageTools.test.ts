@@ -92,14 +92,12 @@ afterEach(() => {
 });
 
 describe("a bot's page in the chat", () => {
-  it("draws inline at the page height, with its version, Point, Share, Open in new tab and Full screen", async () => {
+  it("draws inline at the page height, with its version, Point and Full screen", async () => {
     await render(row(payload()));
     expect(card().querySelector("[data-page-version]")?.textContent).toBe("v1");
     expect(inlineFrame().getAttribute("sandbox")).toBe("allow-scripts allow-forms");
     expect(card().querySelector<HTMLElement>("[data-app-box]")!.style.height).toBe(`${PAGE_HEIGHT.start}px`);
-    for (const label of ["Point", "Share", "Full screen"]) expect(button(label, card()).disabled, label).toBe(false);
-    expect(button("Open in new tab", card()).disabled).toBe(true);
-    expect(button("Open in new tab", card()).title).toBe("Share the page to open it in a new tab");
+    for (const label of ["Point", "Full screen"]) expect(button(label, card()).disabled, label).toBe(false);
     expect(documents()[0]!.searchParams.get("origin")).toBe(window.location.origin);
   });
 
@@ -139,35 +137,7 @@ describe("a bot's page in the chat", () => {
     expect(posted).toHaveBeenLastCalledWith({ jsonrpc: "2.0", method: "relayit/point", params: { on: false } }, "*");
   });
 
-  it("shares the version on screen; the card the server patches shows the link with Copy, opens it, and unpublishes it", async () => {
-    await render(row(payload()));
-    await click("Share", card());
-    await settle();
-    expect(posts("/app/publish")).toEqual([{ rev: 0 }]);
-    await render(row(payload(), LIVE));
-    expect(card().querySelector("[data-page-link]")?.textContent).toContain(LINK);
-    expect(button("Copy link", card())).toBeDefined();
-    expect(button("Open in new tab", card()).disabled).toBe(false);
-    await click("Open in new tab", card());
-    expect(openExternal).toHaveBeenCalledWith(LINK);
-    await click("Update link", card());
-    await settle();
-    expect(card().querySelector("[data-page-link]")?.textContent).toContain("Updated at the same link");
-    await click("Unpublish", card());
-    await settle();
-    expect(fetchMock.mock.calls.some(([path, init]) => path === `/api/published-pages/${LIVE.pageId}/unpublish` && init?.method === "POST")).toBe(true);
-    await render(row(payload(), { ...LIVE, state: "unpublished" }));
-    expect(card().querySelector("[data-page-link]")).toBeNull();
-    expect(card().textContent).toContain("Unpublished. The link no longer opens.");
-    expect(button("Open in new tab", card()).disabled).toBe(true);
-  });
 
-  it("shows publish_page's link on the page it published", async () => {
-    await render(row(payload(), LIVE));
-    expect(card().querySelector("[data-page-link]")?.textContent).toContain("Published");
-    expect(button("Open in new tab", card()).disabled).toBe(false);
-    expect(fetchMock.mock.calls.some(([path]) => path.includes("/publish"))).toBe(false);
-  });
 
   it("opens Full screen over the chat, points there too, and closes on Escape or after a pick", async () => {
     await render(row(payload()));

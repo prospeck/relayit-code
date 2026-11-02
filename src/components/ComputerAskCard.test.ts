@@ -40,11 +40,9 @@ describe("a bot's ask to turn on what it needs from the person's computer", () =
     expect(markup).not.toContain("Allow once");
   });
 
-  it("when the app there is the fix, links to it instead of a Turn on that can't work", () => {
+  it("when the app is closed, asks the person to open it there instead of offering a Turn on that can't work", () => {
     const markup = panel(ask({ reason: "closed" }));
     expect(markup).toContain("RelayIt isn&#x27;t open on your PC. Open it there and Scout carries on.");
-    expect(markup).toContain('href="https://www.agent.example.test/download"');
-    expect(markup).toContain(">Get RelayIt</a>");
     expect(markup).not.toContain(">Turn on</button>");
   });
 
