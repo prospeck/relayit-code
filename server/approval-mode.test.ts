@@ -81,24 +81,23 @@ describe("approval modes", () => {
     expect(approvalModeFor({ autoApprove: true })).toBe("auto");
   });
 
-  it("starts a bot or conversation nobody has set a level on at Full access", () => {
-    expect(DEFAULT_APPROVAL_MODE).toBe("full");
-    expect(approvalModeFor({})).toBe("full");
+  it("starts a bot or conversation nobody has set a level on at Ask", () => {
+    expect(DEFAULT_APPROVAL_MODE).toBe("ask");
+    expect(approvalModeFor({})).toBe("ask");
     // Every bot made over HTTP stores the legacy bit off beside no level.
-    expect(approvalModeFor({ autoApprove: false })).toBe("full");
-    expect(approvalModeFor({ approvalMode: "ask", autoApprove: false })).toBe("ask");
+    expect(approvalModeFor({ autoApprove: false })).toBe("ask");
+    expect(approvalModeFor({ approvalMode: "full" })).toBe("full");
   });
 
-  it("keeps Ask as the default where the server says so (a shared company workspace)", () => {
-    setDefaultApprovalMode("ask");
+  it("lets a server pick its default at startup", () => {
+    setDefaultApprovalMode("auto");
     try {
-      expect(approvalModeFor({})).toBe("ask");
-      expect(approvalModeFor({ autoApprove: false })).toBe("ask");
-      expect(approvalModeFor({ approvalMode: "full" })).toBe("full");
+      expect(approvalModeFor({})).toBe("auto");
+      expect(approvalModeFor({ approvalMode: "ask" })).toBe("ask");
     } finally {
       setDefaultApprovalMode(DEFAULT_APPROVAL_MODE);
     }
-    expect(approvalModeFor({})).toBe("full");
+    expect(approvalModeFor({})).toBe("ask");
   });
 
   it("prefers a valid explicit mode and fails closed around corrupt values", () => {

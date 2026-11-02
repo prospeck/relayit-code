@@ -61,7 +61,7 @@ function setup(bot: HoldBot) {
     activeGroupTurnForBot: () => null,
     notify: (notification) => notified.push(notification),
   };
-  const input = { bot, threadId: "t1", tool: "GMAIL_SEND_EMAIL", calls, opaque: false, fullAccess: false };
+  const input = { bot, threadId: "t1", tool: "GMAIL_SEND_EMAIL", calls, opaque: false };
   return { hold: createOutboundHold(deps), dataDir, appended, patches, activity, notified, outboundRequests, input };
 }
 
@@ -146,13 +146,18 @@ describe("createOutboundHold", () => {
     expect(timed.patches[0]).toMatchObject({ threadId: "t1", messageId: timed.appended[0].message.id, patch: { card: { answered: "unavailable", dismissed: true, title: "Send on your behalf?" } } });
   });
 
-  it("reserve refuses when the hold was not approved and the policy is ask", async () => {
-    const { hold, dataDir, input } = setup(bot({ policy: "ask", dailyCap: 10 }));
-    expect(() => hold.reserve({ ...input, fullAccess: false, approved: false })).toThrow(/outbound policy changed/);
+  it("reserve refuses when the hold was not approved and the policy is ask", () => {
+    const { hold, input } = setup(bot({ policy: "ask", dailyCap: 10 }));
+    expect(() => hold.reserve({ ...input, approved: false })).toThrow(/outbound policy changed/);
+  });
 
-    // Full access sends freely and logs it.
-    expect(() => hold.reserve({ ...input, fullAccess: true, approved: false })).not.toThrow();
-    await flushDecisionLog(dataDir);
-    expect(readDecisions(dataDir, 10)).toMatchObject([{ decision: "auto-approved", source: "outbound", rule: "full-access" }]);
+  it("never lets a daily allowance cover money", async () => {
+    const pay = [{ slug: "RAZORPAY_CREATE_PAYMENT", arguments: { amount: 500 } }];
+    const { hold, input, appended } = setup(bot({ policy: "allow", dailyCap: 10 }));
+    const money = { ...input, tool: pay[0].slug, calls: pay };
+    expect(() => hold.reserve({ ...money, approved: false })).toThrow(/outbound policy changed/);
+    void hold.hold({ ...money, active: () => true });
+    await vi.waitFor(() => expect(appended).toHaveLength(1));
+    expect(appended[0].message.card).toMatchObject({ title: "Send on your behalf?" });
   });
 });

@@ -107,10 +107,11 @@ export function autoVerdict(
   if (ASKS_A_PERSON.has(bareToolName(tool))) {
     return { approve: null, source: "no-grant" };
   }
-  // Full's promise is literal, sandbox widening included; entering Full is consent-gated by the bot PATCH endpoint.
+  // Sends and money reach a person at every level, Full included.
+  if (isOutboundTool(tool)) return { approve: null, source: "outbound-guard" };
+  // Full covers everything else, sandbox widening included; entering Full is consent-gated by the bot PATCH endpoint.
   if (mode === "full") return { approve: `approved ${tool} (full access)`, source: "full-access" };
   if (context?.requiresExplicitApproval) return { approve: null, source: "explicit-approval-block" };
-  if (isOutboundTool(tool)) return { approve: null, source: "outbound-guard" };
   if (context?.commandAllowed) return { approve: `approved ${tool} (saved command)`, source: "command-allowlist" };
   if (context?.toolAllowed) return { approve: `approved ${tool} (always allowed)`, source: "tool-allowlist" };
   if (context?.ownFilesRead) return { approve: `approved ${tool} (its own files)`, source: "own-files" };

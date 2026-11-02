@@ -34,10 +34,15 @@ describe("Full access delivery", () => {
 
 describe("autoVerdict", () => {
   it("never uses a saved command grant to silently send on the person's behalf", () => {
-    for (const mode of ["ask", "edits", "auto", "custom"] as const) {
+    for (const mode of ["ask", "edits", "auto", "custom", "full"] as const) {
       expect(autoVerdict(mode, "mcp__composio__GMAIL_SEND_DRAFT", { commandAllowed: true })).toEqual({ approve: null, source: "outbound-guard" });
     }
-    expect(autoVerdict("full", "GMAIL_SEND_EMAIL").source).toBe("full-access");
+  });
+  it("sends and money reach a person even at Full access", () => {
+    for (const tool of ["GMAIL_SEND_EMAIL", "mcp__zomato__place_order", "mcp__swiggy__checkout_cart", "mcp__irctc__book_ticket", "RAZORPAY_CREATE_PAYMENT"]) {
+      expect(autoVerdict("full", tool)).toEqual({ approve: null, source: "outbound-guard" });
+    }
+    expect(autoVerdict("full", "mcp__zomato__search_restaurants").source).toBe("full-access");
   });
   it("applies an explicit exact command grant without changing Full or answering questions/elevations", () => {
     for (const mode of ["ask", "edits", "auto", "custom"] as const) {

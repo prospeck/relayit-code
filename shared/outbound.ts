@@ -1,8 +1,8 @@
 // Outbound actions: calls that reach a person outside the app or move money.
-// Below Full access they get their own confirmation, or spend an optional daily
-// allowance per bot; at Full access they run. A read-and-draft routine run never
-// reaches them: the relay refuses every send there. Shared by the harness (which
-// enforces it) and the app.
+// They always get their own confirmation, at every approval level. Sends may spend
+// an optional daily allowance per bot; money never does. A read-and-draft routine
+// run never reaches them: the relay refuses every send there. Shared by the harness
+// (which enforces it) and the app.
 import { isConnectedAppsServer } from "./own-apps.ts";
 
 export type OutboundPolicy = {
@@ -35,6 +35,33 @@ const SEND_VERBS = new Set([
   "TRANSFER",
 ]);
 
+/** Words that mean money leaves the person's account, or an order they pay for
+ * is placed. These never run without the person, at any level. */
+const MONEY_VERBS = new Set([
+  "REFUND",
+  "CHARGE",
+  "PAY",
+  "PAYS",
+  "PAYMENT",
+  "PAYOUT",
+  "TRANSFER",
+  "BUY",
+  "PURCHASE",
+  "CHECKOUT",
+  "ORDER",
+  "BOOK",
+  "BOOKING",
+  "RESERVE",
+  "RECHARGE",
+  "TOPUP",
+  "SUBSCRIBE",
+  "DONATE",
+  "TIP",
+  "WITHDRAW",
+  "INVOICE",
+  "UPI",
+]);
+
 /** Creating one of these is sending it: a created comment is a comment
  * someone reads, a created invoice is one someone receives. */
 const CREATE_VERBS = new Set(["CREATE", "CREATION", "ADD", "NEW"]);
@@ -42,7 +69,7 @@ const SENT_NOUNS = new Set(["MESSAGE", "COMMENT", "POST", "EMAIL", "MAIL", "INVO
 
 /** A read verb first means the rest of the name is what is being read:
  * REDDIT_GET_POST fetches a post, it does not post. */
-const READ_VERBS = new Set(["GET", "LIST", "FETCH", "SEARCH", "READ", "FIND", "RETRIEVE", "LOOKUP", "DOWNLOAD", "VIEW", "CHECK", "COUNT"]);
+const READ_VERBS = new Set(["GET", "LIST", "FETCH", "SEARCH", "READ", "FIND", "RETRIEVE", "LOOKUP", "DOWNLOAD", "VIEW", "COUNT", "TRACK", "PREVIEW", "ESTIMATE", "QUOTE", "COMPARE"]);
 
 /** Composio reads known by slug, since some put the noun first (GOOGLECALENDAR_EVENTS_LIST lists events). */
 export const KNOWN_READ_SLUGS: ReadonlySet<string> = new Set([
@@ -87,6 +114,17 @@ export function isReadOnlyTool(name: string): boolean {
 /** The built-in agents server's X research tools only read X: x_post reads a post, it does not post one. */
 const AGENTS_X_READS = /^(?:mcp__agents__|agents__|agents_)?x_(?:search|user_posts|post|profile)$/;
 
+/** Does this tool move money or place something the person pays for? A guess
+ * from the name, so it errs towards asking. CHECK is not a read verb here:
+ * CHECKOUT_... and CHECK_OUT_... must not slip through as a look. */
+export function isMoneyTool(name: string): boolean {
+  if (name === "COMPOSIO_PROXY_EXECUTE") return true;
+  if (AGENTS_X_READS.test(name) || isReadOnlyTool(name)) return false;
+  const tokens = actionTokens(name);
+  if (tokens.some((token) => MONEY_VERBS.has(token))) return true;
+  return tokens.some((token, i) => token === "CHECK" && tokens[i + 1] === "OUT");
+}
+
 /** Does this tool send something to someone, or move money? */
 export function isOutboundTool(name: string): boolean {
   // A raw API call from the workbench can do anything an app tool can, and
@@ -96,6 +134,7 @@ export function isOutboundTool(name: string): boolean {
   const tokens = actionTokens(name);
   if (tokens.length === 0) return false;
   if (isReadOnlyTool(name)) return false;
+  if (isMoneyTool(name)) return true;
   if (tokens.some((token) => SEND_VERBS.has(token))) return true;
   if (tokens.includes("DRAFT")) return false;
   return tokens.some((token) => CREATE_VERBS.has(token)) && tokens.some((token) => SENT_NOUNS.has(token));

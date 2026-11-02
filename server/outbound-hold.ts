@@ -1,5 +1,5 @@
 import type { ConnectorCall } from "../shared/outbound.ts";
-import { DEFAULT_OUTBOUND_POLICY } from "../shared/outbound.ts";
+import { DEFAULT_OUTBOUND_POLICY, isMoneyTool, type OutboundPolicy } from "../shared/outbound.ts";
 import type { Notification } from "../shared/notification.ts";
 import { HELD_NOTE } from "./auto-approve.ts";
 import { appendDecision } from "./decision-log.ts";
@@ -30,10 +30,15 @@ export interface OutboundHoldDeps {
 export type OutboundHoldAnswer = { ok: true; approved: boolean } | { ok: false; text: string };
 
 export interface OutboundHold {
-  /** Below Full access, a send waits on the "Send on your behalf?" card or spends the daily allowance. */
-  hold(input: { bot: OutboundHoldBot; threadId: string; tool: string; calls: ConnectorCall[]; opaque: boolean; fullAccess: boolean; active: () => boolean }): Promise<OutboundHoldAnswer>;
-  /** At dispatch time: Full access logs auto-approved; "allow" reserves against the cap; otherwise the hold must have been approved. Throws the refusal text. */
-  reserve(input: { bot: OutboundHoldBot; threadId: string; tool: string; calls: ConnectorCall[]; opaque: boolean; fullAccess: boolean; approved: boolean }): void;
+  /** At every level a send waits on the "Send on your behalf?" card or spends the daily allowance. Money always waits. */
+  hold(input: { bot: OutboundHoldBot; threadId: string; tool: string; calls: ConnectorCall[]; opaque: boolean; active: () => boolean }): Promise<OutboundHoldAnswer>;
+  /** At dispatch time: "allow" reserves against the cap; otherwise the hold must have been approved. Throws the refusal text. */
+  reserve(input: { bot: OutboundHoldBot; threadId: string; tool: string; calls: ConnectorCall[]; opaque: boolean; approved: boolean }): void;
+}
+
+/** An allowance can cover sends the person has allowed. It never covers money, or a call nothing here can read. */
+function spendsAllowance(policy: OutboundPolicy, calls: ConnectorCall[], opaque: boolean): boolean {
+  return policy.policy === "allow" && !opaque && !calls.some((call) => isMoneyTool(call.slug));
 }
 
 export function createOutboundHold(deps: OutboundHoldDeps): OutboundHold {
@@ -42,14 +47,13 @@ export function createOutboundHold(deps: OutboundHoldDeps): OutboundHold {
   const { holdMs } = deps;
 
   return {
-    async hold({ bot: currentSender, threadId, tool: outboundTool, calls: outboundCalls, opaque, fullAccess, active }) {
+    async hold({ bot: currentSender, threadId, tool: outboundTool, calls: outboundCalls, opaque, active }) {
       const refuseOutbound = (text: string): OutboundHoldAnswer => ({ ok: false, text });
-      if (fullAccess) return { ok: true, approved: false };
       const policy = currentSender.outbound ?? DEFAULT_OUTBOUND_POLICY;
       const { app, calls, summary } = outboundCard(outboundCalls);
       const capNote = (count: number) =>
         `OpenMausBot did not send this. ${currentSender.name} has reached its daily limit of ${count} outbound action${count === 1 ? "" : "s"}. Ask the user to raise the limit under the bot's Permissions before trying again.`;
-      if (policy.policy === "allow" && !opaque) {
+      if (spendsAllowance(policy, outboundCalls, opaque)) {
         const today = outboundCounts.today(currentSender.id);
         if (today + outboundCalls.length > policy.dailyCap) {
           appendDecision(DATA_DIR, {
@@ -113,16 +117,13 @@ export function createOutboundHold(deps: OutboundHoldDeps): OutboundHold {
       }
       return { ok: true, approved: false };
     },
-    reserve({ bot: fresh, threadId, tool: outboundTool, calls: outboundCalls, opaque, fullAccess, approved: outboundApproved }) {
+    reserve({ bot: fresh, threadId, tool: outboundTool, calls: outboundCalls, opaque, approved: outboundApproved }) {
       const refuseDispatch: (text: string) => never = (text) => {
         throw new Error(text);
       };
-      if (fullAccess) {
-        appendDecision(DATA_DIR, { threadId, botId: fresh.id, botName: fresh.name,
-          tool: outboundTool, decision: "auto-approved", source: "outbound", rule: "full-access" });
-      } else {
+      {
         const policy = fresh.outbound ?? DEFAULT_OUTBOUND_POLICY;
-        if (policy.policy === "allow" && !opaque) {
+        if (spendsAllowance(policy, outboundCalls, opaque)) {
           let reserved: number | null;
           try { reserved = outboundCounts.reserve(fresh.id, outboundCalls.length, policy.dailyCap); }
           catch { refuseDispatch("The daily allowance could not be saved. Nothing was sent."); }

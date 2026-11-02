@@ -1,6 +1,7 @@
 import { approvalModeFor } from "../shared/approval-mode.ts";
 import { APP_LIMITS, APP_MIME, appBlockedText, mcpAppFallbackText, oneLine, type AppBlockedReason, type AppCan, type AppDocument, type AppPayload, type AppToolResult } from "../shared/app.ts";
 import { mcpAppNetwork } from "../shared/app-frame/csp.ts";
+import { isOutboundTool } from "../shared/outbound.ts";
 import { allowsTool, canUseMcpServer } from "../shared/tool-scope.ts";
 import { rowRate, type ChatApps } from "./chat-apps.ts";
 import type { AgentCardResult } from "./chat-widgets.ts";
@@ -299,11 +300,12 @@ export function createChatAppsMcp(deps: ChatAppsMcpDeps): ChatAppsMcp {
     try { problems = validate && !validate(callArgs) ? schemaProblems(validate.errors) : undefined; } catch { problems = undefined; }
     if (problems?.length) return rpcError(400, -32602, `Invalid arguments: ${problems.join("; ")}`);
     // A change follows the bot's approval level: it runs at Full access, and at any other level, where the bot
-    // itself would ask first, it is declined. OpenMausBot draws no Allow card of its own.
+    // itself would ask first, it is declined. A send or payment from an app's own screen is always declined here:
+    // this path has no Allow card, and those never run without one.
     const annotations = isRecord(tool.annotations) ? tool.annotations : {};
     const runs = annotations.readOnlyHint === true
       || (!visibility.includes("model") && annotations.destructiveHint !== true)
-      || approvalOf(bot.id, request.threadId) === "full";
+      || (approvalOf(bot.id, request.threadId) === "full" && !isOutboundTool(tool.name));
     if (!runs) return rpcError(403, -32000, APP_WRITE_DECLINED);
     const result = await connections.request(name, server, "tools/call", { name: tool.name, arguments: callArgs }, AbortSignal.timeout(RPC_CALL_MS), extension);
     return { status: 200, body: isRecord(result) ? result : { content: [] } };

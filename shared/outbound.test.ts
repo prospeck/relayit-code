@@ -1,6 +1,41 @@
 import { describe, expect, it } from "vitest";
 
-import { OUTBOUND_DEFAULT_CAP, connectorCallsIn, isOutboundTool, isReadOnlyTool, normalizeOutboundPolicy, outboundCallsIn } from "./outbound.ts";
+import { OUTBOUND_DEFAULT_CAP, connectorCallsIn, isMoneyTool, isOutboundTool, isReadOnlyTool, normalizeOutboundPolicy, outboundCallsIn } from "./outbound.ts";
+
+describe("isMoneyTool", () => {
+  it("catches orders, bookings and payments on any server", () => {
+    for (const name of [
+      "mcp__zomato__place_order",
+      "mcp__swiggy__create_order",
+      "mcp__swiggy__checkout_cart",
+      "checkOut",
+      "mcp__irctc__book_ticket",
+      "mcp__dineout__reserve_table",
+      "STRIPE_CREATE_REFUND",
+      "RAZORPAY_CREATE_PAYMENT",
+      "mcp__paytm__recharge_mobile",
+      "buy_now",
+      "COMPOSIO_PROXY_EXECUTE",
+    ]) {
+      expect(isMoneyTool(name), name).toBe(true);
+      expect(isOutboundTool(name), name).toBe(true);
+    }
+  });
+
+  it("leaves looking at orders and prices alone", () => {
+    for (const name of [
+      "mcp__swiggy__get_orders",
+      "mcp__zomato__track_order",
+      "mcp__swiggy__search_restaurants",
+      "mcp__irctc__search_trains",
+      "mcp__swiggy__list_payment_methods",
+      "mcp__food__preview_order",
+      "GMAIL_SEND_EMAIL",
+    ]) {
+      expect(isMoneyTool(name), name).toBe(false);
+    }
+  });
+});
 
 describe("isOutboundTool", () => {
   it("flags tools that send, reply, post, publish, invite, share, or move money", () => {

@@ -10,7 +10,7 @@ export type ApprovalMode = (typeof APPROVAL_MODES)[number];
  * `edits` (auto-accept edits) exists where the engine has such a mode:
  * Claude and Grok `acceptEdits`, Antigravity `auto_edit`, Qwen `auto-edit`,
  * Gemini `auto_edit`. Codex's Ask already runs `workspace-write`, so an edits
- * level would change nothing there. Full access, the default level, runs on
+ * level would change nothing there. Full access runs on
  * every engine: in the engine's own most permissive mode, or, where it has
  * none, with the harness answering the permission requests it leaves (the
  * chat-completions family, ACP agents such as Kimi or Hermes, Pi's computer
@@ -64,16 +64,14 @@ export function isApprovalMode(value: unknown): value is ApprovalMode {
   return typeof value === "string" && (APPROVAL_MODES as readonly string[]).includes(value);
 }
 
-/** The level a bot or conversation runs at until a person picks one: Full
- * access, as in t3code (its DEFAULT_RUNTIME_MODE). Each provider maps it to
- * its own most permissive mode; a real question or a missing credential
- * still reaches a person. */
-export const DEFAULT_APPROVAL_MODE: ApprovalMode = "full";
+/** The level a bot or conversation runs at until a person picks one. RelayIt
+ * asks before acting until the person chooses otherwise; Full access is a
+ * choice, and even then sends and money still ask (see autoVerdict). */
+export const DEFAULT_APPROVAL_MODE: ApprovalMode = "ask";
 
 let defaultApprovalMode: ApprovalMode = DEFAULT_APPROVAL_MODE;
 
-/** On a shared company workspace Full access comes only from the operator's
- * own policy, so its server makes Ask the default once, at startup. */
+/** Lets a server choose its default level once, at startup. */
 export function setDefaultApprovalMode(mode: ApprovalMode): void {
   defaultApprovalMode = mode;
 }
