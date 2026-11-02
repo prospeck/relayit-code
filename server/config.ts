@@ -943,9 +943,10 @@ export function saveConfig(
   let disk: JsonObject = {};
   try {
     const parsed = jsonObjectSchema.safeParse(parseJson(readFileSync(p, "utf8")));
-    if (parsed.success) disk = hydrateConfigCredentials(DATA_DIR, parsed.data);
+    if (!parsed.success) throw new CredentialStorageError();
+    disk = hydrateConfigCredentials(DATA_DIR, parsed.data);
   } catch (error) {
-    if (error instanceof CredentialStorageError) throw error;
+    if ((error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT") throw new CredentialStorageError();
   }
   const checkedPatch = appConfigSchema.partial().extend({ threads: threadsPatchSchema.optional(), newBots: newBotsPatchSchema.optional() }).parse(patch);
   const before = configSaveListeners.size ? structuredClone(disk) : disk;

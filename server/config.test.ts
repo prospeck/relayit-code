@@ -5,6 +5,16 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JsonValue } from "./schema.ts";
 
+it("preserves unreadable configuration instead of overwriting credentials on a later save", () => {
+  mkdirSync(DATA_DIR, { recursive: true });
+  const path = join(DATA_DIR, "config.json"), original = '{"openai":{"key":"fixture-private"';
+  writeFileSync(path, original);
+  try {
+    expect(() => saveConfig({ profile: { name: "Fixture" } })).toThrow("Credential storage could not be opened");
+    expect(readFileSync(path, "utf8")).toBe(original);
+  } finally { rmSync(path, { force: true }); }
+});
+
 import { cacheUntilConfigChanges,
   changedInstanceIds,
   customMcpServers,

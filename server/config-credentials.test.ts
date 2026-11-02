@@ -63,6 +63,13 @@ describe("configuration credential migration", () => {
     expect(disk.instances.custom.environment.CUSTOM_CREDENTIAL).not.toBe("fixture-private-env");
   });
 
+  it("round-trips JSON strings with unpaired surrogates without failing migration redaction", () => {
+    const value = { openai: { key: "fixture-private-\ud800" } };
+    writeFileSync(join(dir, "config.json"), JSON.stringify(value));
+    expect(readConfigCredentials(dir)).toEqual(value);
+    expect(readFileSync(join(dir, "config.json"), "utf8")).not.toContain("fixture-private-");
+  });
+
   it("preserves plaintext when the encrypted write fails", () => {
     const original = JSON.stringify(config);
     writeFileSync(join(dir, "config.json"), original);

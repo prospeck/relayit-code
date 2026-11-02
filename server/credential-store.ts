@@ -57,7 +57,7 @@ addHeldSecretScrubber(text => {
 export function holdCredentialValues(value: unknown): void {
   if (typeof value === "string" && value) {
     held.add(value);
-    held.add(encodeURIComponent(value));
+    try { held.add(encodeURIComponent(value)); } catch { /* JSON permits unpaired surrogates; redaction must still accept the original value. */ }
     held.add(JSON.stringify(value).slice(1, -1));
   } else if (value && typeof value === "object") {
     for (const item of Object.values(value)) holdCredentialValues(item);
