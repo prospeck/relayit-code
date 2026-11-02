@@ -10,12 +10,12 @@ import { z } from "zod";
 
 import { EMPTY, MOVE_BOT_PARTS, itemKey } from "../electron/cloud-send-parts.mjs";
 import type { MoveKind } from "../electron/cloud-send-parts.mjs";
-import type { AppTrigger } from "../shared/app-triggers.ts";
+
 import { canonicalJson } from "../shared/package-format.ts";
 import { isSkillName } from "../shared/skill-md.ts";
 import type { InstalledPlaybook, InstalledPackageMetadata } from "../shared/wire.ts";
 import type { WebhookTrigger } from "../shared/webhooks.ts";
-import type { AppTriggerManager } from "./app-triggers.ts";
+
 import type { CalendarCall, CalendarCallManager } from "./calendar-calls.ts";
 import type { CloudOwner } from "./cloud-owner-lines.ts";
 import type { CloudSendItem } from "./cloud-send.ts";
@@ -39,7 +39,7 @@ const ROUTINE_FIELDS = ["name", "prompt", "target", "botId", "groupId", "runOn",
   "overlap", "runOnStartup", "sourceThreadId", "resultsThreadId", "createdAt", "checks", "access", "deliver"] as const;
 const CALL_FIELDS = ["name", "description", "botIds", "schedule", "durationMinutes", "attachments", "roomId", "createdAt"] as const;
 const WEBHOOK_FIELDS = ["name", "prompt", "botId", "runOn", "delivery", "groupId", "eventTypes", "maxPendingRuns", "resultsThreadId", "createdAt"] as const;
-const APP_EVENT_FIELDS = ["name", "prompt", "botId", "runOn", "app", "event", "accountId", "config", "filter", "sourceThreadId"] as const;
+
 /** Prose that may name this computer's data folder. */
 const TEXTS = ["prompt", "description", "output", "error"] as const;
 export const MOVE_BOT_FIELDS: readonly string[] = Object.values(MOVE_BOT_PARTS).flat();
@@ -50,7 +50,7 @@ export interface MoveKindsDeps {
   routines(): Pick<RoutineManager, "listRoutines" | "listRuns" | "adopt"> | null;
   calls(): Pick<CalendarCallManager, "list" | "adopt"> | null;
   webhooks(): Pick<WebhookManager, "list" | "adopt"> | null;
-  appEvents(): Pick<AppTriggerManager, "list" | "adopt" | "remove"> | null;
+
   /** The person's Claude Code skills while this server uses them where they are; a move keeps them as imported skills. */
   claudeCodeSkills(): ImportedSkillInput[];
   instanceExists(id: string): boolean;
@@ -166,9 +166,7 @@ export function moveItems(deps: MoveKindsDeps, bots: ReadonlySet<string>, only?:
   for (const webhook of deps.webhooks()?.list() ?? []) {
     if (bots.has(webhook.botId)) add("webhook", webhook.id, webhook.name, { def: definitionHash(webhook, WEBHOOK_FIELDS, deps.dataDir) }, webhook.botId);
   }
-  for (const trigger of deps.appEvents()?.list() ?? []) {
-    if (bots.has(trigger.botId)) add("app-event", trigger.id, trigger.name, { def: definitionHash(trigger, APP_EVENT_FIELDS, deps.dataDir) }, trigger.botId);
-  }
+
   for (const skill of importedSkills(deps)) add("imported-skill", skill.name, skill.name, { files: importedSkillHash(skill) });
   for (const { entry } of librarySkills()) add("library-skill", entry.name, entry.name, { text: entry.sha256.slice(0, 24) || EMPTY, state: entry.reviewState });
   return items;
@@ -187,7 +185,7 @@ export function automationSwitches(deps: MoveKindsDeps, bot?: string): Array<{ k
     ...(deps.routines()?.listRoutines() ?? []).map((routine) => ({ key: itemKey.moved("routine", routine.id), on: routine.enabled })),
     ...(deps.calls()?.list() ?? []).map((call) => ({ key: itemKey.moved("call", call.id), on: call.nextRunAt !== null })),
     ...(deps.webhooks()?.list() ?? []).map((webhook) => ({ key: itemKey.moved("webhook", webhook.id), on: webhook.enabled })),
-    ...(deps.appEvents()?.list() ?? []).map((trigger) => ({ key: itemKey.moved("app-event", trigger.id), on: trigger.enabled })),
+
   ];
 }
 
@@ -219,7 +217,7 @@ export function kindRecord(deps: MoveKindsDeps, kind: Kind, id: string): { recor
   }
   if (kind === "call") { const call = deps.calls()?.list().find((candidate) => candidate.id === id); return call ? { record: call } : null; }
   if (kind === "webhook") { const webhook = deps.webhooks()?.list().find((candidate) => candidate.id === id); return webhook ? { record: webhook } : null; }
-  if (kind === "app-event") { const trigger = deps.appEvents()?.list().find((candidate) => candidate.id === id); return trigger ? { record: trigger } : null; }
+  if (kind === "app-event") refuse(400, "App-event watches are not available.");
   if (kind === "imported-skill") { const skill = importedSkills(deps).find((candidate) => candidate.name === id); return skill ? { record: skill } : null; }
   const skill = librarySkills().find((candidate) => candidate.entry.name === id);
   return skill ? { record: skill } : null;
@@ -341,11 +339,7 @@ async function adopt(deps: MoveKindsDeps, kind: Kind, id: string, raw: unknown, 
     webhooks.adopt({ ...rebased(raw as unknown as WebhookTrigger, from, deps.dataDir), id });
     return;
   }
-  if (kind === "app-event") {
-    const triggers = deps.appEvents() ?? refuse(503, "My Cloud's app events are not ready yet.");
-    await triggers.adopt({ ...rebased(raw as unknown as AppTrigger, from, deps.dataDir), id });
-    return;
-  }
+  if (kind === "app-event") refuse(400, "App-event watches are not available.");
   if (kind === "imported-skill") {
     const parsed = importedSkillSchema.safeParse(raw);
     if (!parsed.success || parsed.data.name !== id) refuse(400, "send the skill's files as this computer holds them");
@@ -394,12 +388,7 @@ export async function moveKindsRoute(deps: MoveKindsDeps, { req, res, path, meth
       json(res, 200, { v: 1, ok: true });
       return true;
     }
-    if (method === "DELETE") {
-      const key = parseKey(url.searchParams.get("key"));
-      if (key?.kind !== "app-event") { json(res, 400, { error: "only an app event My Cloud now collects is let go of here" }); return true; }
-      json(res, 200, { v: 1, removed: await (deps.appEvents()?.remove(key.id) ?? false) });
-      return true;
-    }
+
     json(res, 405, { error: "method not allowed" });
   } catch (error) {
     const status = error instanceof Refused ? error.status : Number.isInteger((error as { status?: unknown }).status) ? (error as { status: number }).status : 500;

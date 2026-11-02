@@ -115,7 +115,7 @@ export type SecretRequestCardData = Omit<import("../../shared/wire").SecretReque
 
 export type ComputerControlState = { held: boolean; helpReason: string | null; help?: import("../../shared/wire").ComputerHelpRef | null };
 
-export interface Message extends Pick<import("../../shared/wire").WireMessage, "widget" | "app" | "fromApp" | "pointed" | "routedBy" | "quickModel" | "automation" | "publishedPage" | "sender" | "setupSuggestion" | "helperIntro" | "helperFollowup" | "setupOffer" | "savedSteps" | "setupChoices" | "setupChoicesPending" | "setupChoicesUpdating" | "setupRequest" | "relay" | "inbox" | "sentDirectly" | "doneWhen" | "bugReport"> {
+export interface Message extends Pick<import("../../shared/wire").WireMessage, "widget" | "app" | "fromApp" | "pointed" | "routedBy" | "quickModel" | "automation" | "publishedPage" | "sender" | "setupSuggestion" | "helperIntro" | "helperFollowup" | "setupOffer" | "savedSteps" | "setupChoices" | "setupChoicesPending" | "setupChoicesUpdating" | "setupRequest" | "relay" | "inbox" | "sentDirectly" | "doneWhen"> {
   id: string;
   role: "bot" | "user";
   kind: "text" | "options" | "activity" | "screen" | "connector" | "secret" | "signin" | "routine.run" | "goal.run" | "digest" | "compaction" | "call" | "widget" | "app";
@@ -408,7 +408,7 @@ export type { BrowserEngineSummary, BrowserProfile, ConfigStatus, ManagedPolicyS
 // A section left out here is wiped from state.config whenever a config frame lands.
 export type ConfigStatusFrame = Pick<
   ConfigStatus,
-  "credentialStorage" | "xai" | "mistral" | "cerebras" | "groq" | "greenference" | "meta" | "deepseek" | "xResearch" | "treg" | "postiz" | "anthropic" | "openai" | "openrouter" | "openaiCompat" | "fleet" | "composio" | "box" | "vps" | "rooms" | "mcp" | "threads" | "automaticRecovery" | "cacheKeepWarm" | "localVm" | "opencodeGo" | "tts" | "decider" | "helpers" | "imageGen" | "live" | "savedKeys" | "profile" | "language" | "features" | "onboarding" | "browserEngine" | "browserProfiles" | "edition" | "budgets" | "billing" | "managedPolicy" | "cloudHome" | "team" | "workspaceBanner"
+  "credentialStorage" | "xai" | "mistral" | "cerebras" | "groq" | "greenference" | "meta" | "deepseek" | "treg" | "postiz" | "anthropic" | "openai" | "openrouter" | "openaiCompat" | "fleet" | "composio" | "box" | "vps" | "rooms" | "mcp" | "threads" | "automaticRecovery" | "cacheKeepWarm" | "localVm" | "opencodeGo" | "tts" | "decider" | "helpers" | "imageGen" | "live" | "savedKeys" | "profile" | "language" | "features" | "onboarding" | "browserEngine" | "browserProfiles" | "edition" | "budgets" | "billing" | "managedPolicy" | "cloudHome" | "team" | "workspaceBanner"
 >;
 
 export function configStatusFromFrame(frame: ConfigStatusFrame): ConfigStatus {
@@ -418,7 +418,7 @@ export function configStatusFromFrame(frame: ConfigStatusFrame): ConfigStatus {
     mistral: frame.mistral,
     cerebras: frame.cerebras,
     groq: frame.groq, greenference: frame.greenference, deepseek: frame.deepseek,
-    meta: frame.meta, xResearch: frame.xResearch, treg: frame.treg, postiz: frame.postiz,
+    meta: frame.meta, treg: frame.treg, postiz: frame.postiz,
     anthropic: frame.anthropic,
     openai: frame.openai,
     openrouter: frame.openrouter,
@@ -460,7 +460,7 @@ export interface InstanceInfo {
   displayName: string;
   icon?: import("../../shared/provider-icon").ProviderIcon;
   readOnly?: boolean;
-  trialCredit?: "active" | "used_up" | "ended";
+
   managed?: { organizationId: string; organizationName: string };
   policy?: { organizationName: string; reason: string; team?: boolean };
   snapshot: {
@@ -590,7 +590,7 @@ export interface AppState {
   appSettingsCloudLink: number;
   appSettingsPhonePairing: number;
   shortcutsOpen: boolean;
-  cloudAdd: { source: import("@/lib/cloud-plan").CloudSource; signIn?: true } | null;
+  cloudAdd: { source: string; signIn?: true } | null;
   cloudHowTo: boolean;
   welcomeOpen: boolean;
   tourOpen: boolean;
@@ -795,7 +795,7 @@ export type Action =
   | { type: "unreadDividerDone"; threadId: string }
   | { type: "toggleAppSettings"; open?: boolean; section?: AppSettingsSection; cloudLink?: boolean; phonePairing?: boolean }
   | { type: "toggleShortcuts"; open?: boolean }
-  | { type: "openCloudAdd"; source: import("@/lib/cloud-plan").CloudSource; signIn?: true }
+  | { type: "openCloudAdd"; source: string; signIn?: true }
   | { type: "closeCloudAdd" }
   | { type: "cloudHowTo"; open: boolean }
   | { type: "toggleWelcome"; open?: boolean }

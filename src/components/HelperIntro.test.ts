@@ -39,7 +39,7 @@ vi.mock("./onboarding/ConnectAi", async () => {
 });
 vi.mock("./onboarding/welcome-ai", () => ({ useWelcomeAi: () => null }));
 const analytics = vi.hoisted(() => ({ track: vi.fn() }));
-vi.mock("@/lib/analytics", () => analytics);
+
 vi.mock("@/lib/setup-import", () => ({
   localSetupImport: () => f.local,
   setupImportApi: {},

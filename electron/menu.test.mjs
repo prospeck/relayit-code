@@ -74,42 +74,17 @@ describe("buildApplicationMenu", () => {
     }
   });
 
-  it.each(["darwin", "linux", "win32"])("offers native organisation sign-in while a hosted workspace is active on %s", platform => {
-    const onOrganizationSignIn = vi.fn();
-    const template = build(platform, { onOrganizationSignIn });
-    const item = template.find(entry => entry.label === "Server").submenu.find(entry => entry.id === "organization-sign-in");
-    expect(item.label).toBe("Sign in with your organization…");
-    item.click();
-    expect(onOrganizationSignIn).toHaveBeenCalledOnce();
+  it.each(["darwin", "linux", "win32"])("offers no organization sign-in or cloud purchase actions on %s", platform => {
+    const onOrganizationSignIn = vi.fn(), onAddCloud = vi.fn();
+    const template = build(platform, { onOrganizationSignIn, onAddCloud });
+    const items = template.find(entry => entry.label === "Server").submenu;
+    expect(items.some(entry => ["organization-sign-in", "add-cloud", "back-to-my-cloud"].includes(entry.id))).toBe(false);
+    expect(items.some(entry => entry.label === "Connect to a server…")).toBe(true);
+    expect(onOrganizationSignIn).not.toHaveBeenCalled();
+    expect(onAddCloud).not.toHaveBeenCalled();
   });
 
-  it("mirrors Add a Cloud… under the saved servers only when main offers it, and names My Cloud's line", () => {
-    const servers = [{ id: "cloud", name: "My Cloud", origin: "https://omb-u-1.fly.dev" }];
-    const without = build("darwin", { environments: servers }).find(entry => entry.label === "Server").submenu;
-    expect(without.some(entry => entry.id === "add-cloud")).toBe(false);
-    expect(without.find(entry => entry.type === "radio" && entry.label.startsWith("My Cloud")).label).toBe("My Cloud — omb-u-1.fly.dev");
-    const onAddCloud = vi.fn();
-    const submenu = build("darwin", { environments: servers, onAddCloud, sublabels: { cloud: "Always on" } }).find(entry => entry.label === "Server").submenu;
-    expect(submenu.map(entry => entry.id ?? entry.label ?? entry.type).slice(0, 4)).toEqual(["This computer", "My Cloud — Always on", "add-cloud", "separator"]);
-    submenu.find(entry => entry.id === "add-cloud").click();
-    expect(onAddCloud).toHaveBeenCalledOnce();
-    expect(submenu.find(entry => entry.id === "add-cloud").label).toBe("Add a Cloud…");
-  });
 
-  it("once My Cloud is home, lists only the other saved servers with Back to My Cloud, and has no Server menu without any", () => {
-    const home = { origin: "https://omb-t-1.fly.dev", onBack: vi.fn() };
-    const cloud = { id: "c", name: "My Cloud", origin: home.origin };
-    const office = { id: "o", name: "Office", origin: "https://office.example.test" };
-    const alone = build("darwin", { environments: [cloud], activeId: "c", home });
-    expect(alone.find((entry) => entry.label === "Server")).toBeUndefined();
-    const onSwitch = vi.fn();
-    const both = build("darwin", { environments: [cloud, office], activeId: "o", home, onSwitch });
-    const items = both.find((entry) => entry.label === "Server").submenu.filter((entry) => entry.label);
-    expect(items.map((entry) => entry.label)).toEqual(["Back to My Cloud", "Office — office.example.test", "Add Server from Copied Pairing Link…", "Forget “Office”"]);
-    items[0].click();
-    expect(home.onBack).toHaveBeenCalledOnce();
-    expect(items.some((entry) => /This computer|organization|Add a Cloud|Connect to a server/.test(entry.label))).toBe(false);
-    const onCloud = build("darwin", { environments: [cloud, office], activeId: "c", home }).find((entry) => entry.label === "Server").submenu;
-    expect(onCloud.find((entry) => entry.id === "back-to-my-cloud").enabled).toBe(false);
-  });
+
+
 });

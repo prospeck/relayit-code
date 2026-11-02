@@ -1,6 +1,6 @@
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
 import { cn } from "@/lib/cn";
-import { CLOUD_SWATCH_LABEL, CLOUD_SWATCH_ORDER, swatchFill } from "@/lib/cloud-extra";
+import { CLOUD_SWATCH_LABEL, CLOUD_SWATCH_ORDER, swatchFill } from "@/lib/workspace-colors";
 import { t } from "@/lib/i18n";
 
 const RING_OFFSET = { panel: "ring-offset-panel", card: "ring-offset-card", menu: "ring-offset-menu" } as const;

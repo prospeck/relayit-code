@@ -441,9 +441,9 @@ describe("resolveRequestAuth", () => {
     const signedIn = sessions.exchange({ code: credential, label: "Chrome on Mac", source: "1.2.3.4", browser: true });
     if (!signedIn.ok) throw new Error(signedIn.error);
     const cookie = `${cookieName}=${signedIn.token}`;
-    const cloud = { host: "omb-u-0123456789ab.fly.dev", "x-forwarded-proto": "https", cookie };
+    const cloud = { host: "omb-u-0123456789ab.server.example.test", "x-forwarded-proto": "https", cookie };
     expect(resolve(cloud).auth?.kind).toBe("session");
-    expect(resolve({ ...cloud, origin: "https://omb-u-0123456789ab.fly.dev" }, "/api/bots", "POST").auth?.kind).toBe("session");
+    expect(resolve({ ...cloud, origin: "https://omb-u-0123456789ab.server.example.test" }, "/api/bots", "POST").auth?.kind).toBe("session");
     expect(resolve({ ...cloud, "sec-fetch-site": "same-origin" }, "/api/bots", "DELETE").auth?.kind).toBe("session");
     for (const [headers, method] of [[{}, "POST"], [{}, "PUT"], [{}, "PATCH"], [{}, "DELETE"], [{ "sec-fetch-site": "none" }, "POST"], [{ "sec-fetch-site": "cross-site" }, "POST"],
       [{ "sec-fetch-site": "same-site" }, "POST"], [{ origin: "https://evil.example", "sec-fetch-site": "same-origin" }, "POST"]] as const) {
@@ -460,7 +460,7 @@ describe("resolveRequestAuth", () => {
     expect(resolve({ ...cloud, "sec-fetch-site": "same-origin" }, connectorRefresh, "GET").auth?.kind).toBe("session");
     expect(resolve({ ...cloud, "sec-fetch-site": "same-site" }, "/api/bots", "GET").auth?.kind).toBe("session");
     const paired = pairedToken();
-    expect(resolve({ host: "omb-u-0123456789ab.fly.dev", "x-forwarded-proto": "https", cookie: `${cookieName}=${paired}` }, "/api/bots", "POST").auth?.kind).toBe("session");
+    expect(resolve({ host: "omb-u-0123456789ab.server.example.test", "x-forwarded-proto": "https", cookie: `${cookieName}=${paired}` }, "/api/bots", "POST").auth?.kind).toBe("session");
     expect(provesSameOrigin(request({ host: "a.example", origin: "http://a.example" }))).toBe(true);
     expect(provesSameOrigin(request({ host: "a.example" }))).toBe(false);
     expect(provesSameOrigin(request({ host: "a.example", origin: "https://evil.example", "sec-fetch-site": "same-origin" }))).toBe(false);
@@ -566,7 +566,7 @@ describe("an IPC listener (openmausbot serve --tunnel) is remote by construction
       const { code } = sessions.openPairing({ scopes: ["admin", "client"] });
       const paired = sessions.exchange({ code, label: "phone", source: "203.0.113.9" });
       if (!paired.ok) throw new Error(paired.error);
-      const admitted = resolveRequestAuth(overSocket({ host: "c-1.openmausbot.com", authorization: `Bearer ${paired.token}` }), gate);
+      const admitted = resolveRequestAuth(overSocket({ host: "c-1.agent.example.test", authorization: `Bearer ${paired.token}` }), gate);
       expect(admitted.auth?.kind).toBe("session");
     } finally {
       rmSync(dir, { recursive: true, force: true });

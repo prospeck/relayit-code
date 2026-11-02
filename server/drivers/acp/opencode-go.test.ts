@@ -7,33 +7,15 @@ import { fileURLToPath } from "node:url";
 
 import { removeTempDir } from "../../testing/cleanup.ts";
 import { recordEvents, type EventRecorder } from "../../testing/events.ts";
-import {
-  canRunOpenCode,
-  catalogFromOpenCodeSession,
-  classifyOpenCodeError,
-  configuredOpenCodeFolderAction,
-  createOpenCodeDriver,
-  describeOpenCodeAccountError,
-  discoverOpenCodeModels,
-  openCodeFreeFallback,
-  openCodeOwnedDirectories,
-  OpenCodeDriver,
-  openCodeProviderKeysAllowed,
-  openMausOwnsWorkingFolder,
-  parseOpenCodeModelsOutput,
-  preferredOpenCodeModel,
-  resetOpenCodeModelCache,
-  setOpenCodeProviderKeyPolicy,
-  surveyOpenCodeEfforts,
-} from "./opencode-go.ts";
+import { canRunOpenCode, catalogFromOpenCodeSession, classifyOpenCodeError, configuredOpenCodeFolderAction, createOpenCodeDriver, describeOpenCodeAccountError, discoverOpenCodeModels, openCodeFreeFallback, openCodeOwnedDirectories, OpenCodeDriver, openCodeProviderKeysAllowed, openMausOwnsWorkingFolder, parseOpenCodeModelsOutput, preferredOpenCodeModel, resetOpenCodeModelCache, surveyOpenCodeEfforts } from "./opencode-go.ts";
 import { ATTACHMENTS_DIR } from "../../attachments.ts";
 import { enginesBinDir, serverInstallFor } from "../../engine-install.ts";
 import { registerFallbackPathDir, registerPathDir, resetPathCacheForTests } from "../../env-path.ts";
 import { standaloneAssetFor, standaloneEngineDir } from "../../engine-standalone.ts";
-import { cloudHomeConfigured } from "../../cloud-home.ts";
+
 import { DATA_DIR, OPENCODE_PROVIDER_ENV } from "../../config.ts";
 import * as quietStatus from "./quiet-status.ts";
-import { hostedWorkspaceConfigured } from "../../enterprise.ts";
+
 import { TASK_WORKSPACES_DIR, workspaceDir } from "../../workspace.ts";
 import type { ModelCatalog, ProviderInstance, SendTurnInput } from "../../contracts.ts";
 
@@ -429,67 +411,9 @@ describe("OpenCode catalog", () => {
     expect(source).toContain("openCodeOrganisationManaged = () => managedPolicy.current() !== null || managedDesktop.enrolled();");
   });
 
-  it("keeps the server's own provider keys out on a Cloud home or a managed desktop", async () => {
-    const scratch = mkdtempSync(join(tmpdir(), "omb-opencode-managed-"));
-    setOpenCodeProviderKeyPolicy(() => false);
-    for (const key of OPENCODE_PROVIDER_ENV) vi.stubEnv(key, `operator-${key}`);
-    try {
-      const dump = join(scratch, "env.json");
-      const driver = createOpenCodeDriver(async () => catalog("opencode-go/minimax-m3"));
-      const instance = await driver.create({
-        instanceId: "opencode-managed",
-        displayName: "OpenCode",
-        environment: { OPENCODE_API_KEY: "secret-value", FAKE_ACP_DUMP: dump },
-        enabled: true,
-        config: { cli: FAKE_CLI, fullAuto: false },
-      });
-      await instance.snapshot();
-      const child = JSON.parse(readFileSync(dump, "utf8")) as { env: Record<string, string> };
-      expect(child.env.OPENCODE_API_KEY).toBe("secret-value");
-      for (const key of OPENCODE_PROVIDER_ENV) expect(child.env[key], key).toBeUndefined();
-      await instance.dispose();
-    } finally {
-      vi.unstubAllEnvs();
-      setOpenCodeProviderKeyPolicy(() => !cloudHomeConfigured() && !hostedWorkspaceConfigured());
-      await removeTempDir(scratch);
-    }
-  });
 
-  it("lets the owner's saved provider keys through on a Cloud home, and only those", async () => {
-    const scratch = mkdtempSync(join(tmpdir(), "omb-opencode-own-keys-"));
-    setOpenCodeProviderKeyPolicy(() => false);
-    for (const key of OPENCODE_PROVIDER_ENV) vi.stubEnv(key, `operator-${key}`);
-    try {
-      const dump = join(scratch, "env.json");
-      const driver = createOpenCodeDriver(async () => catalog("opencode-go/minimax-m3"));
-      const instance = await driver.create({
-        instanceId: "opencode-own-keys",
-        displayName: "OpenCode",
-        environment: {
-          ANTHROPIC_API_KEY: "owner-anthropic",
-          VENICE_API_KEY: "owner-venice",
-          // Saved with the very value the server also holds: still saved.
-          GEMINI_API_KEY: "operator-GEMINI_API_KEY",
-          FAKE_ACP_DUMP: dump,
-        },
-        enabled: true,
-        config: { cli: FAKE_CLI, fullAuto: false },
-      });
-      await instance.snapshot();
-      const child = JSON.parse(readFileSync(dump, "utf8")) as { env: Record<string, string> };
-      expect(child.env.ANTHROPIC_API_KEY).toBe("owner-anthropic");
-      expect(child.env.VENICE_API_KEY).toBe("owner-venice");
-      expect(child.env.GEMINI_API_KEY).toBe("operator-GEMINI_API_KEY");
-      for (const key of OPENCODE_PROVIDER_ENV.filter((name) => name !== "ANTHROPIC_API_KEY" && name !== "GEMINI_API_KEY")) {
-        expect(child.env[key], key).toBeUndefined();
-      }
-      await instance.dispose();
-    } finally {
-      vi.unstubAllEnvs();
-      setOpenCodeProviderKeyPolicy(() => !cloudHomeConfigured() && !hostedWorkspaceConfigured());
-      await removeTempDir(scratch);
-    }
-  });
+
+
 });
 
 describe("OpenCode catalog discovery from the ACP session", () => {

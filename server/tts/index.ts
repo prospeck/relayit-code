@@ -1,5 +1,5 @@
 import type { AppConfig } from "../config.ts";
-import { voiceCredential } from "../included-services.ts";
+import { voiceCredential } from "../provider-credentials.ts";
 import * as chatterbox from "./chatterbox.ts";
 import * as elevenlabs from "./elevenlabs.ts";
 import * as grok from "./grok.ts";
@@ -64,7 +64,7 @@ export function voiceReady(cfg: AppConfig, voiceId?: string): boolean {
 /** Never includes the key. */
 export function describeVoice(cfg: AppConfig) {
   const provider = voiceProvider(cfg);
-  const included = provider === "elevenlabs" && elevenLabs(cfg)?.included === true;
+
   return {
     configured: providerConfigured(cfg),
     ready: voiceConfigured(cfg),
@@ -73,7 +73,7 @@ export function describeVoice(cfg: AppConfig) {
     baseUrl: provider === "chatterbox" ? (cfg.tts?.baseUrl ?? "") : "",
     model: provider === "chatterbox" ? (cfg.tts?.model ?? "") : "",
     ...(provider === "fish" ? { fishModel: cfg.tts?.fishModel ?? fish.DEFAULT_FISH_MODEL } : {}),
-    ...(included ? { included: true as const } : {}),
+    ...(({})),
   };
 }
 

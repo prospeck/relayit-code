@@ -1,6 +1,6 @@
 import { hasTeamAuthority, peerAllowed } from "../peer-roster.ts"; import { chiefLevel } from "../chief-level.ts";
 import type { BotRecord } from "../store.ts";
-import { libraryTeamRoles } from "../team-library.ts";
+
 import { PASS, type RouteHandler } from "./table.ts";
 
 interface CatalogInstance {
@@ -22,25 +22,16 @@ export function createInternalChiefTeamRoutes(deps: {
   teams(): string[];
   bots(): readonly BotRecord[];
   instances(): Promise<readonly CatalogInstance[]>;
-  library?: typeof libraryTeamRoles;
+
 }): RouteHandler {
   const chief = () => {
     const bot = deps.bot();
     return chiefLevel(bot) && !bot!.hidden ? bot : null;
   };
   return async ({ res, path, method, json }) => {
-    if (method !== "GET" || (path !== "/api/internal/team-setup-catalog" && path !== "/api/internal/team-library")) return PASS;
+    if (method !== "GET" || path !== "/api/internal/team-setup-catalog") return PASS;
     if (!chief()) return json(res, 403, { error: NOT_CHIEF });
-    if (path === "/api/internal/team-library") {
-      let teams: Awaited<ReturnType<typeof libraryTeamRoles>>;
-      try {
-        teams = await (deps.library ?? libraryTeamRoles)();
-      } catch {
-        return json(res, 502, { error: "The team library can't be reached right now. Build the team from what the person asked." });
-      }
-      deps.requireActive();
-      return chief() ? json(res, 200, { teams }) : json(res, 403, { error: NOT_CHIEF });
-    }
+
     const instances = await deps.instances();
     deps.requireActive();
     const current = chief();

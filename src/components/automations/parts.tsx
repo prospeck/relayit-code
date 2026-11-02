@@ -4,7 +4,7 @@ import { AUTOMATION_FIX_LABEL, type Automation, type AutomationStatus } from "@/
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { useStore } from "@/state/store";
-import type { useAllAutomationActions } from "./app-actions";
+import type { useAutomationActions } from "./actions";
 
 /** A coloured dot for Working and Paused; a warning sign for Needs you; a quiet check for Done. */
 export function StatusMark({ status, className }: { status: AutomationStatus; className?: string }) {
@@ -17,7 +17,7 @@ export function StatusMark({ status, className }: { status: AutomationStatus; cl
 export function FixButton({ automation, status, actions, onEdit, className }: {
   automation: Automation;
   status: AutomationStatus;
-  actions: ReturnType<typeof useAllAutomationActions>;
+  actions: ReturnType<typeof useAutomationActions>;
   onEdit: () => void;
   className?: string;
 }) {

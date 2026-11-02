@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { KeyRound, X } from "lucide-react";
 import type { PasskeyWall } from "../../../shared/passkey-wall";
-import { PASSKEY_HELP_URL, openExternalLink } from "@/lib/app-links";
+
 import { t } from "@/lib/i18n";
 import { api, useStore } from "@/state/store";
 
@@ -42,7 +42,7 @@ export function PasskeyNotice({ wall, botName, onDismiss }: { wall: PasskeyWall;
             <li>{t(wall === "google" ? "browser.passkey.otherWayGoogle" : "browser.passkey.otherWayMicrosoft")}</li>
             {cloudHome && <li>{lent ? t("browser.passkey.lentPc", { computer: lent, name: botName }) : t("browser.passkey.lendPc", { name: botName })}</li>}
           </ol>
-          <button type="button" className="mt-1 text-accent-text underline" onClick={() => void openExternalLink(PASSKEY_HELP_URL)}>{t("browser.passkey.learnMore")}</button>
+
         </div>
         <button type="button" className="rounded-md p-1 text-ink-tertiary hover:bg-inset hover:text-ink" aria-label={t("browser.passkey.dismiss")} onClick={onDismiss}><X size={14} /></button>
       </div>

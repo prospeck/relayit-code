@@ -438,7 +438,7 @@ function GrokKeyInstead({ className, unframed }: { className?: string; unframed:
         </span>
         <p className="min-w-0 text-[13px] leading-relaxed text-ink">{t("engineSetup.grok.notInstalled")}</p>
       </div>
-      {!remote && <KeyRow id="xai" bare via="model_picker" className="mt-2 px-0 pb-0" />}
+      {!remote && <KeyRow id="xai" bare  className="mt-2 px-0 pb-0" />}
     </div>
   );
 }
@@ -466,7 +466,7 @@ function ApiKeyEngineSetup({ instance, className, unframed, configured = false }
       {!inline && isApiKeyEngine(instance) && needsSignIn(instance) && (
         <p role="alert" className="mt-2 text-[12px] leading-relaxed text-danger">{t("engineSetup.apiKey.rejected")}</p>
       )}
-      {inline ? <KeyRow id={inline} bare via="model_picker" rejected={isApiKeyEngine(instance) && needsSignIn(instance)} className="mt-2 px-0 pb-0" /> : !remote && (
+      {inline ? <KeyRow id={inline} bare  rejected={isApiKeyEngine(instance) && needsSignIn(instance)} className="mt-2 px-0 pb-0" /> : !remote && (
         <button
           type="button"
           onClick={() => dispatch(openKeysFor(instance))}

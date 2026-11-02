@@ -1,15 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import {
-  APP_NAME,
-  APP_REPOSITORY,
-  DOCS_URL,
-  LICENSE_URL,
-  RELEASES_URL,
-  appVersion,
-  openExternalLink,
-  platformLabel,
-} from "@/lib/app-links";
+import { APP_NAME, appVersion, platformLabel } from "@/lib/app-links";
 import { productName } from "@/lib/brand";
 import { t } from "@/lib/i18n";
 import { useOtherServerName } from "@/lib/other-server";
@@ -69,10 +60,8 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
           A desktop home for your agents, built on {APP_NAME}: open source, Apache 2.0 licensed.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[13px]">
-          <AboutLink href={APP_REPOSITORY} label="GitHub" />
-          <AboutLink href={DOCS_URL} label="Docs" />
-          <AboutLink href={RELEASES_URL} label="Releases" />
-          <AboutLink href={LICENSE_URL} label="License" />
+
+
         </div>
         <button
           ref={closeRef}
@@ -84,17 +73,5 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
         </button>
       </div>
     </div>
-  );
-}
-
-function AboutLink({ href, label }: { href: string; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={() => void openExternalLink(href)}
-      className="text-accent hover:underline"
-    >
-      {label}
-    </button>
   );
 }

@@ -68,7 +68,7 @@ function ScreenUnavailable() {
 export const ActivityPanel = lazyScreen("ActivityPanel", async () => (await import("./ActivityPanel")).ActivityPanel);
 export const BotSettingsDialog = lazyScreen("BotSettingsDialog", async () => (await import("./BotSettingsDialog")).BotSettingsDialog);
 export const ComputerPanel = lazyScreen("ComputerPanel", async () => (await import("./ComputerPanel")).ComputerPanel);
-export const FilesView = lazyScreen("FilesView", async () => (await import("./FilesView")).FilesView);
+
 export const InspectorPanel = lazyScreen("InspectorPanel", async () => (await import("./InspectorPanel")).InspectorPanel);
 export const KeyboardShortcutsModal = lazyScreen("KeyboardShortcutsModal", async () => (await import("./KeyboardShortcutsModal")).KeyboardShortcutsModal);
 export const LocalVmWorkspace = lazyScreen("LocalVmWorkspace", async () => (await import("./LocalVmWorkspace")).LocalVmWorkspace);
@@ -82,14 +82,14 @@ export const SettingsModal = lazyScreen("SettingsModal", async () => (await impo
 export const TeamMapPage = lazyScreen("TeamMapPage", async () => (await import("./TeamMapPage")).TeamMapPage);
 
 // Rarely opened, so never fetched ahead. The team library is what brings the YAML parser in.
-export const CloudAddDialog = lazyScreen("CloudAddDialog", async () => (await import("./CloudAddDialog")).CloudAddDialog);
-export const PhoneAppDialog = lazyScreen("PhoneAppDialog", async () => (await import("./PhoneAppDialog")).PhoneAppDialog);
+
+
 export const ShareTeamDialog = lazyScreen("ShareTeamDialog", async () => (await import("./ShareTeamDialog")).ShareTeamDialog);
 export const TeamLibraryPanel = lazyScreen("TeamLibraryPanel", async () => (await import("./TeamLibraryPanel")).TeamLibraryPanel);
 
 // Most opened first: a Cloud page fetches these in this order.
 const SCREENS = [
-  SettingsModal, BotSettingsDialog, PluginsPanel, ComputerPanel, TriggersPage, ActivityPanel, FilesView, InspectorPanel, KeyboardShortcutsModal,
+  SettingsModal, BotSettingsDialog, PluginsPanel, ComputerPanel, TriggersPage, ActivityPanel, InspectorPanel, KeyboardShortcutsModal,
   LocalVmWorkspace, NewBotDialog, RemoteAgentSettingsPanel, RemoteDesktopPanel, RoomPanel, TeamMapPage,
 ];
 

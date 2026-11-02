@@ -3,7 +3,7 @@ import { CREDENTIAL_TARGETS } from "../../shared/credential-request.ts";
 import { OPTIONS_CARD_LIMITS, WATCHER_OPTIONS_CARD_BOT_ID } from "../../shared/options-card.ts";
 import { agentToolAnnotations } from "../agent-tool-policy.ts";
 import { CHAT_CARD_TOOL_DEFINITIONS } from "./agents-chat-card-tools.ts";
-import { DEVS_TOOL_DEFINITIONS } from "./agents-devs-tools.ts";
+
 import { HELPER_TOOL_DEFINITIONS } from "./agents-helper-tools.ts";
 import { USAGE_LIMITS_TOOL_DEFINITION } from "./agents-usage-tool.ts";
 import { WAIT_TOOL_DEFINITIONS, WAIT_TOOL_NAMES } from "./agents-wait-tools.ts";
@@ -378,11 +378,7 @@ const TOOL_DEFINITIONS = [
     description: "Chief of Staff only: list authorized teams, teammate IDs, and exact engine/model choices for team setup. Call before proposing configuration; never invent model IDs. Existing thread models are independent of bot defaults.",
     inputSchema: { type: "object", additionalProperties: false, properties: {} },
   },
-  {
-    name: "list_team_library",
-    description: "Chief of Staff only: ready-made teams, each with a summary and roles (lead = the team's Chief). Create roles with create_bot.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
-  },
+
   {
     name: "propose_team_setup",
     description: "Chief of Staff only: submit all requested specialist creation, profile/model configuration, Chief assignments, and authorized team moves in ONE combined plan. Use exact catalog engine/model IDs from list_team_setup. Combine all fields for each bot; use the same create key or botId to coalesce repeated entries. New teams must be named explicitly in newTeams and have a specialist in this plan; access is granted only to those new teams. Existing unauthorized teams cannot be included. Models change bot defaults for groups/new threads; existing threads and execution permissions stay unchanged. If review is pending, the decision and structured result automatically resume you once; do not ask again, poll, or repeat the proposal." + APPLIES_OUTCOME,
@@ -517,7 +513,7 @@ const TOOL_DEFINITIONS = [
       required: ["text"],
     },
   },
-  ...RESEARCH_TOOL_DEFINITIONS, ...HELPER_TOOL_DEFINITIONS, ...PERSON_TOOL_DEFINITIONS, ...DEVS_TOOL_DEFINITIONS,
+  ...RESEARCH_TOOL_DEFINITIONS, ...HELPER_TOOL_DEFINITIONS, ...PERSON_TOOL_DEFINITIONS,
   {
     name: "memory_update",
     description:
@@ -593,17 +589,15 @@ const TOOL_DEFINITIONS = [
   {
     name: "trigger_info",
     description:
-      "Read this bot's triggers (was list_triggers / list_trigger_events). list: its routines (schedules), app events and webhooks: ids, when they fire, on or paused, next run or last fire, problems, and the computer's authoritative current time and timezone; trigger_id gives one trigger with its last 10 fires, and with include_address a webhook's private address, to paste into the setup of the app that sends to it. Before reporting completion, inspect related monitors and verify enabled=false and nextRunAt=null after stopping them with trigger. events: before a when=app_event trigger, the connected apps you may use, with their accounts and events, and popular apps not connected yet.",
+      "Read this bot's triggers (was list_triggers / list_trigger_events). list: its routines (schedules) and webhooks: ids, when they fire, on or paused, next run or last fire, problems, and the computer's authoritative current time and timezone; trigger_id gives one trigger with its last 10 fires, and with include_address a webhook's private address, to paste into the setup of the app that sends to it. Before reporting completion, inspect related monitors and verify enabled=false and nextRunAt=null after stopping them with trigger.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {
-        action: { type: "string", enum: ["list", "events"] },
+        action: { type: "string", enum: ["list"] },
         trigger_id: { type: "string", description: "list: one trigger's details and recent fires." },
         include_address: { type: "boolean", description: "list, with a webhook's trigger_id: also its private address. For the bot that owns it, or a Chief of Staff." },
         for_bot_id: { type: "string", description: "list: ANOTHER bot's triggers in your section, from list_bots." },
-        app: { type: "string", description: "events: optional app slug, e.g. gmail." },
-        search: { type: "string", description: "events: optional words in event names." },
       },
       required: ["action"],
     },
@@ -611,7 +605,7 @@ const TOOL_DEFINITIONS = [
   {
     name: "trigger",
     description:
-      "Set up or change work that happens on its own (was create_trigger / manage_trigger): when <something happens>, a bot does <instructions>. create in this turn whenever the person describes recurring or event-based work (\"every morning send me…\", \"whenever I get an email from…\", \"when another app calls…\"); never ask for confirmation first. when=schedule runs on a time rule, cron included (call trigger_info first for relative dates: it has the authoritative time and timezone); when=app_event runs when something happens in a connected app (trigger_info action=events first; prefer it to a schedule that keeps checking); when=webhook gives an address another app sends to: the result carries its private address, so you can paste it into that app's setup yourself (never anywhere else). when=limit_reset runs when an AI's usage limit resets (\"run this when my limit resets\", or to finish work your own limit stopped). To the person these are automations: write name and instructions as they would say them. Something to do once, now, is not a trigger. update (only the fields to change), pause, resume and run_now (an app event or webhook gets a test event) act on one of the bot's routines, app events or webhooks, by its trigger_id from trigger_info. Before reporting a task finished, inspect related automations with trigger_info; pause a temporary monitor whose goal is met, then read its state back. Keep standing automations; delete_trigger deletes one only at the person's explicit request. Each applies at once; the person sees it with Edit, Pause and Undo. for_bot_id: a trigger of ANOTHER bot in your section, which keeps that bot's engine and permissions.",
+      "Set up or change work that happens on its own (was create_trigger / manage_trigger): when <something happens>, a bot does <instructions>. create in this turn whenever the person describes recurring or event-based work (\"every morning send me…\", \"when another app calls…\"); never ask for confirmation first. when=schedule runs on a time rule, cron included (call trigger_info first for relative dates: it has the authoritative time and timezone); prefer it to a schedule that keeps checking); when=webhook gives an address another app sends to: the result carries its private address, so you can paste it into that app's setup yourself (never anywhere else). when=limit_reset runs when an AI's usage limit resets (\"run this when my limit resets\", or to finish work your own limit stopped). To the person these are automations: write name and instructions as they would say them. Something to do once, now, is not a trigger. update (only the fields to change), pause, resume and run_now (a webhook gets a test event) act on one of the bot's routines or webhooks, by its trigger_id from trigger_info. Before reporting a task finished, inspect related automations with trigger_info; pause a temporary monitor whose goal is met, then read its state back. Keep standing automations; delete_trigger deletes one only at the person's explicit request. Each applies at once; the person sees it with Edit, Pause and Undo. for_bot_id: a trigger of ANOTHER bot in your section, which keeps that bot's engine and permissions.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -620,13 +614,10 @@ const TOOL_DEFINITIONS = [
         trigger_id: { type: "string", description: "Not for create: the id from trigger_info." },
         when: {
           type: "string",
-          enum: ["schedule", "app_event", "webhook", "limit_reset"],
-          description: "create: schedule = on a time rule (give schedule); app_event = something happens in a connected app (give app and event); webhook = when another app calls a link; limit_reset = when an AI engine's usage limit resets.",
+          enum: ["schedule", "webhook", "limit_reset"],
+          description: "create: schedule = on a time rule (give schedule); webhook = when another app calls a link; limit_reset = when an AI engine's usage limit resets.",
         },
         ...TRIGGER_FIELDS_SCHEMA,
-        app: { type: "string", description: "app_event: app slug from trigger_info action=events." },
-        event: { type: "string", description: "app_event: event slug from trigger_info action=events." },
-        account: { type: "string", description: "app_event: account id or alias, only when the app has several." },
         engine: { type: "string", description: "limit_reset: the engine id whose limit to wait for, e.g. claude or codex. Omit for your own engine." },
         repeat: { type: "string", enum: ["once", "every_reset"], description: "limit_reset: once (default) or every_reset." },
         for_bot_id: { type: "string", description: "Only for ANOTHER bot's trigger: that bot's id, from list_bots." },
@@ -870,7 +861,7 @@ const SKILL_TOOL_NAMES = new Set(["skills_list", "skill_manage"]);
 export const SHARED_COMPUTER_TOOL_NAMES = new Set(["list_shared_computers", "shared_computer"]);
 const VOICE_TOOL_NAMES = new Set(["send_voice_note"]);
 const CHIEF_ONLY_TOOL_NAMES = new Set([
-  "create_bot", "list_team_setup", "list_team_library", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread",
+  "create_bot", "list_team_setup", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread",
 ]);
 const CHIEF_TARGET_TOOL_NAMES = new Set(["propose_profile", "propose_model"]);
 const WATCHER_TOOL_NAMES = new Set(["create_options_card"]);

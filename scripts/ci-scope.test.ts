@@ -304,7 +304,7 @@ describe("Windows on a pull request", () => {
     ".github/workflows/package-win.yml", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".gitattributes", "vite.config.ts",
     "third_party/browser/agent-browser-windows-stdio.patch", ".github/workflows/ci.yml", "scripts/ci-scope.mjs",
     "scripts/testing/host-e2e.ts", "scripts/testing/vitest-shard-weights.json", "server/testing/host-timeout.ts",
-    "scripts/prepare-cloudflared.mjs", "scripts/after-pack.mjs", ...Object.keys(HOST_E2E),
+    "scripts/executable-target.mjs", "scripts/after-pack.mjs", ...Object.keys(HOST_E2E),
   ])("runs for %s", (file) => {
     expect(reason(["src/App.tsx", file])).toBe(file);
   });

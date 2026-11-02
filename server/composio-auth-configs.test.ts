@@ -5,13 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import type { AppConfig } from "./config.ts";
 import { DATA_DIR } from "./config.ts";
-import {
-  authorizeService,
-  prepareConnectionAuthConfigs,
-  prepareProjectSession,
-  relayMcp,
-  setManagedBrokerAccess,
-} from "./composio.ts";
+import { authorizeService, prepareConnectionAuthConfigs, prepareProjectSession, relayMcp } from "./composio.ts";
 import { forgetProjectAuthConfigs } from "./composio-project.ts";
 
 // Composio's own wording for a toolkit it has no managed sign-in for (Xero, Buffer) when the Session names no auth config.
@@ -156,7 +150,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  setManagedBrokerAccess(null);
+
 });
 
 const existingSession = (auth_configs: Record<string, string> = {}) => {
@@ -417,27 +411,5 @@ describe("custom auth configs made in the Composio dashboard", () => {
     });
     const reply = await callTool(cfg, "XERO_LIST_INVOICES");
     expect(reply.result.content[1]!.text).toMatch(/^OpenMausBot note: OpenMausBot could not turn on Tool Router for your xero auth config/);
-  });
-});
-
-describe("OpenMausBot's managed connected apps", () => {
-  const managed = {} as AppConfig;
-  const plainLine = "xero needs your own OAuth app. Add your Composio project key in Settings → API keys; OpenMausBot then "
-    + "uses your xero auth config from that project. Connect again.";
-
-  it("answers a toolkit that needs the person's own OAuth app with one plain line instead of Composio's error", async () => {
-    setManagedBrokerAccess({ url: `${origin}/broker`, token: "c".repeat(64) });
-    await expect(authorizeService(managed, "xero")).rejects.toMatchObject({ status: 409, message: plainLine });
-
-    const before = calls.length;
-    await expect(prepareConnectionAuthConfigs(managed, [{ slug: "xero", authConfigId: "ac_xero_newest" }]))
-      .rejects.toMatchObject({ status: 409, message: plainLine });
-    await expect(prepareConnectionAuthConfigs(managed, [{ slug: "xero" }])).resolves.toBeUndefined();
-    expect(calls.slice(before)).toEqual([]);
-
-    const reply = await callTool(managed, "XERO_LIST_INVOICES");
-    expect(reply.result.content[1]!.text).toContain("OpenMausBot's built-in connected apps cannot use. Tell the person: add their own Composio project key in Settings → API keys");
-    expect(reply.result.content[1]!.text).toContain("OpenMausBot then picks that auth config up on its own");
-    expect(calls.slice(before).some((call) => call.path.startsWith("/api/"))).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 // Runs on the harness, never the renderer: the key must not leave the server. OMB_ELEVENLABS_API overrides the
 // base URL for dev and tests.
-import { elevenLabsProviderApi } from "../included-services.ts";
+import { elevenLabsProviderApi } from "../provider-credentials.ts";
 
 const MODEL = "eleven_flash_v2_5";
 // 64kbps mono is indistinguishable for speech and a third of the bytes

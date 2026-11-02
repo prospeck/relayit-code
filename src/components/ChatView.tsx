@@ -41,11 +41,11 @@ import { failedTurnCause, signedOutEngine } from "@/lib/failed-turn";
 import { plainErrorLine } from "@/lib/plain-error";
 import { openPlaceAction, placeRowViewFor, usePlaceSeat, worksOnSimpleLabel } from "@/lib/place-view";
 import type { PlaceRow } from "../../shared/place-view";
-import { trialCreditKind, type TrialCreditRefusal } from "../../shared/trial-credit";
-import { TrialCreditNotice } from "./TrialCreditNotice";
+
+
 import { isPureLeakedSystemHarnessMessage, stripLeakedSystemHarnessMessages } from "../../shared/system-message-guard.ts";
 import { ConversationalReply, QuickModelNote, isConversational, useReplySegments, useThreadOpenedAt } from "./ConversationalReply";
-import type { LocaleKey } from "@/locales";
+
 import { isProviderSafetyBlock, PROVIDER_SAFETY_GUIDANCE, PROVIDER_SAFETY_HELP_URL } from "../../shared/provider-safety";
 import { isCancelledTranscriptRow, PERSON_STOPPED_TURN_NAME } from "../../shared/client-cancel";
 import { stopNoticeDue, useStoppedAt } from "@/lib/stop-turn";
@@ -71,7 +71,7 @@ import { useShowRunCard } from "@/lib/run-card-preferences";
 import { useColorUserBubbles } from "@/lib/user-bubble-preference";
 import { userBubbleStyle } from "@/lib/user-bubble-tone";
 import { ToolActivity } from "./ToolActivity";
-import { DataResultChip } from "./DataResultChip"; import { PublishedPageCard } from "./PublishedPageCard";
+import { DataResultChip } from "./DataResultChip";
 import { ThreadRefText } from "./ThreadRefs";
 import { optionsCardRow } from "./OptionsCardRow";
 import { MessageBoundary } from "./MessageBoundary";
@@ -264,13 +264,8 @@ function PlaceFailedRow({ place, botId, threadId, onRetry }: {
   return <ErrorRow message={view.line} action={view.action && onClick ? { label: view.action.label, onClick } : null} />;
 }
 
-const TRIAL_CREDIT_LINE: Record<"paused" | "too_low", LocaleKey> = { paused: "engines.trialCreditPaused", too_low: "engines.trialCreditTooLow" };
-function TrialCreditFailedRow({ kind, onRetry }: { kind: TrialCreditRefusal; onRetry?: () => void }) {
-  const { dispatch } = useStore();
-  if (kind === "used_up" || kind === "ended") return <TrialCreditNotice kind={kind} />;
-  if (kind === "paused") return <ErrorRow message={t(TRIAL_CREDIT_LINE[kind])} onRetry={onRetry} />;
-  return <ErrorRow message={t(TRIAL_CREDIT_LINE[kind])} action={{ label: t("chat.error.connectOwnAi"), onClick: () => dispatch({ type: "toggleAppSettings", open: true, section: "engines" }) }} />;
-}
+
+
 
 export function claudeUpdateTarget(engine: InstanceInfo | undefined): InstanceInfo | undefined {
   return engine?.driverKind === "claudeAgent" && !engine.readOnly ? engine : undefined;
@@ -285,8 +280,8 @@ export function FailedTurnRow({ tool, engine, onRetry, botId, threadId }: {
 }) {
   const resume = useLimitResetContinue(botId, threadId, tool.limitResetsAt);
   if (tool.place && botId) return <PlaceFailedRow place={tool.place} botId={botId} threadId={threadId} onRetry={onRetry} />;
-  const credit = trialCreditKind(failedTurnCause(tool.name) ?? "");
-  if (credit) return <TrialCreditFailedRow kind={credit} onRetry={onRetry} />;
+
+
   const signedOut = signedOutEngine(tool, engine);
   const cause = failedTurnCause(tool.name) ?? tool.name;
   return (
@@ -775,7 +770,7 @@ const MessagesList = memo(function MessagesList({
             case "screen":
               return <ScreenFrame threadId={threadId} message={m} />;
             default: {
-              if (m.publishedPage) return <PublishedPageCard message={m} />;
+              if (m.publishedPage) return null;
               const peer = peerLine(m) ?? peerRequest(m, botId);
               const user = m.role === "user" && !peer;
               if (!user && isPureLeakedSystemHarnessMessage(m.text) && !m.attachments?.length) return null;

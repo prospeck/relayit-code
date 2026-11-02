@@ -1,14 +1,11 @@
-// Never throws into a turn: every failure comes back as { ok: false, reason }. The included relay
-// token goes only to the relay's URL, and only with requests the relay accepts.
+// Never throws into a turn: decisions use the person's own provider keys and return typed failure reasons.
 import type { AppConfig } from "../config.ts";
-import { deciderCredential } from "../included-services.ts";
-import {
-  helpersOn, includedAccount, jevAccount, openrouterAccount, sharedOpenRouterKey, workersAiAccount, type HelperAccount,
-} from "./accounts.ts";
+
+import { helpersOn, jevAccount, openrouterAccount, sharedOpenRouterKey, workersAiAccount, type HelperAccount } from "./accounts.ts";
 import { jevBackend } from "./jev.ts";
 import { appendDeciderLog, stateHash } from "./log.ts";
 import { OPENROUTER_DEFAULT_API, OPENROUTER_DEFAULT_MODEL, openrouterBackend } from "./openrouter.ts";
-import { KEY_CHECK_QUESTION, KEY_CHECK_STATE, relayAccepts, relaySeam } from "./relay.ts";
+import { KEY_CHECK_QUESTION, KEY_CHECK_STATE } from "./relay.ts";
 import type {
   Answers, AskOptions, BackendResult, ChoiceAnswer, ChoiceQuestion, DeciderBackend, DeciderFailure, DeciderJob,
   DeciderProvider, DeciderQuestion, DeciderResult, DeciderSeam, OpenRouterApi, ScoreAnswer, YesNoAnswer,
@@ -44,10 +41,10 @@ export function deciderApi(cfg: AppConfig): OpenRouterApi {
 
 /** In order: the person's own Jev key, their own Workers AI key (Clef), Cloud's included relay (only for seams it
  * accepts), the OpenRouter LLM fallback, nothing. */
-export function deciderAccount(cfg: AppConfig, seam?: DeciderSeam): HelperAccount | null {
+export function deciderAccount(cfg: AppConfig, _seam?: DeciderSeam): HelperAccount | null {
   const jev = jevAccount(cfg);
-  const candidates = [jev, workersAiAccount(cfg), jev?.included ? null : includedAccount(), openrouterAccount(cfg)];
-  return candidates.find((account): account is HelperAccount => Boolean(account) && !(account!.included && seam && !relaySeam(seam))) ?? null;
+  const candidates = [jev, workersAiAccount(cfg), openrouterAccount(cfg)];
+  return candidates.find((account): account is HelperAccount => Boolean(account) && true) ?? null;
 }
 
 export function deciderConfigured(cfg: AppConfig): boolean {
@@ -55,7 +52,7 @@ export function deciderConfigured(cfg: AppConfig): boolean {
 }
 
 export function deciderIncludedHere(): boolean {
-  return deciderCredential(undefined, undefined)?.included === true;
+  return false;
 }
 
 export function deciderEnabled(cfg: AppConfig): boolean {
@@ -87,7 +84,7 @@ export function describeDecider(cfg: AppConfig) {
     configured: Boolean(account),
     ...(account?.keySource ? { keySource: account.keySource } : {}),
     ...(provider === "openrouter" && deciderSharedKeyUsable(cfg) ? { sharedKey: true as const } : {}),
-    ...(account?.included ? { included: true as const } : {}),
+    ...(({})),
     enabled: deciderEnabled(cfg),
     jobs: { roomRouting: deciderJobOn(cfg, "roomRouting") },
   };
@@ -96,7 +93,7 @@ export function describeDecider(cfg: AppConfig) {
 /** A key a decision falls back on when the person has none of their own. */
 export interface DeciderKeyFallback {
   /** Cloud's included decisions. */
-  included?: boolean;
+
   /** The OpenRouter key under Settings → API keys. */
   shared?: boolean;
 }
@@ -116,7 +113,7 @@ export function deciderSavePatch(
   const clearing = KEY_FIELDS.some((field) => next[field] === "");
   const after = (field: (typeof KEY_FIELDS)[number] | "workersAiAccountId") => (typeof next[field] === "string" ? next[field] : current?.[field]?.trim()) || "";
   const ownAfter = Boolean(after("key") || after("openrouterKey") || (after("workersAiToken") && after("workersAiAccountId")));
-  const fallbackHere = fallback.included === true || fallback.shared === true;
+  const fallbackHere = (fallback.shared === true);
   if (patch.openrouterModel !== undefined && patch.openrouterApi === undefined) next.openrouterApi = "chat";
   if (next.workersAiToken && !after("workersAiAccountId")) return { ok: false, error: "Add your Cloudflare account ID with the token." };
   if (saving) {
@@ -176,7 +173,7 @@ function checkAccount(cfg: AppConfig, input: { key?: string; provider?: DeciderP
   const provider = input.provider ?? draftProvider(cfg);
   if (provider === "workersai") return workersAiAccount(cfg, { token: draft, accountId: input.accountId });
   if (provider === "openrouter") return openrouterAccount(cfg, draft);
-  return jevAccount(cfg, draft) ?? includedAccount();
+  return jevAccount(cfg, draft);
 }
 
 export interface DeciderDeps {
@@ -256,7 +253,7 @@ export function createDecider(deps: DeciderDeps): Decider {
           baseUrl: account.api,
           ...(account.accountId ? { accountId: account.accountId } : {}),
           ...(options.careful ? { careful: true } : {}),
-          ...(account.included ? { relaySeam: seam } : {}),
+          ...(({})),
           ...request,
           signal: controller.signal,
           fetch: fetchImpl,
@@ -314,7 +311,7 @@ export function createDecider(deps: DeciderDeps): Decider {
       if (refused) return { ok: false, reason: refused };
       const account = deciderAccount(cfg, seam)!;
       // Through the included token, only the exact requests the relay takes.
-      if (account.included && !relayAccepts(seam, state, questions)) return { ok: false, reason: "misconfigured" };
+
       return await call(seam, account, { ...openrouterRequest(cfg, account), state, questions }, options);
     } catch {
       return { ok: false, reason: "malformed" };
@@ -347,7 +344,7 @@ export function createDecider(deps: DeciderDeps): Decider {
         const account = checkAccount(cfg, input);
         if (!account) return { ok: false, reason: "no_key" };
         const questions = { answer: { type: "yesno" as const, instructions: KEY_CHECK_QUESTION } };
-        if (account.included && !relayAccepts("keyCheck", KEY_CHECK_STATE, questions)) return { ok: false, reason: "misconfigured" };
+
         return single(await call("keyCheck", account, { ...openrouterRequest(cfg, account, input), state: KEY_CHECK_STATE, questions }, { timeoutMs: KEY_CHECK_TIMEOUT_MS, ...options }));
       } catch {
         return { ok: false, reason: "malformed" };

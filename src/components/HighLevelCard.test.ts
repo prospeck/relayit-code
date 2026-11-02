@@ -13,10 +13,10 @@ const fixture = vi.hoisted(() => {
 vi.mock("@/state/store", () => ({ api: fixture.api }));
 
 import { HighLevelCard } from "./HighLevelCard";
-import { forgetHighLevelStatus, preloadHighLevelStatus } from "@/lib/highlevel-status";
+import { forgetHighLevelStatus } from "@/lib/highlevel-status";
 
 const flow = { flowId: "flow-1", authorizationUrl: "https://marketplace.leadconnectorhq.com/v2/oauth/chooselocation?state=abc", expiresAt: "2026-10-15T12:10:00Z" };
-const connectedStatus: HighLevelStatus = { state: "connected", kind: "oauth", location: { id: "loc_1", name: "Example Profiles" } };
+const connectedStatus: HighLevelStatus = { state: "connected", kind: "token", location: { id: "loc_1", name: "Example Profiles" } };
 
 interface Server {
   status: HighLevelStatus;
@@ -64,10 +64,7 @@ async function mount(status: HighLevelStatus) {
   await settle();
 }
 
-const poll = async () => {
-  await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
-  await settle();
-};
+
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
@@ -86,14 +83,15 @@ afterEach(async () => {
 });
 
 describe("HighLevel card states", () => {
-  it("offers Connect with the CRM subtitle when signed out, and no token field until asked", async () => {
+  it("offers the direct private-token form without hosted sign-in", async () => {
     await mount({ state: "signed-out" });
     expect(card()?.dataset.highlevelState).toBe("signed-out");
     expect(text()).toContain("HighLevel");
     expect(text()).toContain("Also Growably and other HighLevel-based CRMs.");
     expect(button("Connect HighLevel")).toBeTruthy();
-    expect(button("Use a Private Integration token instead")).toBeTruthy();
-    expect(host.querySelector("input")).toBeNull();
+    expect(host.querySelectorAll("input")).toHaveLength(2);
+    expect(openExternal).not.toHaveBeenCalled();
+    expect(server.calls.every(([, path]) => !path.includes("sign-in"))).toBe(true);
     expect(text()).not.toMatch(/OAuth/);
     expect(onConnection).toHaveBeenLastCalledWith(false);
   });
@@ -115,87 +113,16 @@ describe("HighLevel card states", () => {
     expect(onConnection).toHaveBeenLastCalledWith(false);
   });
 
-  it("follows a sign-in the server already has, with Cancel and the finish-in-browser line", async () => {
-    await mount({ state: "connecting", flow });
-    expect(text()).toContain("Finish signing in to HighLevel in your browser.");
-    expect(button("Cancel")).toBeTruthy();
-    expect(openExternal).not.toHaveBeenCalled();
-    server.polls.push({ phase: "connected" });
-    await poll();
-    expect(text()).toContain("Connected · Example Profiles");
-  });
 
-  it("draws nothing when the server has no relay", async () => {
-    await mount({ state: "unavailable" });
-    expect(card()).toBeNull();
-    expect(onConnection).toHaveBeenLastCalledWith(false);
-  });
+
+
 });
 
-describe("Connecting HighLevel", () => {
-  it("starts the flow, opens HighLevel's page, polls, and lands on connected", async () => {
-    await mount({ state: "signed-out" });
-    await act(async () => button("Connect HighLevel")!.click());
-    await settle();
-    expect(server.calls).toContainEqual(["POST", "/api/highlevel/sign-in", undefined]);
-    expect(openExternal).toHaveBeenCalledWith(flow.authorizationUrl);
-    expect(text()).toContain("Finish signing in to HighLevel in your browser.");
-    expect(button("Cancel")).toBeTruthy();
-    expect(server.calls.filter(([method, path]) => method === "GET" && path === `/api/highlevel/sign-in/${flow.flowId}`)).toHaveLength(0);
 
-    await poll();
-    expect(server.calls.filter(([method, path]) => method === "GET" && path === `/api/highlevel/sign-in/${flow.flowId}`)).toHaveLength(1);
-    expect(text()).toContain("Finish signing in to HighLevel in your browser.");
-
-    server.polls.push({ phase: "connected" });
-    await poll();
-    expect(text()).toContain("Connected · Example Profiles");
-    expect(button("Cancel")).toBeUndefined();
-    expect(host.querySelector('[role="alert"]')).toBeNull();
-    expect(onConnection).toHaveBeenLastCalledWith(true);
-    expect(await preloadHighLevelStatus()).toEqual(connectedStatus);
-  });
-
-  it("cancels on the server and returns to Connect when the person cancels", async () => {
-    await mount({ state: "signed-out" });
-    await act(async () => button("Connect HighLevel")!.click());
-    await settle();
-    await act(async () => button("Cancel")!.click());
-    await settle();
-    expect(server.calls).toContainEqual(["DELETE", `/api/highlevel/sign-in/${flow.flowId}`, undefined]);
-    expect(button("Connect HighLevel")).toBeTruthy();
-    expect(host.querySelector('[role="alert"]')).toBeNull();
-    await poll();
-    expect(server.calls.filter(([method, path]) => method === "GET" && path === `/api/highlevel/sign-in/${flow.flowId}`)).toHaveLength(0);
-  });
-
-  it("shows the server's reason in one line when the sign-in fails", async () => {
-    await mount({ state: "signed-out" });
-    await act(async () => button("Connect HighLevel")!.click());
-    await settle();
-    server.polls.push({ phase: "failed", message: "HighLevel refused the sign-in." });
-    server.status = { state: "signed-out" };
-    await poll();
-    expect([...host.querySelectorAll('[role="alert"]')].map((element) => element.textContent)).toEqual(["HighLevel refused the sign-in."]);
-    expect(button("Connect HighLevel")).toBeTruthy();
-  });
-
-  it("reconnects through the same flow from the signed-out state", async () => {
-    await mount({ state: "needs-sign-in", location: { id: "loc_1", name: "Example Profiles" } });
-    await act(async () => button("Reconnect HighLevel")!.click());
-    await settle();
-    expect(server.calls).toContainEqual(["POST", "/api/highlevel/sign-in", undefined]);
-    expect(openExternal).toHaveBeenCalledWith(flow.authorizationUrl);
-    server.polls.push({ phase: "connected" });
-    await poll();
-    expect(text()).toContain("Connected · Example Profiles");
-  });
-});
 
 describe("Private Integration token", () => {
   it("reveals the two fields with one line of help and posts token and location", async () => {
     await mount({ state: "signed-out" });
-    await act(async () => button("Use a Private Integration token instead")!.click());
     await settle();
     const tokenField = host.querySelector<HTMLInputElement>('input[aria-label="Private Integration token"]')!;
     const locationField = host.querySelector<HTMLInputElement>('input[aria-label="Location ID"]')!;
@@ -225,7 +152,6 @@ describe("Private Integration token", () => {
 
   it("keeps the token out of the card and shows the server's refusal", async () => {
     await mount({ state: "signed-out" });
-    await act(async () => button("Use a Private Integration token instead")!.click());
     await settle();
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
     const [tokenField, locationField] = [...host.querySelectorAll("input")];

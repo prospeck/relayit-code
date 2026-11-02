@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { X_MESSAGES, XResearchError, type XResearchClient } from "../x-research.ts";
 import type { ResearchClient } from "../research.ts";
-import type { ServiceCredential } from "../included-services.ts";
+import type { ServiceCredential } from "../provider-credentials.ts";
 import { PASS } from "./table.ts";
 import { createXResearchInternalRoutes, type XInternalContext } from "./x-research.ts";
 
@@ -35,7 +35,7 @@ async function callInternal(
 }
 
 describe("X research internal routes", () => {
-  const included: ServiceCredential = { token: "omb_xd_t", api: "https://cloud.example.test/api/cloud/services/x", included: true };
+  const included: ServiceCredential = { token: "omb_xd_t", api: "https://cloud.example.test/api/cloud/services/x",  };
   const enabled = (client = fakeClient(), credential: () => ServiceCredential | null = () => included) =>
     ({ client, handler: createXResearchInternalRoutes({ credential, botEnabled: (id) => id === "bot-1", client: () => client }) });
 
@@ -101,31 +101,23 @@ describe("X research internal routes", () => {
     const gone = enabled(fakeClient({ post: vi.fn(async () => { throw new XResearchError("not_found", X_MESSAGES.postNotFound); }) }));
     expect(await callInternal(gone.handler, { path: "/api/internal/x/post", body: { post: "42" } }))
       .toMatchObject({ status: 404, body: { error: X_MESSAGES.postNotFound, code: "not_found" } });
-    const badToken = enabled(fakeClient({ search: vi.fn(async () => { throw new XResearchError("bad_key", X_MESSAGES.badKey); }) }));
+    const badToken = enabled(fakeClient({ search: vi.fn(async () => { throw new XResearchError("bad_key", X_MESSAGES.ownBadKey); }) }));
     expect(await callInternal(badToken.handler, { body: { query: "maus" } }))
-      .toMatchObject({ status: 502, body: { error: X_MESSAGES.badKey, code: "bad_key" } });
+      .toMatchObject({ status: 502, body: { error: X_MESSAGES.ownBadKey, code: "bad_key" } });
   });
 
-  it("tells a Cloud home's bot the relay refused the Cloud's token, never to sign in again", async () => {
-    const client = fakeClient({ search: vi.fn(async () => { throw new XResearchError("bad_key", X_MESSAGES.badKey); }) });
-    const home = createXResearchInternalRoutes({ credential: () => included, botEnabled: () => true, client: () => client, cloudHome: true });
-    const answer = await callInternal(home, { body: { query: "maus" } });
-    expect(answer).toMatchObject({ status: 502, body: { error: X_MESSAGES.homeBadKey, code: "bad_key" } });
-    expect(answer.body.error).not.toMatch(/sign in again/i);
-    const other = createXResearchInternalRoutes({ credential: () => included, botEnabled: () => true, client: () => fakeClient({ search: vi.fn(async () => { throw new XResearchError("rate_limited", X_MESSAGES.rateLimited); }) }), cloudHome: true });
-    expect(await callInternal(other, { body: { query: "maus" } })).toMatchObject({ status: 502, body: { error: X_MESSAGES.rateLimited } });
-  });
+
 
   it("keeps the Cloud home sentence for the plan's token only: a refused own treg key says to check the key", async () => {
-    const ownKey: ServiceCredential = { token: "treg_own", api: "https://treg.to", included: false };
+    const ownKey: ServiceCredential = { token: "treg_own", api: "https://treg.to",  };
     const client = fakeClient({ search: vi.fn(async () => { throw new XResearchError("bad_key", X_MESSAGES.ownBadKey); }) });
-    const home = createXResearchInternalRoutes({ credential: () => ownKey, botEnabled: () => true, client: () => client, cloudHome: true });
+    const home = createXResearchInternalRoutes({ credential: () => ownKey, botEnabled: () => true, client: () => client,  });
     expect(await callInternal(home, { body: { query: "maus" } })).toMatchObject({ status: 502, body: { error: X_MESSAGES.ownBadKey } });
   });
 });
 
 describe("research internal routes", () => {
-  const ownKey: ServiceCredential = { token: "treg_own", api: "https://treg.to", included: false };
+  const ownKey: ServiceCredential = { token: "treg_own", api: "https://treg.to",  };
   const fakeResearch = (overrides: Partial<ResearchClient> = {}): ResearchClient => ({
     search: vi.fn(async () => ({ query: "q", results: [] })),
     endpoint: vi.fn(async () => ({ endpoint: { id: "apollo.people.search" } })),
@@ -157,4 +149,3 @@ describe("research internal routes", () => {
     expect((await callInternal(routes(research).handler, { path: "/api/internal/research/unknown", body: {} })).out).toBe(PASS);
   });
 });
-

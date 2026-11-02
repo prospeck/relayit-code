@@ -5,7 +5,7 @@ export interface WelcomeDraft {
   beat: BeatId;
 }
 
-/** Kept in this browser beside the email gate (analytics). */
+/** Kept in this browser until the welcome flow finishes. */
 export const WELCOME_DRAFT_KEY = "omb.onboarding.welcomeDraft";
 
 /** A draft from an earlier welcome (its steps, a typed name) is no draft of this one. */

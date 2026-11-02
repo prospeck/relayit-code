@@ -11,7 +11,7 @@ import { fleetAvailable, fleetRequest, fleetSocketPath } from "../fleet-client.t
 import { noteKeyAccepted, noteKeyRejected } from "../key-rejections.ts";
 import type { OutboundCounts } from "../outbound-counts.ts";
 import { loadPlanUsage, planAccountsFromInstances } from "../plan-usage.ts";
-import { tregProviderApi } from "../included-services.ts";
+import { tregProviderApi } from "../provider-credentials.ts";
 import { checkProviderKey, PROVIDER_KEY_KINDS, providerBaseUrl, type ProviderKeyKind } from "../provider-key-check.ts";
 import { checkTregKey } from "../research.ts";
 import type { Store } from "../store.ts";

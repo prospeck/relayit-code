@@ -21,7 +21,8 @@ export interface PostizDeps {
   mcpConfigBusy: { get(): boolean; set(busy: boolean): void };
   mcpPolicyRefusal(name: string, server: object): string | undefined;
   appCatalog?: { serverChanged(name: string): void; forgetServer(name: string): void };
-  team: { team: unknown; scopes: { scope(kind: "mcp", id: string): "team" | "person" }; forgetServer(name: string): void };
+
+  team: { forgetServer(name: string): void };
   /** Plain http to this computer's own Postiz: the desktop only, never a Cloud. */
   loopback: boolean;
   probe?: typeof probeMcpServer;
@@ -93,10 +94,10 @@ export function createPostiz(deps: PostizDeps) {
     const cfg = deps.cfg();
     const address = savedPostizAddress(cfg.postiz);
     const key = cfg.postiz?.key?.trim() ?? "";
-    const team = Boolean(deps.team.team);
+    const team = false;
     const base = {
       address, host: hostOf(address), selfHosted: address !== postizCloud(), keySaved: key !== "",
-      team, scope: team ? deps.team.scopes.scope("mcp", POSTIZ_SERVER) : "team" as const,
+      team, scope: "team" as const,
     };
     const how = method();
     const refusal = deps.mcpPolicyRefusal(POSTIZ_SERVER, server(how === "key" ? postizKeyUrl(address) : postizSignInUrl(), false));

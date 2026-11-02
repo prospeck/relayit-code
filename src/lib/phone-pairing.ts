@@ -1,7 +1,7 @@
-import type { CloudAccountState } from "../../electron/cloud-account.mjs";
-import { teamPlan } from "../../electron/cloud-team-plan.mjs";
+
+
 import type { LocaleKey } from "@/locales";
-import { cloudPlanView } from "./cloud-plan";
+
 import type { Action } from "@/state/store";
 import { readMembership } from "./membership";
 import { isOwnerOrAdmin, readSessionState, type SessionState } from "./session";
@@ -52,10 +52,6 @@ export function connectPhoneEntry(target: PhonePairingTarget, access: PhonePairi
 
 export type CloudPhoneDestination = "ready" | "not-ready" | null;
 
-export function cloudPhoneDestination(account: CloudAccountState | null | undefined): CloudPhoneDestination {
-  if (cloudPlanView(account).kind !== "paid" || teamPlan(account)) return null;
-  return account?.status === "connected" && account.machine?.status === "ready" ? "ready" : "not-ready";
-}
 
 export interface PhoneDestination extends ConnectPhoneEntry {
   id: "cloud" | "here";

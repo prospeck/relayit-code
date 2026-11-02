@@ -74,7 +74,7 @@ export interface WebhookManagerOptions {
   /** delivery:"post" sink: lands in the trigger's own stable thread, never a caller-supplied one. */
   post?: (botId: string, threadId: string, text: string) => void;
   /** Absent, every post delivery fails with 503 rather than falling back to an ambient thread
-   *  (https://github.com/milind-soni/OpenMausBot/issues/2071). */
+   *  (a resolved macOS keychain issue). */
   resolvePostThread?: (trigger: WebhookTrigger, forceNew: boolean) => string | undefined;
   /** delivery:"post" with a groupId: the room sink. Absent, a room delivery fails with 503
    *  rather than downgrading to a thread post. */

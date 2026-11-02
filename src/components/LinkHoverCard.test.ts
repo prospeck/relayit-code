@@ -31,7 +31,7 @@ describe("placeCard", () => {
 describe("LinkHoverCard", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const href = "https://github.com/milind-soni/OpenMausBot/pull/2547";
+  const href = "https://github.com/example/agent-app/pull/2547";
   const link = () => host.querySelector("a")!;
   const card = () => document.querySelector<HTMLElement>("[data-link-preview]");
   const fire = (target: EventTarget, type: string, init: PointerEventInit = {}) =>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Loader2, Merge } from "lucide-react";
-import { ipcErrorText } from "@/lib/cloud-send";
+import { ipcErrorText } from "@/lib/ipc-error";
 import { t } from "@/lib/i18n";
 import type { TwoPlacesSuggestion } from "@/lib/two-places";
 import { NoticeCard, NotNowButton, PRIMARY_BUTTON } from "./NoticeCard";

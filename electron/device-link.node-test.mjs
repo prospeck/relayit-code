@@ -257,7 +257,7 @@ test("the link signs in like the poll, takes My Cloud's word for this computer's
   assert.equal(connects.length, 0);
   stop.abort();
   assert.deepEqual(await running, { code: 1000, reason: "stopped" });
-  assert.equal(linkUrl("https://omb-u-1.fly.dev", "/api/shared-computers/c/link"), "wss://omb-u-1.fly.dev/api/shared-computers/c/link");
+  assert.equal(linkUrl("https://omb-u-1.server.example.test", "/api/shared-computers/c/link"), "wss://omb-u-1.server.example.test/api/shared-computers/c/link");
   assert.equal(linkUrl("http://127.0.0.1:9", "/x"), "ws://127.0.0.1:9/x");
 });
 

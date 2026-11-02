@@ -7,8 +7,8 @@ import { answerConnection, connectionFingerprints, highlevelDigest, launchersOnP
 import { createConnectionPrompt, type ConnectionPromptBot } from "./cloud-connections-prompt.ts";
 import { movedFrom } from "./cloud-send-arrived.ts";
 import * as composio from "./composio.ts";
-import { brokerAccess } from "./composio-broker-access.ts";
-import { adoptComposioShare, adoptOwnComposio, composioIdentity, composioShareCode } from "./composio-share.ts";
+
+import { adoptOwnComposio, composioIdentity } from "./composio-share.ts";
 import type { AppConfig } from "./config.ts";
 import type { HighLevelService } from "./highlevel/service.ts";
 import type { ConnectionHandoffAnswer, ConnectionHandoffWhat } from "./login-handoff.ts";
@@ -31,12 +31,11 @@ export interface CloudConnectionsHostDeps {
   /** The engines (instance ids) ready to run here now. */
   engines(): Promise<string[]>;
   /** A trial's moved keys, unused while its Claude credit lasts. */
-  heldKeys?: { hold(engines: readonly string[]): boolean } | null;
+
   /** This server's data folder, where a Cloud home keeps the computer its bots moved from. */
   dataDir?: string;
 }
 
-const managedService = (): boolean => { try { return brokerAccess() !== null; } catch { return false; } };
 
 export function createCloudConnectionsHost(deps: CloudConnectionsHostDeps) {
   const label = (process.env.OMB_ENVIRONMENT_LABEL?.trim() || hostname()).slice(0, 120).trim() || "the person's computer";
@@ -62,9 +61,9 @@ export function createCloudConnectionsHost(deps: CloudConnectionsHostDeps) {
       ...(deps.cloudHome?.team ? { personalRefusal: (what: string) => personalConnectionRefusal(deps.cloudHome!.team!, what) } : {}),
       async list() {
         return { computer, connections: await connections(), engines: await deps.engines().catch((): string[] => []), commands: commands ??= launchersOnPath(),
-          ...(deps.cloudHome === null && !managedService() ? { managedApps: false as const } : {}) };
+          ...(deps.cloudHome === null ? { managedApps: false as const } : {}) };
       },
-      adoptShare: adoptComposioShare,
+
       adoptOwn: (apiKey, userId) => adoptOwnComposio(deps.config(), apiKey, userId),
       composioConnected,
       adoptSignIn(name, record, replaces) {
@@ -75,20 +74,17 @@ export function createCloudConnectionsHost(deps: CloudConnectionsHostDeps) {
         return { ok: true, outcome: deps.mcpOAuth.adopt(name, parsed.server.url, record, replaces ? (current) => signInDigest(current.tokens) === replaces : undefined) };
       },
       adoptHighLevel: (connection, replaces) => ({ ok: true, outcome: deps.highlevel.adopt(connection, replaces ? (current) => highlevelDigest(current) === replaces : undefined) }),
-      holdKeys: (engines) => deps.heldKeys?.hold(engines) ?? false,
     }),
 
     /** The private port's ask: one connection's secrets, a code for the person's Cloud to act as this computer's
      * connected-apps account, or letting go of a sign-in that moved. */
     async handoff(what: ConnectionHandoffWhat): Promise<ConnectionHandoffAnswer> {
-      if (what.kind === "composio-share") {
-        try { return { ok: true, share: { code: await composioShareCode(what.for) } }; }
-        catch (error) { return { ok: false, error: error instanceof Error && error.message ? error.message.slice(0, 300) : "Connected apps could not be shared." }; }
-      }
+
       if (what.kind === "connection-fingerprints") return { ok: true, secrets: connectionFingerprints(what.nonce, sources()) };
       if (what.kind === "connection-release") {
         return releaseConnection(what.id, what.digest, { ...sources(), forgetSignIn: (name) => deps.mcpOAuth.forget(name), forgetHighLevel: () => { deps.highlevel.disconnect(); } });
       }
+      if (what.kind !== "connection") return { ok: false, error: "Unsupported connection handoff." };
       return answerConnection(what.id, sources());
     },
 

@@ -35,7 +35,7 @@ function frozenCopy({ exportOnly = false } = {}) {
   const webhook = webhooks.create({ name: "Orders", prompt: "File it.", botId: "b1" }).webhook;
   const appEvents = { switched: [] as Array<[string, unknown]>, list: () => [{ id: "e1", enabled: true }], update: async (id: string, patch: unknown) => { appEvents.switched.push([id, patch]); return null; } };
   const freeze = createMoveFreeze({ dataDir: dir, exportOnly });
-  freeze.freeze("https://omb-t-1.fly.dev");
+  freeze.freeze("https://omb-t-1.server.example.test");
   freeze.hold(() => routines.start(), () => routines.stop());
   freeze.hold(() => calls.start(), () => calls.stop());
   // Frozen past both times: the morning routine and the call are due the moment the schedulers start.

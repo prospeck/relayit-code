@@ -27,7 +27,6 @@ function setup({ busy = false, waits = null as WaitManager | null } = {}) {
     { id: "brief", botId: "scout", enabled: true }, { id: "weekly", botId: "scout", enabled: false }, { id: "pips", botId: "pip", enabled: true },
   ];
   const hooks = [{ id: "hook", botId: "scout", enabled: true }];
-  const events = [{ id: "mail", botId: "scout", enabled: true }];
   const removed: string[] = [];
   const moves = createBotMoves({
     store: {
@@ -37,23 +36,23 @@ function setup({ busy = false, waits = null as WaitManager | null } = {}) {
     routines: () => ({ listRoutines: () => routines as never, update: (id: string, patch: { enabled?: boolean }) => Object.assign(routines.find((routine) => routine.id === id)!, patch) as never,
       removeForBot: (botId: string) => { removed.push(botId); for (let i = routines.length - 1; i >= 0; i--) if (routines[i]!.botId === botId) routines.splice(i, 1); } }),
     webhooks: () => ({ list: () => hooks as never, update: (id: string, patch: unknown) => Object.assign(hooks.find((hook) => hook.id === id)!, patch as object) as never }),
-    appEvents: () => ({ list: () => events as never, update: async (id: string, patch: unknown) => Object.assign(events.find((event) => event.id === id)!, patch as object) as never }),
+
     waits: () => waits,
     busy: () => busy,
     now: () => 1_000,
   });
-  return { moves, bots, routines, hooks, events, removed };
+  return { moves, bots, routines, hooks, removed };
 }
 const on = (list: Array<{ id: string; enabled: boolean }>) => Object.fromEntries(list.map((entry) => [entry.id, entry.enabled]));
 
 describe("My Cloud holding a bot while it moves into a team", () => {
   it("takes no turns and switches off its automations, keeping which were on; holding it again changes nothing", async () => {
-    const { moves, bots, routines, hooks, events } = setup();
-    expect(await moves.hold("scout", ACME)).toEqual({ movedTo: { team: ACME, state: "moving", at: 1_000, held: ["routine:brief", "webhook:hook", "app-event:mail"] } });
-    expect([on(routines), on(hooks), on(events)]).toEqual([{ brief: false, weekly: false, pips: true }, { hook: false }, { mail: false }]);
+    const { moves, bots, routines, hooks } = setup();
+    expect(await moves.hold("scout", ACME)).toEqual({ movedTo: { team: ACME, state: "moving", at: 1_000, held: ["routine:brief", "webhook:hook"] } });
+    expect([on(routines), on(hooks)]).toEqual([{ brief: false, weekly: false, pips: true }, { hook: false }]);
     expect(() => assertBotHere(bots.get("scout") as never)).toThrow("Scout is moving to Acme. It's ready there in a moment.");
     expect(() => assertBotHere(bots.get("pip") as never)).not.toThrow();
-    expect((await moves.hold("scout", ACME) as { movedTo: { held: string[] } }).movedTo.held).toEqual(["routine:brief", "webhook:hook", "app-event:mail"]);
+    expect((await moves.hold("scout", ACME) as { movedTo: { held: string[] } }).movedTo.held).toEqual(["routine:brief", "webhook:hook"]);
     expect(await moves.hold("scout", { id: "team-beta", name: "Beta" })).toEqual({ refused: "Scout is moving to Acme. It's ready there in a moment." });
   });
 
@@ -63,10 +62,10 @@ describe("My Cloud holding a bot while it moves into a team", () => {
   });
 
   it("lets the bot go on as it was when the move stops: what it switched off comes back on, nothing else", async () => {
-    const { moves, bots, routines, hooks, events } = setup();
+    const { moves, bots, routines, hooks } = setup();
     await moves.hold("scout", ACME);
     expect(await moves.release("scout")).toEqual({ released: true });
-    expect([on(routines), on(hooks), on(events)]).toEqual([{ brief: true, weekly: false, pips: true }, { hook: true }, { mail: true }]);
+    expect([on(routines), on(hooks)]).toEqual([{ brief: true, weekly: false, pips: true }, { hook: true }]);
     expect(bots.get("scout")!.movedTo).toBeUndefined();
     expect(() => assertBotHere(bots.get("scout") as never)).not.toThrow();
   });

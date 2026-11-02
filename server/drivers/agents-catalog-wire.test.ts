@@ -66,7 +66,7 @@ function profiles(): Record<string, Profile> {
 }
 
 const PROFILES = profiles();
-const CHIEF_ONLY_TOOLS = ["create_bot", "list_team_setup", "list_team_library", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread"];
+const CHIEF_ONLY_TOOLS = ["create_bot", "list_team_setup", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread"];
 const CHIEF_TARGET_TOOLS = ["propose_profile", "propose_model"];
 const CHIEF_PROFILE_TARGET = " A Chief of Staff may pass for_bot_id (from list_bots) for a requested change to another bot in its section.";
 const TEAMWORK_TOOLS = ["list_room_targets", "coordinate_bots", "assignment_status", "list_bots", "list_rooms", "list_threads", "close_thread", "start_thread", "post_to_room"];
@@ -81,33 +81,33 @@ const FULL = "skills+shared+voice+escalations+x+team";
 
 /** Bytes when the budget was last set; a profile may move at most 2% either way (lower it to lock in a win). */
 const BUDGET_BASELINE: Record<string, number> = {
-  "default": 56910,
-  "voice": 57691,
-  "shared": 59141,
-  "shared+voice": 59922,
-  "skills": 59729,
-  "skills+voice": 60510,
-  "skills+shared": 61960,
-  "skills+shared+voice": 62741,
-  "non-chief": 48881,
-  "voice+non-chief": 49662,
-  "shared+non-chief": 51146,
-  "shared+voice+non-chief": 51927,
-  "skills+non-chief": 51700,
-  "skills+voice+non-chief": 51453,
-  "skills+shared+non-chief": 53965,
-  "skills+shared+voice+non-chief": 53684,
-  "skills+shared+voice+cloud-home": 63096,
-  "skills+shared+voice+non-chief+cloud-home": 53961,
-  "default+legacy-switches": 56910,
-  "default+mausbot": 57561,
-  "skills+shared+voice+mausbot": 63392,
-  "skills+shared+voice+escalations": 63571,
-  "skills+shared+voice+escalations+x": 67410,
-  "skills+shared+voice+escalations+x+team": 68042,
-  "default+no-computer-pick": 55698,
-  "default+room": 49808,
-  "non-chief+room": 40751,
+  "default": 55042,
+  "voice": 55823,
+  "shared": 57307,
+  "shared+voice": 58088,
+  "skills": 57861,
+  "skills+voice": 58642,
+  "skills+shared": 60126,
+  "skills+shared+voice": 60907,
+  "non-chief": 46233,
+  "voice+non-chief": 47014,
+  "shared+non-chief": 48498,
+  "shared+voice+non-chief": 49279,
+  "skills+non-chief": 49052,
+  "skills+voice+non-chief": 49833,
+  "skills+shared+non-chief": 51317,
+  "skills+shared+voice+non-chief": 52098,
+  "skills+shared+voice+cloud-home": 60673,
+  "skills+shared+voice+non-chief+cloud-home": 51864,
+  "skills+shared+voice+escalations": 61737,
+  "skills+shared+voice+escalations+x": 65576,
+  "skills+shared+voice+escalations+x+team": 66208,
+  "default+legacy-switches": 55042,
+  "default+mausbot": 55693,
+  "skills+shared+voice+mausbot": 61558,
+  "default+no-computer-pick": 53830,
+  "default+room": 46912,
+  "non-chief+room": 38103
 };
 
 const RPC_PREFIX = '{"jsonrpc":"2.0","id":1,"result":';
@@ -143,7 +143,8 @@ async function toolsListWire(entry: string, env: Record<string, string>): Promis
 
 async function wireForEveryProfile(entry: string): Promise<Record<string, string>> {
   const names = Object.keys(PROFILES);
-  const wires = await Promise.all(names.map((name) => toolsListWire(entry, PROFILES[name]!.env)));
+  const wires: string[] = [];
+  for (const name of names) wires.push(await toolsListWire(entry, PROFILES[name]!.env));
   return Object.fromEntries(names.map((name, index) => [name, wires[index]!]));
 }
 

@@ -20,8 +20,6 @@ vi.mock("@/state/store", async (importOriginal) => {
 vi.mock("./DesktopCapabilities", () => ({
   useDesktopCapabilities: () => ({ capabilities: { dictation: { available: true, engine: "apple-speech", onDevice: true } }, ready: true }),
 }));
-const track = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/analytics", () => ({ track }));
 
 const { CallButton, CallTargetButton } = await import("./CallView");
 const { requestCallStart } = await import("@/lib/call-start-request");
@@ -48,7 +46,7 @@ afterEach(() => {
   host.remove();
   endCall();
   composerStarts.mockReset();
-  track.mockReset();
+
   delete window.ogb;
 });
 
@@ -69,7 +67,7 @@ describe("the bot panel's Call button", () => {
     flushSync(() => root.render(createElement(CallButton, { bot: atlas, placement: "panel" })));
     flushSync(() => panelButton().click());
     expect(currentCall()).toBe("atlas");
-    expect(track).toHaveBeenCalledWith("call_started", expect.objectContaining({ mode: "turns" }));
+
     expect(panelButton().getAttribute("aria-label")).toBe("Hang up on Atlas");
     flushSync(() => panelButton().click());
     expect(currentCall()).toBeNull();
@@ -85,7 +83,7 @@ describe("the bot panel's Call button", () => {
     )));
     flushSync(() => requestCallStart("atlas", "turns"));
     expect(composerStarts).toHaveBeenCalledExactlyOnceWith("turns");
-    expect(track.mock.calls.filter(([event]) => event === "call_started")).toEqual([]);
+
     expect(currentCall()).toBe("atlas");
   });
 });

@@ -1,10 +1,4 @@
-// The routes a one-time move to the person's own Cloud uses for connections. GET /api/cloud-connections, on either
-// side, names this server's connections (never a secret) with the engines it runs and the programs it has. On a Cloud
-// home: POST /api/cloud-connections/connected-apps makes this Cloud act as the computer's connected-apps account (a
-// one-time code from OpenMausBot's service, or the person's own Composio project); PUT
-// /api/cloud-connections/mcp/<name>/sign-in and PUT /api/cloud-connections/highlevel take a sign-in that moved; PUT
-// /api/cloud-connections/held-keys keeps a trial's moved keys unused while its Claude credit lasts. Admin scope
-// (request-auth's default): only the owner's app reaches them.
+// Own-server connection migration: list metadata, adopt the person's own Composio project, and transfer MCP/HighLevel credentials over an authorized owner session.
 import { z } from "zod";
 
 import type { ConnectionListing } from "../cloud-connections.ts";
@@ -19,7 +13,6 @@ const SLUG = /^[a-z0-9_][a-z0-9_-]{0,80}$/u;
 const SIGN_IN = /^\/api\/cloud-connections\/mcp\/([a-z][a-z0-9_-]{0,31})\/sign-in$/u;
 const DIGEST = /^[0-9a-f]{64}$/u;
 const connectSchema = z.union([
-  z.object({ share: z.string().regex(/^[0-9a-f]{64}$/u), apps: z.array(z.string().regex(SLUG)).max(500).optional() }).strict(),
   z.object({ apiKey: z.string().trim().min(1).max(500), userId: z.string().min(1).max(200), apps: z.array(z.string().regex(SLUG)).max(500).optional() }).strict(),
 ]);
 
@@ -44,7 +37,7 @@ export interface CloudConnectionRouteDeps {
   /** A Team Cloud: a person's own connections (a share, a sign-in, HighLevel) are refused with one plain line. */
   personalRefusal?: (what: string) => string | null;
   list(): Promise<ConnectionsAnswer>;
-  adoptShare(code: string): Promise<ShareOutcome>;
+
   adoptOwn(apiKey: string, userId: string): Promise<ShareOutcome>;
   /** Which of these connected apps are connected here now. */
   composioConnected(slugs: string[]): Promise<Record<string, boolean>>;
@@ -52,7 +45,7 @@ export interface CloudConnectionRouteDeps {
   adoptSignIn(name: string, record: McpOAuthRecord, replaces: string | null): Adopted;
   adoptHighLevel(connection: HighLevelConnection, replaces: string | null): Adopted;
   /** Keeps the keys of these engines unused while a trial's Claude credit lasts; false when they run now. */
-  holdKeys?(engines: string[]): boolean;
+
 }
 
 export function createCloudConnectionRoutes(deps: CloudConnectionRouteDeps): RouteHandler {
@@ -64,12 +57,7 @@ export function createCloudConnectionRoutes(deps: CloudConnectionRouteDeps): Rou
       return json(res, 200, await deps.list());
     }
     if (!deps.cloudHome && deps.ownHome?.(auth) !== true) return json(res, 404, { error: "not found" });
-    if (path === "/api/cloud-connections/held-keys") {
-      if (method !== "PUT") return json(res, 405, { error: "method not allowed" });
-      const asked = z.object({ for: z.array(z.string().regex(/^[\w.:-]{1,128}$/u)).max(20) }).safeParse(await readBody(req, 4096));
-      if (!asked.success) return json(res, 400, { error: "send { for }: the engines a key runs" });
-      return json(res, 200, { held: deps.holdKeys?.(asked.data.for) ?? false });
-    }
+
     const signIn = SIGN_IN.exec(path);
     if (path !== "/api/cloud-connections/connected-apps" && path !== "/api/cloud-connections/highlevel" && !signIn) return json(res, 404, { error: "not found" });
     if (method !== (path === "/api/cloud-connections/connected-apps" ? "POST" : "PUT")) return json(res, 405, { error: "method not allowed" });
@@ -98,7 +86,7 @@ export function createCloudConnectionRoutes(deps: CloudConnectionRouteDeps): Rou
     const asked = parsed.data;
     let outcome: ShareOutcome;
     try {
-      outcome = "share" in asked ? await deps.adoptShare(asked.share) : await deps.adoptOwn(asked.apiKey, asked.userId);
+      outcome = await deps.adoptOwn(asked.apiKey, asked.userId);
     } catch (error) {
       return json(res, 502, { error: error instanceof Error && error.message ? error.message.slice(0, 300) : "Connected apps could not be shared." });
     }

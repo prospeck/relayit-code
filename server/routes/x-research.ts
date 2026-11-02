@@ -6,7 +6,7 @@
 import type { ServerResponse } from "node:http";
 import { z } from "zod";
 import type { json as sendJson } from "../harness/http.ts";
-import type { ServiceCredential } from "../included-services.ts";
+import type { ServiceCredential } from "../provider-credentials.ts";
 import { costLine, createResearchClient, RESEARCH_ID, RESEARCH_SEARCH_MAX, type ResearchClient } from "../research.ts";
 import {
   createXClient,
@@ -30,7 +30,7 @@ export interface XResearchDeps {
   client?: (credential: ServiceCredential) => XResearchClient;
   research?: (credential: ServiceCredential) => ResearchClient;
   /** This server is a Cloud home: a refused relay token is the Admin's to replace, not a sign-in to redo. */
-  cloudHome?: boolean;
+
   /** The plan's relay refused a research call because research is off for this account. */
   researchOff?: () => void;
 }
@@ -136,7 +136,7 @@ export function createXResearchInternalRoutes(deps: XResearchDeps) {
     } catch (error) {
       if (!(error instanceof XResearchError)) throw error;
       if (error.code === "off" && prefix === RESEARCH_PREFIX) deps.researchOff?.();
-      const message = error.code === "bad_key" && deps.cloudHome && credential.included ? X_MESSAGES.homeBadKey : error.message;
+      const message = error.message;
       ctx.json(ctx.res, statusFor(error.code), { error: message, code: error.code });
     }
   };

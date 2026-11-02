@@ -10,7 +10,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 
-import { ensureManagedComposioCredentials, managedComposioAccess } from "../electron/managed-composio.mjs";
+
 import { writeFileAtomic } from "./atomic.ts";
 import { McpOAuthManager, type McpSignInPhase } from "./mcp-oauth.ts";
 import { mcpOAuthFiles, removeMcpOAuthFile } from "./mcp-oauth-store.ts";
@@ -25,7 +25,7 @@ export const PEOPLE_CONNECTIONS_DIR = "people-connections";
 export const APP_SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 export const MCP_NAME = /^[a-z][a-z0-9_-]{0,31}$/;
 const PERSON = /^p_[\w-]{22}$/;
-const TOKEN = /^[0-9a-f]{64}$/;
+
 
 const scopesSchema = z.object({
   v: z.literal(1),
@@ -73,11 +73,7 @@ export function personAppOf(tool: string, personApps: readonly string[]): string
 export const appLabel = (slug: string): string =>
   slug.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") || slug;
 
-const appsSchema = z.object({
-  v: z.literal(1),
-  brokerUrl: z.string(),
-  people: z.record(z.string(), z.object({ email: z.string(), installationId: z.string().min(1), token: z.string().regex(TOKEN) })).default({}),
-});
+
 const keysSchema = z.object({
   v: z.literal(1),
   people: z.record(z.string(), z.object({
@@ -85,7 +81,7 @@ const keysSchema = z.object({
     servers: z.record(z.string(), z.object({ url: z.string(), header: z.string(), value: z.string() })).default({}),
   })).default({}),
 });
-type AppsFile = z.infer<typeof appsSchema>;
+
 type KeysFile = z.infer<typeof keysSchema>;
 export interface PersonKey { url: string; header: string; value: string }
 export interface BrokerAccess { url: string; token: string }
@@ -93,7 +89,7 @@ export interface BrokerAccess { url: string; token: string }
 export interface PeopleConnectionsOptions {
   dataDir: string;
   /** The connected-apps service a member's own installation is made on (the Cloud home's own); null: none here. */
-  brokerUrl: () => string | null;
+
   /** The team server's sign-in app for an MCP server, when an admin set one (config.json `oauth`). */
   clients: (name: string, url: string) => McpOAuthClientConfig | undefined;
   isOwnerLive: (owner: string) => boolean;
@@ -106,7 +102,7 @@ export interface PeopleConnectionsOptions {
 export class PeopleConnections {
   readonly dir: string;
   private readonly managers = new Map<string, McpOAuthManager>();
-  private readonly registering = new Map<string, Promise<BrokerAccess | null>>();
+
   private readonly options: PeopleConnectionsOptions;
   constructor(options: PeopleConnectionsOptions) {
     this.options = options;
@@ -124,55 +120,17 @@ export class PeopleConnections {
     this.ensureDir();
     writeFileAtomic(join(this.dir, name), `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
   }
-  private apps(): AppsFile {
-    const url = this.options.brokerUrl();
-    const file = this.read<AppsFile>("apps.json", appsSchema, { v: 1, brokerUrl: url ?? "", people: {} });
-    // A token goes only to the service that issued it.
-    return url && file.brokerUrl === url ? file : { v: 1, brokerUrl: url ?? "", people: {} };
-  }
+
   private keys(): KeysFile {
     return this.read<KeysFile>("mcp-keys.json", keysSchema, { v: 1, people: {} });
   }
 
   /** The member's own installation, when they have made one. */
-  appsAccess(person: string): BrokerAccess | null {
-    const file = this.apps(), record = file.people[person];
-    return record ? managedComposioAccess(file.brokerUrl, { composioBrokerToken: record.token }) : null;
-  }
+
   /** The member's own installation, made now if they have none (the first time they connect an app). */
-  ensureAppsAccess(person: string, email: string): Promise<BrokerAccess | null> {
-    if (!PERSON.test(person)) return Promise.resolve(null);
-    const held = this.appsAccess(person);
-    if (held) return Promise.resolve(held);
-    const brokerUrl = this.options.brokerUrl();
-    if (!brokerUrl) return Promise.resolve(null);
-    const pending = this.registering.get(person);
-    if (pending) return pending;
-    const made = (async () => {
-      const credentials: { composioBrokerToken?: string; composioInstallationId?: string } = {};
-      await ensureManagedComposioCredentials({
-        brokerUrl, credentials, fetchImpl: this.options.fetchImpl,
-        saveCredentials: (next) => {
-          if (!next.composioBrokerToken || !next.composioInstallationId) return;
-          const file = this.apps();
-          file.people[person] = { email, installationId: next.composioInstallationId, token: next.composioBrokerToken };
-          this.write("apps.json", { ...file, brokerUrl });
-          this.remember(person, email);
-        },
-      });
-      return this.appsAccess(person);
-    })().finally(() => this.registering.delete(person));
-    this.registering.set(person, made);
-    return made;
-  }
+
   /** Everyone with an installation, with their address (for "who has connected"). */
-  appsPeople(): Array<{ person: string; email: string; access: BrokerAccess }> {
-    const file = this.apps();
-    return Object.entries(file.people).flatMap(([person, record]) => {
-      const access = managedComposioAccess(file.brokerUrl, { composioBrokerToken: record.token });
-      return access ? [{ person, email: record.email, access }] : [];
-    });
-  }
+
 
   key(person: string, name: string, url: string): PersonKey | null {
     const held = this.keys().people[person]?.servers[name];
@@ -255,8 +213,7 @@ export class PeopleConnections {
   }
   /** Test seam and deletion: everything a person connected here. */
   forgetPerson(person: string): void {
-    const apps = this.apps();
-    if (apps.people[person]) { delete apps.people[person]; this.write("apps.json", apps); }
+
     const keys = this.keys();
     if (keys.people[person]) { delete keys.people[person]; this.write("mcp-keys.json", keys); }
     this.managers.get(person)?.dispose();

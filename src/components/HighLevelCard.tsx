@@ -3,18 +3,9 @@ import { Check, Loader2, MoreHorizontal } from "lucide-react";
 
 import { api } from "@/state/store";
 import { t } from "@/lib/i18n";
-import { reserveConnectionPage } from "@/lib/connector-oauth";
-import { openExternalLink } from "@/lib/app-links";
-import {
-  HIGHLEVEL_API,
-  cancelHighLevelSignIn,
-  isHighLevelStatus,
-  runHighLevelSignIn,
-  watchHighLevelSignIn,
-  type HighLevelFlow,
-  type HighLevelSignInResult,
-  type HighLevelStatus,
-} from "@/lib/highlevel-sign-in";
+
+
+import { HIGHLEVEL_API, isHighLevelStatus, type HighLevelStatus } from "@/lib/highlevel-sign-in";
 import { forgetHighLevelStatus, rememberHighLevelStatus } from "@/lib/highlevel-status";
 import { SidebarPopoverMenu } from "./SidebarPopoverMenu";
 
@@ -39,13 +30,13 @@ export function HighLevelCard({ refreshKey = 0, onConnection }: {
   const [status, setStatus] = useState<HighLevelStatus | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState<"connect" | "token" | "disconnect" | null>(null);
-  const [flow, setFlow] = useState<HighLevelFlow | null>(null);
+
   const [error, setError] = useState<string | null>(null);
-  const [tokenMode, setTokenMode] = useState(false);
+
   const [token, setToken] = useState("");
   const [locationId, setLocationId] = useState("");
   const mounted = useRef(true);
-  const watching = useRef<AbortController | null>(null);
+
 
   const load = useCallback(async (): Promise<HighLevelStatus | null> => {
     try {
@@ -62,89 +53,16 @@ export function HighLevelCard({ refreshKey = 0, onConnection }: {
     }
   }, []);
 
-  const finish = useCallback(async (result: HighLevelSignInResult) => {
-    if (!mounted.current) return;
-    if (result.phase === "failed") setError(result.message || t("highlevel.failed"));
-    else if (result.phase === "expired") setError(t("highlevel.expired"));
-    await load();
-  }, [load]);
 
   /** Follows a flow the server already has (after a reload, or started elsewhere) without opening anything. */
-  const follow = useCallback((current: HighLevelFlow) => {
-    if (watching.current) return;
-    const controller = new AbortController();
-    watching.current = controller;
-    setFlow(current);
-    void watchHighLevelSignIn(current, { api, open: openExternalLink, signal: controller.signal })
-      .then(finish)
-      .finally(() => {
-        if (watching.current === controller) watching.current = null;
-        if (mounted.current) setFlow(null);
-      });
-  }, [finish]);
 
-  useEffect(() => {
-    mounted.current = true;
-    void load().then((loaded) => {
-      if (loaded?.state === "connecting" && loaded.flow && mounted.current) follow(loaded.flow);
-    });
-    return () => {
-      mounted.current = false;
-      watching.current?.abort();
-      watching.current = null;
-    };
-  }, [load, follow, refreshKey]);
 
   useEffect(() => {
     onConnection?.(status ? status.state === "connected" : null);
   }, [status, onConnection]);
 
-  const connect = async () => {
-    if (busy || watching.current) return;
-    // Reserve the tab during the click, before the request consumes the browser's user activation.
-    const launch = reserveConnectionPage();
-    const controller = new AbortController();
-    watching.current = controller;
-    setBusy("connect");
-    setError(null);
-    try {
-      const result = await runHighLevelSignIn({
-        api,
-        signal: controller.signal,
-        onStarted: (started) => {
-          if (!mounted.current) return;
-          setFlow(started);
-          setBusy(null);
-        },
-        open: async (url) => {
-          const opened = await launch.open(url);
-          launch.cancel();
-          if (!opened && mounted.current && !controller.signal.aborted) setError(t("connectors.popupBlockedContinue"));
-          return opened;
-        },
-      });
-      await finish(result);
-    } catch (cause) {
-      if (mounted.current) setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      launch.cancel();
-      if (watching.current === controller) watching.current = null;
-      if (mounted.current) {
-        setFlow(null);
-        setBusy(null);
-      }
-    }
-  };
 
-  const cancel = () => {
-    const controller = watching.current;
-    if (controller) {
-      controller.abort();
-      return;
-    }
-    // A flow the server reported but nobody here is following (its watcher ended): tell the server directly.
-    if (flow) void cancelHighLevelSignIn(flow.flowId, api).then(() => load());
-  };
+  useEffect(() => { mounted.current = true; void load(); return () => { mounted.current = false; }; }, [load, refreshKey]);
 
   const connectWithToken = async () => {
     if (busy) return;
@@ -161,7 +79,7 @@ export function HighLevelCard({ refreshKey = 0, onConnection }: {
       if (!mounted.current) return;
       setToken("");
       setLocationId("");
-      setTokenMode(false);
+
       await load();
     } catch (cause) {
       if (mounted.current) setError(cause instanceof Error ? cause.message : String(cause));
@@ -189,7 +107,7 @@ export function HighLevelCard({ refreshKey = 0, onConnection }: {
   if (status?.state === "unavailable") return null;
 
   const state = status?.state ?? null;
-  const connecting = flow !== null || busy === "connect" || state === "connecting";
+
   const connected = state === "connected";
   const needsSignIn = state === "needs-sign-in";
   const description = connected && status?.location?.name
@@ -224,44 +142,17 @@ export function HighLevelCard({ refreshKey = 0, onConnection }: {
           </div>
           <p className="truncate text-[13px] leading-[18px] text-ink-secondary" title={description}>{description}</p>
         </div>
-        {connecting ? (
-          <button type="button" onClick={cancel} className={pill}>{t("mcp.auth.cancel")}</button>
-        ) : status === null ? (
+        {(status === null ? (
           loadFailed
             ? <button type="button" onClick={() => void load()} className={pill}>{t("connectors.action.retry")}</button>
             : <button type="button" disabled className={pill} aria-label={t("common.checking")}><Loader2 size={14} className="animate-spin" /></button>
-        ) : connected ? (
-          menu
-        ) : (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              aria-label={t(needsSignIn ? "highlevel.reconnect" : "highlevel.connect")}
-              disabled={busy !== null}
-              onClick={() => void connect()}
-              className={pill}
-            >
-              {t(needsSignIn ? "connectors.action.reconnect" : "connectors.action.connect")}
-            </button>
-            {menu}
-          </div>
-        )}
+        ) : menu)}
       </div>
       <div className="ps-[52px]">
-        {connecting && (
-          <p role="status" className="mt-1.5 flex items-center gap-2 text-[12px] text-ink-secondary">
-            <Loader2 size={12} className="shrink-0 animate-spin" aria-hidden="true" />
-            <span>{t("highlevel.finishInBrowser")}</span>
-            {flow && (
-              <button type="button" onClick={() => void openExternalLink(flow.authorizationUrl).catch(() => setError(t("mcp.auth.openFailed")))} className="text-accent-text underline underline-offset-2">
-                {t("mcp.auth.openAgain")}
-              </button>
-            )}
-          </p>
-        )}
+
         {error && <p role="alert" className="mt-1.5 text-[12px] text-danger">{error}</p>}
-        {!connecting && status !== null && !connected && !needsSignIn && (
-          tokenMode ? (
+        {(status !== null) && !connected && (
+          ((
             <form
               data-highlevel-token-form
               className="mt-2 flex flex-col gap-2"
@@ -289,19 +180,13 @@ export function HighLevelCard({ refreshKey = 0, onConnection }: {
               />
               <p className="text-[12px] leading-relaxed text-ink-secondary">{t("highlevel.tokenHelp")}</p>
               <div className="flex items-center gap-2">
-                <button type="submit" disabled={busy !== null} className={pill}>
-                  {busy === "token" ? <Loader2 size={14} className="animate-spin" /> : t("connectors.action.connect")}
+                <button type="submit" aria-label={t(needsSignIn ? "highlevel.reconnect" : "highlevel.connect")} disabled={busy !== null} className={pill}>
+                  {busy === "token" ? <Loader2 size={14} className="animate-spin" /> : t(needsSignIn ? "connectors.action.reconnect" : "connectors.action.connect")}
                 </button>
-                <button type="button" onClick={() => { setTokenMode(false); setError(null); }} className="text-[12px] text-ink-secondary underline underline-offset-2 hover:text-ink">
-                  {t("highlevel.useSignIn")}
-                </button>
+
               </div>
             </form>
-          ) : (
-            <button type="button" onClick={() => { setTokenMode(true); setError(null); }} className="mt-1.5 inline-block text-[12px] text-accent-text underline underline-offset-2">
-              {t("highlevel.useToken")}
-            </button>
-          )
+          ))
         )}
       </div>
     </div>

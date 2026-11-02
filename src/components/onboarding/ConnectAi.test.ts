@@ -2,7 +2,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ManagedDesktopBridge } from "../../../electron/managed-desktop.mjs";
+
 import { setLocale } from "@/lib/i18n";
 import type { InstanceInfo } from "@/state/store";
 
@@ -41,7 +41,7 @@ const engine = (instanceId: string, driverKind: string, displayName: string, rea
   instanceId, driverKind, displayName, install: { docsUrl: "https://example.test" },
   snapshot: { state: ready ? "available" : "unavailable", authenticated: ready }, models: { default: "m", options: [] },
 });
-const bridge = { onState: vi.fn(), state: vi.fn() } as unknown as ManagedDesktopBridge;
+
 let host: HTMLDivElement, root: Root;
 const text = () => host.textContent ?? "";
 const show = async (extra: { hosted?: boolean } = {}) => {
@@ -211,20 +211,6 @@ describe("connecting an AI on the first screen", () => {
     expect(host.querySelector("[data-ai-recommended]")?.getAttribute("data-ai-recommended")).toBe("claude");
   });
 
-  it("offers the organization sign-in under Other ways on this computer's own window only", async () => {
-    await show();
-    await otherWays();
-    expect(f.row).toBeNull();
-    vi.stubGlobal("ogb", { organization: bridge });
-    window.ogb = { organization: bridge } as unknown as typeof window.ogb;
-    await show({ hosted: true });
-    expect(f.row).toBeNull();
-    await show();
-    expect(f.row?.bridge).toBe(bridge);
-    f.row!.onOpenSettings();
-    expect(f.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true, section: "organization" });
-    delete window.ogb;
-  });
 
   it("opens as the Connect an AI dialog, which Escape and a click outside close", async () => {
     const onClose = vi.fn();

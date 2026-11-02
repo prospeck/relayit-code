@@ -294,14 +294,7 @@ describe("new bot default model selection wiring in index.ts", () => {
     fixture.close();
   });
 
-  it("on a Cloud home, the trial's Claude credit runs a new bot only while nothing of the person's own can", async () => {
-    const credit = { instanceId: "trial-credit", driverKind: "openai-compat", snapshot: { state: "available", authenticated: true } satisfies ProviderSnapshot,
-      models: { default: "claude-haiku-4-5", options: [{ id: "claude-haiku-4-5", label: "Claude Haiku 4.5" }] } };
-    // Their Claude is signed out: the credit, not a sign-in screen.
-    await expect(server([signedOut, credit], { credit: "trial-credit" }).defaultSelection()).resolves.toEqual({ instanceId: "trial-credit", model: "claude-haiku-4-5" });
-    await expect(server([credit, claude], { credit: "trial-credit" }).defaultSelection()).resolves.toEqual({ instanceId: "claude", model: "claude-default" });
-    await expect(server([credit, codex], { credit: "trial-credit" }).defaultSelection()).resolves.toMatchObject({ instanceId: "codex" });
-  });
+
 
   it("passes the enrolment into the choice, and is the plain choice without one", async () => {
     // Not enrolled, the Company id is an ordinary engine that can run.
@@ -327,9 +320,9 @@ describe("new bot default model selection wiring in index.ts", () => {
       .resolves.toEqual({ instanceId: "claude", model: "claude-default" });
   });
 
-  it("passes the organisation's policy into the choice", async () => {
+  it("refuses a saved company-only policy without a hosted provider", async () => {
     const policy = server([claude, companyRouter], { enrolled: true, companyModelsOnly: true });
-    await expect(policy.defaultSelection()).resolves.toEqual({ instanceId: "company.fixture.openrouter", model: "company/router" });
+    await expect(policy.defaultSelection()).resolves.toEqual({ instanceId: "", model: "" });
     const saved = server([claude, companyRouter], { enrolled: true, companyModelsOnly: true, saved: { instanceId: "claude", model: "claude-default" } });
     await expect(saved.defaultSelection()).resolves.toEqual({ instanceId: "", model: "" });
     policy.close(); saved.close();

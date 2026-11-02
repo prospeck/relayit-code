@@ -25,7 +25,7 @@ import { TurnPresence } from "./TurnPresence";
 import { showToolCallsEnabled } from "@/lib/feature-flags";
 import { CompactionChip, DigestChip } from "./DigestChip";
 import { roomActivityVisible } from "@/lib/room-activity";
-import { StatusActivityRow } from "@/components/StatusActivityRow"; import { BugReportNote } from "@/components/BugReportNote";
+import { StatusActivityRow } from "@/components/StatusActivityRow";
 import { normalizeState } from "@/lib/mascot";
 import { botTextShowsSpeaker, laterTextOwns, runShowsSpeaker } from "@/lib/room-speaker";
 import { defaultResponderName, groupResponseHint, jevRoomRoutingOn } from "@/lib/group-routing";
@@ -87,7 +87,7 @@ import { citationPreviewText, splitTranscriptCitations, type CitationAttachment 
 import { highlightCitationSource } from "@/lib/citations-dom";
 import { latestFailure, latestReply, type TranscriptSnapshot } from "@/lib/transcript-announcer";
 import { pendingApprovals } from "./PendingApproval";
-import { DataResultChip } from "./DataResultChip"; import { PublishedPageCard } from "./PublishedPageCard";
+import { DataResultChip } from "./DataResultChip";
 import { TranscriptAnnouncer } from "./TranscriptAnnouncer";
 import { dayLabel, localDay } from "@/lib/transcript-derivations";
 import { roomThreadSpeakerId, roomThreadWorking } from "@/lib/room-threads";
@@ -252,7 +252,7 @@ function RoomTextMessage({
                 data-citation-thread={group.threadId}
               >
                 <ThreadRefText text={display} peers={peers} everyone={!group.dm} />
-              </div>{m.bugReport && <BugReportNote report={m.bugReport} />}
+              </div>
               {cited && <SentCitations
                 citations={cited.citations}
                 onNavigate={async (citation: CitationAttachment) => {
@@ -467,7 +467,7 @@ export const Transcript = memo(function Transcript({
             <CompactionChip message={m} />
           ) : m.kind === "digest" ? (
             showToolCalls ? <DigestChip message={m} /> : null
-          ) : m.publishedPage ? <PublishedPageCard message={m} /> : m.kind === "text" && (m.text || m.attachments?.length) ? (
+          ) : m.publishedPage ? null : m.kind === "text" && (m.text || m.attachments?.length) ? (
             !user && isPureLeakedSystemHarnessMessage(m.text) && !m.attachments?.length ? null : (
               <RoomTextMessage
                 group={group}

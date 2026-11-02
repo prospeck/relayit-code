@@ -1,6 +1,6 @@
-import type { CompanionAccountState } from "../types/ogb";
+
 import { t } from "./i18n";
-import type { CompanionEndpoint, CompanionPairingRouteMode } from "./companion-pairing";
+import type { CompanionPairingRouteMode } from "./companion-pairing";
 
 export type PhoneSetupPhase = "intro" | "sign-in" | "verifying" | "qr" | "success";
 
@@ -76,11 +76,10 @@ export function phoneSetupReducer(
   }
 }
 
-export type PhoneSetupAccountStatus = CompanionAccountState["status"] | "unavailable";
 
 export interface PhoneSetupSnapshot {
-  accountStatus: PhoneSetupAccountStatus;
-  accountBusy: boolean;
+
+
   provisioning: boolean;
   provisioningTimedOut?: boolean;
   pairingOpen: boolean;
@@ -88,33 +87,8 @@ export interface PhoneSetupSnapshot {
 
 export const PHONE_SETUP_PROVISIONING_TIMEOUT_MS = 30_000;
 
-export function derivePhoneSetupPhase(
-  flow: PhoneSetupFlowState,
-  snapshot: PhoneSetupSnapshot,
-): PhoneSetupPhase {
-  if (flow.pairedDeviceName) return "success";
-  if (!flow.active) return "intro";
-  if (snapshot.pairingOpen || flow.pairingAttempted) return "qr";
-  if (snapshot.provisioningTimedOut) return "sign-in";
-  if (flow.localFallback || flow.tailscaleFallback) return "verifying";
-  if (snapshot.accountStatus === "signed-out" || snapshot.accountStatus === "unavailable") {
-    return "sign-in";
-  }
-  if (snapshot.accountStatus === "error") return "sign-in";
-  if (snapshot.accountBusy || snapshot.provisioning) return "verifying";
-  return "verifying";
-}
+export function derivePhoneSetupPhase(flow: PhoneSetupFlowState, snapshot: PhoneSetupSnapshot): PhoneSetupPhase { if (flow.pairedDeviceName) return "success"; if (!flow.active) return "intro"; if (snapshot.pairingOpen || flow.pairingAttempted) return "qr"; if (snapshot.provisioningTimedOut) return "sign-in"; return flow.localFallback || flow.tailscaleFallback ? "verifying" : "sign-in"; }
 
-export type CompanionPairingMode =
-  | "local-only"
-  | "hosted-startable"
-  | "hosted-connecting"
-  | "hosted-ready";
-
-export interface PhoneSetupCompanionSnapshot {
-  enabled: boolean;
-  endpoints?: CompanionEndpoint[];
-}
 
 export async function preparePhonePairingRoute<State extends { enabled: boolean; error?: string }>(
   routeMode: CompanionPairingRouteMode,
@@ -146,61 +120,7 @@ export async function preparePhonePairingRoute<State extends { enabled: boolean;
 }
 
 /** Automatic setup is hosted-HTTPS only, so a tailnet route cannot silently replace hosted access. */
-export const companionPairingMode = (
-  account: CompanionAccountState | null,
-  companion: PhoneSetupCompanionSnapshot | null,
-): CompanionPairingMode => {
-  if (companion?.endpoints?.some((endpoint) => endpoint.kind === "hosted")) {
-    return "hosted-ready";
-  }
-  if (!account?.available || account.status === "signed-out" || account.status === "error") {
-    return "local-only";
-  }
-  if (account.status === "ready" && !companion?.enabled) return "hosted-startable";
-  return "hosted-connecting";
-};
 
-export type PhonePairingGate = "open" | "start" | "wait" | "account-required";
-
-export function phonePairingGate(
-  account: CompanionAccountState | null,
-  companion: PhoneSetupCompanionSnapshot | null,
-  explicitRoute: boolean,
-): PhonePairingGate {
-  if (explicitRoute) return "open";
-  switch (companionPairingMode(account, companion)) {
-    case "hosted-ready":
-      return "open";
-    case "hosted-startable":
-      return "start";
-    case "hosted-connecting":
-      return "wait";
-    case "local-only":
-      return "account-required";
-  }
-}
-
-export function shouldPrepareSecureAddress(
-  routeMode: CompanionPairingRouteMode,
-  gate: PhonePairingGate,
-  account: CompanionAccountState | null,
-): boolean {
-  if (routeMode !== "automatic") return false;
-  if (gate === "open") return true;
-  return gate === "wait"
-    && account?.available === true
-    && (account.status === "ready" || account.status === "connecting");
-}
-
-export function secureAddressRequestLapsed(
-  account: CompanionAccountState | null,
-  companion: PhoneSetupCompanionSnapshot | null,
-): boolean {
-  return account?.available === true
-    && account.status === "ready"
-    && !account.endpoint
-    && phonePairingGate(account, companion, false) === "wait";
-}
 
 export function newlyPairedDevice<T extends { id: string; name: string }>(
   baselineDeviceIds: string[],
@@ -393,7 +313,7 @@ const START_FAILURE_MESSAGE =
   "Remote access could not start. Open Advanced & troubleshooting, then try turning Remote access on again.";
 
 export function companionStartFailure(
-  companion: Pick<PhoneSetupCompanionSnapshot, "enabled"> & { error?: string },
+  companion: { enabled: boolean } & { error?: string },
 ): string | null {
   if (companion.enabled && !companion.error) return null;
   return companion.error?.trim() || START_FAILURE_MESSAGE;
