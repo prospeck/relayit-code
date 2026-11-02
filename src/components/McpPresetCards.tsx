@@ -11,7 +11,7 @@ export function McpPresetCards({ servers, disabled, connect }: {
     <h4 className="mb-2 text-sm font-semibold text-ink">{t("india.presets.title")}</h4>
     <div className="grid gap-2 sm:grid-cols-2">
       {MCP_PRESETS.map((preset) => {
-        const connected = servers.some((server) => isRemoteMcpListing(server) && server.url === preset.url && server.enabled);
+        const connected = servers.some((server) => isRemoteMcpListing(server) && server.url === preset.url && server.enabled && server.auth === "signed-in");
         return <div key={preset.id} className="rounded-xl border border-hairline p-3">
           <p className="text-sm font-medium text-ink">{preset.name}</p>
           <p className="my-1 text-xs text-ink-secondary">{t(preset.descriptionKey)}</p>
