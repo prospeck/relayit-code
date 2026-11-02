@@ -1,5 +1,6 @@
 // Transcript-replay driver for OpenRouter, Groq, Together, llama.cpp, and
 // other endpoints that speak the OpenAI chat-completions contract.
+import { isOllamaContextCopy, ollamaModelFor } from "./ollama-context.ts";
 import type { ModelCatalog, ProviderDriver } from "../contracts.ts";
 import { isLoopback } from "../provider-key-check.ts";
 import { lmStudioV1Catalog } from "./local-inject.ts";
@@ -233,7 +234,7 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
         const options: ModelCatalog["options"] = [];
         for (const row of rows) {
           const id = typeof row.id === "string" ? row.id : "";
-          if (!id || seen.has(id)) continue;
+          if (!id || seen.has(id) || isOllamaContextCopy(id)) continue;
           seen.add(id);
           const label = typeof row.name === "string" && row.name.trim() ? row.name : id;
           const contextWindow = advertisedContextWindow(row);
@@ -285,6 +286,7 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
       nudgeAnnouncedAction: true,
       models: () => catalog,
       refreshModels: fetchModels,
+      ...(onThisNetwork(config.url) ? { prepareModel: (model: string, signal: AbortSignal) => ollamaModelFor(config.url, model, fetch, signal) } : {}),
       requestBody: (model, messages, stream) => ({
         model,
         messages,

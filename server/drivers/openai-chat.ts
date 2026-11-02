@@ -98,6 +98,8 @@ interface RuntimeOptions<Config> {
   apiUrl: string;
   models: () => ModelCatalog;
   requestBody(model: string, messages: OpenAIChatMessage[], stream: boolean): Record<string, unknown>;
+  /** The name to send for this model, when the server needs it set up first. Never throws. */
+  prepareModel?(model: string, signal: AbortSignal): Promise<string>;
   httpErrorLabel: string;
   missingKeyError: string;
   unavailableReason: string;
@@ -289,10 +291,11 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
         ? AbortSignal.any([signal, timeoutController.signal])
         : timeoutController.signal;
 
+      const apiModel = options.prepareModel ? await options.prepareModel(model, activeSignal) : model;
       const payload = JSON.stringify(route === "responses"
         ? responsesRequest({ model, messages, tools, replay: (message) => responseOutputs.get(message), summaries: routes.summaries(model) })
         : {
-          ...options.requestBody(model, messages, stream),
+          ...options.requestBody(apiModel, messages, stream),
           ...(route === "chat-reasoning-off" ? { reasoning_effort: "none" } : {}),
           ...(tools.length ? { tools } : {}),
         });

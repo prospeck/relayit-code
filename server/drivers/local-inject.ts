@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+import { isOllamaContextCopy } from "./ollama-context.ts";
 import type { ModelCatalog } from "../contracts.ts";
 
 export interface LocalHost {
@@ -352,7 +353,7 @@ export async function probeLocalInjects(
       const catalogIds = catalog ? idsFromModelsPayload(catalog) : [];
       const extraIds = extra ? idsFromModelsPayload(extra) : [];
       const loaded = loadedIdsFromPayloads(host, catalog ?? extra, extra);
-      const ids = [...new Set([...catalogIds, ...extraIds, ...loaded])];
+      const ids = [...new Set([...catalogIds, ...extraIds, ...loaded])].filter((id) => !isOllamaContextCopy(id));
       const windows = contextWindowsFromPs(extra);
       return { host, ids, loaded, windows };
     }),
