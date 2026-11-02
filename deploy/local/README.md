@@ -1,6 +1,6 @@
 # Local Docker Compose
 
-From the repository root, build the base with `docker build -t openmausbot:local .`,
+From the repository root, build the base with `docker build -t relayit:local .`,
 then run `docker compose up -d --build` and open
 http://localhost:8080. Docker with Linux containers is required.
 Compose supplies defaults; no `.env` file is required.
@@ -32,7 +32,7 @@ Sign in and pair a browser:
 
 ```sh
 docker compose exec omb codex login --device-auth
-docker compose exec omb node dist-server/openmausbot.js pair
+docker compose exec omb node dist-server/relayit.js pair
 ```
 
 On Windows, `./maus.ps1` forwards arguments to Compose using the repository

@@ -134,7 +134,8 @@ it("builds the approval preview from the stored cart", async () => {
   const preview = await previewPlaceOrder(provider, { cartId: cart.cartId });
   expect(preview.amountInr).toBe(cart.totalInr);
   expect(preview.title).toBe("Order from California Pizza Kitchen");
-  expect(preview.summary).toContain("3 items delivered to Home in about 35 min");
+  expect(preview.summary).toContain("2 × Margherita, 1 × Tiramisu from California Pizza Kitchen");
+  expect(preview.summary).toContain("Delivered to Home");
   expect(preview.details.find((d) => d.label === "Items")?.value).toBe(
     "2 × Margherita, 1 × Tiramisu",
   );

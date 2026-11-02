@@ -1,43 +1,43 @@
 export { HEADLESS_VERBS as HEADLESS_VERB_NAMES } from "./headless/args.ts";
 
 export const HEADLESS_USAGE = `Drive a running workspace (scripts, CI, other agents):
-  openmausbot doctor                    check the server answers and an engine is ready
-  openmausbot bots | channels | models  your bots, your rooms, the engines and their models
-  openmausbot run BOT "do this"         give a bot one job and wait until it and every teammate it asked are done
-  openmausbot send BOT "text"           send one message and return at once
-  openmausbot wait BOT                  wait on work already running
-  openmausbot messages BOT              the latest messages of a conversation
-  openmausbot interrupt BOT [--tree]    press Stop (--tree: and every teammate on its job)
-  openmausbot export BOT --out DIR      write a job's transcripts, files and screens to DIR
-  openmausbot events [--job THREAD]     the server's live events as JSON lines
-  openmausbot team apply FILE           make the workspace match a team file (team export writes one)
-  openmausbot engine set claude --key-env ANTHROPIC_API_KEY   give it an engine without a screen
-  openmausbot connect URL --code CODE --out FILE              get a token for a workspace elsewhere
-  openmausbot new-bot | new-channel | set-model | edit | mcp
+  relayit doctor                    check the server answers and an engine is ready
+  relayit bots | channels | models  your bots, your rooms, the engines and their models
+  relayit run BOT "do this"         give a bot one job and wait until it and every teammate it asked are done
+  relayit send BOT "text"           send one message and return at once
+  relayit wait BOT                  wait on work already running
+  relayit messages BOT              the latest messages of a conversation
+  relayit interrupt BOT [--tree]    press Stop (--tree: and every teammate on its job)
+  relayit export BOT --out DIR      write a job's transcripts, files and screens to DIR
+  relayit events [--job THREAD]     the server's live events as JSON lines
+  relayit team apply FILE           make the workspace match a team file (team export writes one)
+  relayit engine set claude --key-env ANTHROPIC_API_KEY   give it an engine without a screen
+  relayit connect URL --code CODE --out FILE              get a token for a workspace elsewhere
+  relayit new-bot | new-channel | set-model | edit | mcp
 
-  Server: --url URL (or OPENMAUSBOT_URL), --port N (or OMB_PORT), else this computer's.
-  Token: OPENMAUSBOT_TOKEN or --token-file FILE. --json prints one JSON document;
-  progress goes to stderr (--quiet drops it). openmausbot help VERB for the details.`;
+  Server: --url URL (or RELAYIT_URL), --port N (or OMB_PORT), else this computer's.
+  Token: RELAYIT_TOKEN or --token-file FILE. --json prints one JSON document;
+  progress goes to stderr (--quiet drops it). relayit help VERB for the details.`;
 
-export const USAGE = `openmausbot — your team of AI bots, ready in a few steps
+export const USAGE = `relayit — your team of AI bots, ready in a few steps
 
-  openmausbot                         set up once, then open your workspace
-  openmausbot setup [--data-dir DIR]
-  openmausbot start [the same options as serve]
-  openmausbot serve [--port 8799] [--data-dir DIR] [--label NAME]
+  relayit                         set up once, then open your workspace
+  relayit setup [--data-dir DIR]
+  relayit start [the same options as serve]
+  relayit serve [--port 8799] [--data-dir DIR] [--label NAME]
                     [--public-url https://host] [--tailscale | --domain HOST] [--no-pair]
-  openmausbot pair  [--label NAME] [--client] [--phone ios|android]
+  relayit pair  [--label NAME] [--client] [--phone ios|android]
                     [--public-url https://host]
-  openmausbot sessions [revoke ID]
-  openmausbot status
-  openmausbot access list | add EMAIL [--chat-only] | remove EMAIL
-  openmausbot service install [--domain HOST | --tailscale] [--port N] [--data-dir DIR] | uninstall
+  relayit sessions [revoke ID]
+  relayit status
+  relayit access list | add EMAIL [--chat-only] | remove EMAIL
+  relayit service install [--domain HOST | --tailscale] [--port N] [--data-dir DIR] | uninstall
                     [--sentinel]   (the health scan below, every two minutes, instead of the server)
-  openmausbot sentinel [--data-dir DIR] [--out DIR] [--once] [--json]   (read-only health scan; see --help)
-  openmausbot browser install [--with-deps] | status
+  relayit sentinel [--data-dir DIR] [--out DIR] [--once] [--json]   (read-only health scan; see --help)
+  relayit browser install [--with-deps] | status
 
 setup   choose AI access and optional phone access; keep existing bots and chats
-start   same as openmausbot: use your saved settings and open the workspace
+start   same as relayit: use your saved settings and open the workspace
 serve   starts the server without prompts and prints a pairing link + QR code
 pair    mints a pairing code against a running server (--client: chat only)
 sessions lists paired devices; "sessions revoke ID" signs one out
@@ -48,7 +48,7 @@ access  the local sign-in allow-list: an address or
 service keep the server running across reboots: writes a systemd unit
         (Linux) or a launchd agent (macOS) for the same serve options and
         prints the commands that install it. Install the package
-        permanently first (npm install -g openmausbot).
+        permanently first (npm install -g relayit).
 browser install: the bots' browser engine (agent-browser, pinned) into the
         data dir, and Chrome for Testing into the user's browser cache.
         --with-deps also installs
@@ -69,6 +69,6 @@ browser install: the bots' browser engine (agent-browser, pinned) into the
 
 ${HEADLESS_USAGE}
 
-Install once with \`npm install -g openmausbot\`, then type \`openmausbot\`.
-Or run without a global install: \`npx openmausbot\`. Node 24+ is required.
+Install once with \`npm install -g relayit\`, then type \`relayit\`.
+Or run without a global install: \`npx relayit\`. Node 24+ is required.
 `;

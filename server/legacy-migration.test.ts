@@ -1,4 +1,4 @@
-// Anything touching the new dir before ensureDirs() runs would make the ~/.opengrokbot rename a no-op: this pins the order.
+// Anything touching the new dir before ensureDirs() runs would make the ~/.relayit rename a no-op: this pins the order.
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,7 +19,7 @@ let stderr = "";
 
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "omb-legacy-test-"));
-  const legacy = join(home, ".opengrokbot");
+  const legacy = join(home, ".relayit");
   mkdirSync(legacy, { recursive: true });
   // A non-product shadow: an empty map would select the full default fleet, whose CLI probes are not part of this test.
   writeFileSync(join(legacy, "config.json"), JSON.stringify({
@@ -59,8 +59,8 @@ afterAll(async () => {
 
 describe("legacy data dir", () => {
   it("is renamed to the new name on first boot, with its contents and a fresh environment id", () => {
-    const fresh = join(home, ".openmausbot");
-    expect(existsSync(join(home, ".opengrokbot"))).toBe(false);
+    const fresh = join(home, ".relayit");
+    expect(existsSync(join(home, ".relayit"))).toBe(false);
     expect(readFileSync(join(fresh, "keep-me.txt"), "utf8")).toBe("carried over");
     expect(readFileSync(join(fresh, "environment-id"), "utf8").trim()).toMatch(/^[0-9a-f-]{36}$/);
   });

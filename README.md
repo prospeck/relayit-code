@@ -37,4 +37,4 @@ Add `http://127.0.0.1:11434/v1` as an OpenAI-compatible server in Settings. On m
 
 ## Licence
 
-RelayIt is built on [OpenMausBot](UPSTREAM.md), used under the Apache License 2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE) and [UPSTREAM.md](UPSTREAM.md).
+RelayIt is built on [RelayIt](UPSTREAM.md), used under the Apache License 2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE) and [UPSTREAM.md](UPSTREAM.md).

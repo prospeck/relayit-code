@@ -9,7 +9,7 @@ const parentPort = (process as NodeJS.Process & { parentPort?: ParentPort }).par
 let desktop: { dataDir: string; master: CredentialMaster } | undefined;
 const pending: Array<{ data?: unknown }> = [];
 const bufferMessage = (event: { data?: unknown }) => {
-  if ((event.data as { type?: string } | undefined)?.type !== "openmausbot:credential-master") pending.push(event);
+  if ((event.data as { type?: string } | undefined)?.type !== "relayit:credential-master") pending.push(event);
 };
 
 // Electron utilityProcess supplies a private parentPort. The key never enters argv, env, HTTP, or a bot child.
@@ -19,7 +19,7 @@ if (parentPort && process.env.OMB_DESKTOP_PARENT === "1") {
     const timer = setTimeout(() => reject(new Error("Desktop credential key was not received.")), 30_000);
     const receive = ({ data }: { data?: unknown }) => {
       const message = data as { type?: string; dataDir?: string; master?: CredentialMaster } | undefined;
-      if (message?.type !== "openmausbot:credential-master") return;
+      if (message?.type !== "relayit:credential-master") return;
       clearTimeout(timer);
       parentPort.removeListener("message", receive);
       if (message.dataDir !== process.env.OMB_DATA_DIR || !/^[a-f0-9]{64}$/.test(message.master?.key ?? "") ||
@@ -27,7 +27,7 @@ if (parentPort && process.env.OMB_DESKTOP_PARENT === "1") {
       accept({ dataDir: message.dataDir!, master: message.master! });
     };
     parentPort.on("message", receive);
-    parentPort.postMessage({ type: "openmausbot:credential-master-request" });
+    parentPort.postMessage({ type: "relayit:credential-master-request" });
   });
 }
 

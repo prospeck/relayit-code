@@ -12,10 +12,10 @@ import type { MenuMotion } from "./MenuMotion";
 import { PersonFace } from "./TeamOwner";
 
 
-/** One row of the @ list: a bot, a teammate on a Team Cloud, a whole team, everyone, or the MausBot team (@devs). */
+/** One row of the @ list: a bot, a teammate on a Team Cloud, a whole team, everyone, or the RelayIt team (@devs). */
 export type MentionChoice = { id: string; name: string; bot?: Bot; person?: TeamPerson; team?: { count: number }; all?: { count: number };  };
 
-/** The last row of every @ list: a message that tags it is a bug report the app sends to the MausBot team. */
+/** The last row of every @ list: a message that tags it is a bug report the app sends to the RelayIt team. */
 
 
 /** The @ list's rows for a Team Cloud's teammates, after the bots. */

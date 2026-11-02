@@ -110,7 +110,7 @@ export class EncryptedCredentialStore {
       const data = readFileSync(file);
       if (data.length < 29 || data[0] !== 1) throw failure();
       const decipher = createDecipheriv("aes-256-gcm", Buffer.from(this.master().key, "hex"), data.subarray(1, 13));
-      decipher.setAAD(Buffer.from(`openmausbot-credentials-v1:${name}`));
+      decipher.setAAD(Buffer.from(`relayit-credentials-v1:${name}`));
       decipher.setAuthTag(data.subarray(-16));
       return JSON.parse(Buffer.concat([decipher.update(data.subarray(13, -16)), decipher.final()]).toString("utf8"));
     } catch { throw failure(); }
@@ -123,7 +123,7 @@ export class EncryptedCredentialStore {
       const text = JSON.stringify(value);
       const nonce = randomBytes(12);
       const cipher = createCipheriv("aes-256-gcm", Buffer.from(this.master().key, "hex"), nonce);
-      cipher.setAAD(Buffer.from(`openmausbot-credentials-v1:${name}`));
+      cipher.setAAD(Buffer.from(`relayit-credentials-v1:${name}`));
       const body = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
       durableWrite(this.path(name), Buffer.concat([Buffer.from([1]), nonce, body, cipher.getAuthTag()]));
       if (JSON.stringify(this.read(name)) !== text) throw failure();

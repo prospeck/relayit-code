@@ -1,6 +1,6 @@
-// Assemble the `openmausbot` npm package: the self-contained server bundle,
+// Assemble the `relayit` npm package: the self-contained server bundle,
 // the built UI, the bundled skills and the CLI, with a package.json of its
-// own. `npx openmausbot serve` then needs Node 24+ and nothing else.
+// own. `npx relayit serve` then needs Node 24+ and nothing else.
 //
 //   pnpm build:server && pnpm exec vite build && node scripts/build-npm-package.mjs
 //   cd release/npm && npm pack        # or npm publish --access public
@@ -12,7 +12,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "release", "npm");
 const app = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 
-for (const required of ["dist-server/index.js", "dist-server/openmausbot.js", "dist/index.html"]) {
+for (const required of ["dist-server/index.js", "dist-server/relayit.js", "dist/index.html"]) {
   if (!existsSync(join(root, required))) {
     console.error(`missing ${required}: run \`pnpm build:server && pnpm exec vite build\` first`);
     process.exit(1);
@@ -37,18 +37,18 @@ if (existsSync(enterpriseBundle)) {
 cpSync(join(root, "LICENSE"), join(out, "LICENSE"));
 
 // The bin lives next to the bundle so serverEntry() finds index.js by path.
-writeFileSync(join(out, "cli.js"), `#!/usr/bin/env node\nimport "./dist-server/openmausbot.js";\n`);
+writeFileSync(join(out, "cli.js"), `#!/usr/bin/env node\nimport "./dist-server/relayit.js";\n`);
 
 writeFileSync(
   join(out, "package.json"),
   JSON.stringify(
     {
-      name: "openmausbot",
+      name: "relayit",
       version: app.version,
-      description: "Run the OpenMausBot server anywhere and pair your devices to it",
+      description: "Run the RelayIt server anywhere and pair your devices to it",
       license: "Apache-2.0",
       type: "module",
-      bin: { openmausbot: "cli.js" },
+      bin: { relayit: "cli.js" },
       // Never bundled, so npm installs them beside the server: DuckDB and
       // resvg are native addons that npm picks per platform from their
       // optional packages, and the 1Password SDK reads its WebAssembly core
@@ -60,7 +60,7 @@ writeFileSync(
       },
       files: ["cli.js", "dist-server", "dist", "skills", "enterprise", "LICENSE", "README.md"],
       engines: { node: ">=24" },
-      keywords: ["openmausbot", "agents", "self-hosted", "server"],
+      keywords: ["relayit", "agents", "self-hosted", "server"],
     },
     null,
     2,
@@ -69,17 +69,17 @@ writeFileSync(
 
 writeFileSync(
   join(out, "README.md"),
-  `# openmausbot
+  `# relayit
 
 Your own team of AI bots, with guided terminal setup. Requires Node 24+.
 
 \`\`\`sh
-npm install -g openmausbot
-openmausbot
+npm install -g relayit
+relayit
 \`\`\`
 
-Or run \`npx openmausbot\` without a global install. Use the same command next
-time; \`openmausbot start\` is an alias for the bare command.
+Or run \`npx relayit\` without a global install. Use the same command next
+time; \`relayit start\` is an alias for the bare command.
 
 First launch: use arrow keys and Enter (numbered choices in plain terminals) to choose
 ChatGPT/Codex, Claude Code, or an API service; sign in or paste a hidden API
@@ -93,7 +93,7 @@ Tailscale must already be installed and signed in on both devices.
 
 After the HTTPS connection is checked, scan the QR with your phone. When
 you pair an Android phone the QR is an app link, so scan it inside the
-OpenMausBot app; the web address is printed beside it if you would rather
+RelayIt app; the web address is printed beside it if you would rather
 use a browser. On iPhone or iPad, scan with Camera for Safari, or use the
 app's own scanner. Choose Connect on the phone; scanning alone is not a
 completed pairing. Codes
@@ -101,20 +101,20 @@ are private, single-use, and expire after five minutes. Guided phone
 access permits chat and approvals, not settings or pairing administration.
 Localhost and a bare LAN address cannot connect your phone to this server.
 
-Later launches reuse your saved choices and open OpenMausBot on this computer.
+Later launches reuse your saved choices and open RelayIt on this computer.
 Keep the terminal open: this is a foreground server, not a background
 service. Ctrl-C stops the server without deleting saved work. Automatic
 browser opening uses only the local address; it is skipped for SSH and
 headless sessions, and can be disabled with \`--no-open\`.
 
 \`\`\`sh
-openmausbot setup          # reconfigure AI and optional phone access; not a reset
-openmausbot --no-open      # do not open a browser
-openmausbot --local        # ignore saved remote access for this launch
-openmausbot --no-pair      # suppress phone prompts and invitations
-openmausbot pair           # another phone while the HTTPS server is running
-openmausbot sessions       # list devices; sessions revoke ID signs one out
-openmausbot serve          # no onboarding prompts; explicit remote flags for services
+relayit setup          # reconfigure AI and optional phone access; not a reset
+relayit --no-open      # do not open a browser
+relayit --local        # ignore saved remote access for this launch
+relayit --no-pair      # suppress phone prompts and invitations
+relayit pair           # another phone while the HTTPS server is running
+relayit sessions       # list devices; sessions revoke ID signs one out
+relayit serve          # no onboarding prompts; explicit remote flags for services
 \`\`\`
 
 Stop an existing server before reconfiguring or changing access mode.
@@ -135,7 +135,7 @@ so anyone who can read that file and the ciphertext can decrypt the keys.
 Ctrl-C before saving AI setup leaves its pending OMB changes unapplied.
 During the later phone step, it keeps the AI setup already saved and exits
 without starting a server. Completed installs and sign-ins remain; run
-\`openmausbot setup\` to continue without deleting your data.
+\`relayit setup\` to continue without deleting your data.
 
 For a service, use \`serve --tailscale\` for your tailnet, or your own HTTPS reverse proxy.
 
@@ -144,13 +144,13 @@ set a team up from a file, give a bot one job and wait until it and every
 teammate it asked are done, and export what they made.
 
 \`\`\`sh
-openmausbot team apply team.yaml
-openmausbot run "Room Lead" "Rehearse the launch of https://example.com" --export ./out
-openmausbot help run       # every verb: doctor, run, wait, send, export, events, team, engine, connect, mcp
+relayit team apply team.yaml
+relayit run "Room Lead" "Rehearse the launch of https://example.com" --export ./out
+relayit help run       # every verb: doctor, run, wait, send, export, events, team, engine, connect, mcp
 \`\`\`
 
-Use \`openmausbot --help\` for setup and command-line usage.
+Use \`relayit --help\` for setup and command-line usage.
 
 `,
 );
-console.log(`npm package assembled at ${out} (openmausbot@${app.version})`);
+console.log(`npm package assembled at ${out} (relayit@${app.version})`);

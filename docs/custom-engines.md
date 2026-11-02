@@ -1,7 +1,7 @@
 # Bring your own engine
 
-Two zero-code ways to run OpenMausBot bots on an engine the app doesn't ship.
-Both live in `~/.openmausbot/config.json` under `"instances"`; restart the app
+Two zero-code ways to run RelayIt bots on an engine the app doesn't ship.
+Both live in `~/.relayit/config.json` under `"instances"`; restart the app
 after editing (instance entries are read at boot).
 
 ## Provider icons
@@ -44,7 +44,7 @@ instance at it:
   the instance's row. An instance without a command shows up with exactly that
   hint instead of failing at first message.
 - **Sign in first.** The driver has no auth flow of its own — run the CLI once
-  in a terminal and log in there; OpenMausBot spawns it with your login intact.
+  in a terminal and log in there; RelayIt spawns it with your login intact.
 - **Choose models per bot.** Open the bot's model picker and use **Re-detect**
   to load the models advertised by the agent. Select a model and, when offered,
   its thinking level. Bot defaults and individual conversation overrides are

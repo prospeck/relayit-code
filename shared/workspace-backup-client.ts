@@ -11,11 +11,11 @@ export const WORKSPACE_BACKUP_CLIENT_KEYS = [
   "omb-send-key",
   "omb-color-user-bubbles",
   "omb-chat-width",
-  "openmausbot.sidebarDensity",
-  "openmausbot.sidebarToolsLayout",
-  "openmausbot.sidebarCollapsedSections.v1",
-  "openmausbot.sidebarSectionOrder.v1",
-  "openmausbot.remote-voice.v1",
+  "relayit.sidebarDensity",
+  "relayit.sidebarToolsLayout",
+  "relayit.sidebarCollapsedSections.v1",
+  "relayit.sidebarSectionOrder.v1",
+  "relayit.remote-voice.v1",
 ] as const;
 
 export type WorkspaceBackupClientState = Partial<Record<(typeof WORKSPACE_BACKUP_CLIENT_KEYS)[number], string>>;

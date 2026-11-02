@@ -452,7 +452,7 @@
       "use_tool"
     ]
   },
-  "default+mausbot": {
+  "default+relayit": {
     "bytes": 15887,
     "sha256": "22b6281c2cfc63d3c3a903b8dcbdac3240fcf6bdce4f68c460336196563e56bb",
     "tools": [
@@ -472,7 +472,7 @@
       "use_tool"
     ]
   },
-  "skills+shared+voice+mausbot": {
+  "skills+shared+voice+relayit": {
     "bytes": 16735,
     "sha256": "60ebd882748880dc75a2627825e3b3d2977d465c115c5c3835f3763ba5ac84a6",
     "tools": [

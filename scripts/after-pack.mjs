@@ -70,7 +70,7 @@ async function thinMacPlatformTools(resources, arch) {
 export default async function afterPack(context) {
   const resources = context.packager?.getResourcesDir?.(context.appOutDir) ?? (
     context.electronPlatformName === "darwin"
-      ? path.join(context.appOutDir, "OpenMausBot.app", "Contents", "Resources")
+      ? path.join(context.appOutDir, "RelayIt.app", "Contents", "Resources")
       : path.join(context.appOutDir, "resources")
   );
   const browserRoot = path.join(resources, "browser-engine");

@@ -30,7 +30,7 @@ it("opening My Cloud from the app needs no click and no code to type", async () 
   vi.stubGlobal("window", { ogb: { workspaces: {} } });
   f.pair.mockResolvedValue({ ok: true });
   const html = render(code);
-  expect(html).toContain("Connecting to this MausBot…");
+  expect(html).toContain("Connecting to this RelayIt…");
   expect(html).not.toContain("Pairing code"); expect(html).not.toContain("<form");
   f.effects[0](); await flush();
   expect(f.pair).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code }));
@@ -52,4 +52,4 @@ it("a browser keeps the code in the form for the person to confirm", () => {
 });
 
 
-it("names the user-owned server and describes its local pairing code", () => { expect(pairTitle(null)).toBe("Connect to this MausBot"); expect(pairIntro()).toContain("Codes work once and expire after five minutes"); });
+it("names the user-owned server and describes its local pairing code", () => { expect(pairTitle(null)).toBe("Connect to this RelayIt"); expect(pairIntro()).toContain("Codes work once and expire after five minutes"); });

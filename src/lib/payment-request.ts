@@ -10,7 +10,7 @@ const card = z.object({
 export type PaymentRequest = z.infer<typeof card>;
 
 export function paymentRequest(name: string, output: string | undefined): PaymentRequest | null {
-  if (!/^(?:(?:mcp__)?india[-_]payments(?:_openmausbot\d*)?(?:__|_))?payments_(?:create_request|check_status|mark_paid_by_user)$/.test(name) || !output || output.length > 64_000) return null;
+  if (!/^(?:(?:mcp__)?india[-_]payments(?:_relayit\d*)?(?:__|_))?payments_(?:create_request|check_status|mark_paid_by_user)$/.test(name) || !output || output.length > 64_000) return null;
   function parse(value: unknown, depth = 0): PaymentRequest | null {
     if (depth > 8) return null;
     if (Array.isArray(value)) {

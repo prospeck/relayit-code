@@ -1,4 +1,4 @@
-export const APP_NAME = "OpenMausBot";
+export const APP_NAME = "RelayIt";
 
 
 export function withSource(url: string, source: string): string {

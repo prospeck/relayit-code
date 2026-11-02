@@ -1,5 +1,5 @@
 {
-  "name": "openmausbot",
+  "name": "relayit",
   "private": true,
   "version": "0.1.139",
   "description": "A personal AI agent for your computer. Say it once. RelayIt handles the rest.",
@@ -7,7 +7,7 @@
     "name": "RelayIt"
   },
   "license": "Apache-2.0",
-  "desktopName": "com.openmausbot.app.desktop",
+  "desktopName": "com.relayit.app.desktop",
   "type": "module",
   "main": "electron/main.mjs",
   "engines": {
@@ -21,8 +21,8 @@
     "i18n:check": "node scripts/generate-locale.mjs --check",
     "dev": "vite",
     "companion": "node --experimental-strip-types companion/src/index.ts",
-    "omb": "node --experimental-strip-types server/openmausbot.ts",
-    "pair": "node --experimental-strip-types server/openmausbot.ts pair",
+    "omb": "node --experimental-strip-types server/relayit.ts",
+    "pair": "node --experimental-strip-types server/relayit.ts pair",
     "dev:server": "node --experimental-strip-types server/dev-server.ts",
     "mcp": "node --experimental-strip-types scripts/mcp-server.ts",
     "control:omb": "node --experimental-strip-types scripts/control-omb.ts",

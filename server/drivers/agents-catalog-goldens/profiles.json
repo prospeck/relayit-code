@@ -1034,7 +1034,7 @@
       "mcp_server"
     ]
   },
-  "default+mausbot": {
+  "default+relayit": {
     "bytes": 55693,
     "sha256": "b567504e319b65616a85bd4b7b54712657f1ba0f03410d552af020bd93237d84",
     "tools": [
@@ -1082,7 +1082,7 @@
       "mark_notifications_read"
     ]
   },
-  "skills+shared+voice+mausbot": {
+  "skills+shared+voice+relayit": {
     "bytes": 61558,
     "sha256": "c2349cc514f752262c2f474c752c3f91c9034ce9aad12dc751989d99d423a2a1",
     "tools": [

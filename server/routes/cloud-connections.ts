@@ -24,7 +24,7 @@ export interface ConnectionsAnswer {
   engines: string[];
   /** Programs a command-line MCP server may start that this server has. */
   commands: string[];
-  /** False on a server with no connected-apps service of MausBot's: connected apps through that service can't move here. */
+  /** False on a server with no connected-apps service of RelayIt's: connected apps through that service can't move here. */
   managedApps?: false;
 }
 

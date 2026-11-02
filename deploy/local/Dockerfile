@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=openmausbot:local
+ARG BASE_IMAGE=relayit:local
 FROM ${BASE_IMAGE}
 USER root
 ARG ENGINES="@anthropic-ai/claude-code @openai/codex"

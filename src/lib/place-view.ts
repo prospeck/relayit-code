@@ -113,7 +113,7 @@ export function openPlaceAction(
     case "manage-computers": appSettings("computer"); return true;
     case "add-boat-key": dispatch(openKeySettings("box")); return true;
     case "open-vm-settings":
-      window.sessionStorage?.setItem("openmausbot.settings.section", "computer");
+      window.sessionStorage?.setItem("relayit.settings.section", "computer");
       appSettings("computer");
       return true;
     case "open-team-map": dispatch({ type: "showTeamMap" }); return true;

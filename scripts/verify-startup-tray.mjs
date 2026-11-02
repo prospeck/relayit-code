@@ -11,7 +11,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 const flag = "--omb-startup-fixture";
 if (!process.versions.electron) {
-  const output = mkdtempSync(join(tmpdir(), "openmausbot-startup-evidence-"));
+  const output = mkdtempSync(join(tmpdir(), "relayit-startup-evidence-"));
   const env = { ...process.env, HOME: output, USERPROFILE: output,
     APPDATA: join(output, "roaming"), LOCALAPPDATA: join(output, "local") };
   delete env.ELECTRON_RUN_AS_NODE;

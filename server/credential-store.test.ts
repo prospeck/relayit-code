@@ -53,11 +53,11 @@ it("receives the desktop key on a fake private parent channel without losing sta
     process.parentPort = port;
     let requests = 0;
     port.postMessage = message => {
-      assert.equal(message.type, "openmausbot:credential-master-request");
+      assert.equal(message.type, "relayit:credential-master-request");
       assert.ok(port.listenerCount("message") >= 2);
       requests++;
       setImmediate(() => {
-        port.emit("message", { data: { type: "openmausbot:credential-master", dataDir: process.env.OMB_DATA_DIR, master: { key: "a".repeat(64), protection: "os-keychain" } } });
+        port.emit("message", { data: { type: "relayit:credential-master", dataDir: process.env.OMB_DATA_DIR, master: { key: "a".repeat(64), protection: "os-keychain" } } });
         port.emit("message", { data: { type: "fixture-startup-message" } });
       });
     };

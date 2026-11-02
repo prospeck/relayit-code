@@ -51,6 +51,6 @@ export declare function registerDesktopPrefs(options: {
   /** The window's frame: `made()`, the frame the window was made with (null before it is); `restarts`, a change waits for
    * the app to start again; `changed()`, the pages hear it. */
   frame?: { made(): boolean | null; restarts: boolean; changed(): void } | null;
-  /** The MausBot Cloud sign-in client: with it, the product-updates question is asked and its answer kept here. */
+  /** The RelayIt Cloud sign-in client: with it, the product-updates question is asked and its answer kept here. */
 
 }): void;

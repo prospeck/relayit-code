@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// When MausBot's first-launch card may open: like the Cloud Pro popup and the product-updates question, never over the
+// When RelayIt's first-launch card may open: like the Cloud Pro popup and the product-updates question, never over the
 // first chat before a reply, never in the launch the welcome finished, never while the app tour runs, and never in the
 // same launch as those two.
 import { act, createElement } from "react";
@@ -17,15 +17,15 @@ vi.mock("@/lib/default-bot", async (original) => ({
   useViewerEmail: () => null,
   setWelcomingBot: (id: string | null) => f.welcoming(id),
 }));
-vi.mock("./MausBotCustomize", () => ({ MausBotCustomize: () => null }));
-const { MausBotWelcome } = await import("./MausBotWelcome");
+vi.mock("./RelayItCustomize", () => ({ RelayItCustomize: () => null }));
+const { RelayItWelcome } = await import("./RelayItWelcome");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-const maus = (turns: number) => ({ id: "maus", threadId: "t1", name: "MausBot", title: "", description: "", notifications: true, color: "chrome",
+const maus = (turns: number) => ({ id: "maus", threadId: "t1", name: "RelayIt", title: "", description: "", notifications: true, color: "chrome",
   mascotBody: null, avatarUrl: null, unread: false, modelSelection: { instanceId: "claude", model: "sonnet" }, createdAt: 1, defaultBot: {}, messages: [],
   tasks: [{ threadId: "t1", title: "", createdAt: 1, ...(turns ? { usage: { input: 1, output: 1, costUsd: null, turns } } : {}) }] });
 let host: HTMLDivElement, root: Root;
-const show = async () => { await act(async () => { root.render(createElement(MausBotWelcome, { viewer: LOCAL_VIEWER })); }); };
+const show = async () => { await act(async () => { root.render(createElement(RelayItWelcome, { viewer: LOCAL_VIEWER })); }); };
 const opened = () => f.welcoming.mock.calls.some(([id]) => id === "maus");
 beforeEach(() => {
   setLocale("en");
@@ -52,7 +52,7 @@ it("opens once the welcome is done and a bot has answered, though the app tour w
 
 it("claims the launch when it opens, so the Cloud Pro popup and the updates question wait for a later one", async () => {
   await show();
-  expect(launchDialogShown()).toBe("mausbot");
+  expect(launchDialogShown()).toBe("relayit");
 });
 
 it("waits while the app tour runs from Settings", async () => {
@@ -89,14 +89,14 @@ it("never opens in a launch where the Cloud Pro popup or the updates question al
 
 it("Escape keeps the card as seen, so it does not come back and claim every later launch", async () => {
   await show();
-  const dialog = document.querySelector<HTMLElement>("[data-mausbot-welcome] [role=dialog]");
+  const dialog = document.querySelector<HTMLElement>("[data-relayit-welcome] [role=dialog]");
   expect(dialog).toBeTruthy();
   await act(async () => { dialog!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
   expect(f.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "maus", patch: { welcomed: true } });
-  expect(document.querySelector("[data-mausbot-welcome]"), "closed").toBeNull();
+  expect(document.querySelector("[data-relayit-welcome]"), "closed").toBeNull();
 });
 
-it("never comes after a first run that met the Chief, which already introduced MausBot; an older install still gets it once", async () => {
+it("never comes after a first run that met the Chief, which already introduced RelayIt; an older install still gets it once", async () => {
   f.state = { ...f.state, bots: [{ ...maus(1), welcomed: true }] };
   await show();
   expect(opened()).toBe(false);

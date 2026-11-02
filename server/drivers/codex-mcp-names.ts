@@ -72,7 +72,7 @@ export function codexConfigRunsServer(config: CodexConfigMcp, name: string, serv
 
 export function mountedMcpServerName(name: string, taken: ReadonlySet<string>): string {
   if (!taken.has(name)) return name;
-  let candidate = `${name}_openmausbot`;
-  for (let i = 2; taken.has(candidate); i++) candidate = `${name}_openmausbot${i}`;
+  let candidate = `${name}_relayit`;
+  for (let i = 2; taken.has(candidate); i++) candidate = `${name}_relayit${i}`;
   return candidate;
 }

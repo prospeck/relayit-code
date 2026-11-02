@@ -41,7 +41,7 @@ NODE_OPTIONS=--max-old-space-size=1500 npx vitest run \
   src/components/RelayToken.test.ts src/components/Avatar.test.ts \
   src/components/BotProfileAvatarCard.test.ts src/components/BotSettingsDialog.simple.test.ts \
   src/components/BotIdentityAvatars.test.ts src/components/PluginsPanel.navigation.test.ts \
-  src/components/MausBotWelcome.test.ts src/components/unread-notice.test.ts \
+  src/components/RelayItWelcome.test.ts src/components/unread-notice.test.ts \
   src/components/AppNotices.test.ts src/components/whats-new/WhatsNewPopup.test.ts \
   src/lib/mascot.test.ts src/lib/halloween-dress.test.ts src/lib/ready-bots.test.ts \
   src/lib/i18n.test.ts src/lib/boat-offer.test.ts src/locales/vocabulary.test.ts \
@@ -89,11 +89,11 @@ PLAYWRIGHT_MODULE=/Users/work/relayit-code/node_modules/playwright-core/index.mj
 # Stop the launcher with Ctrl-C, or SIGTERM its printed pid.
 ```
 
-The backend uses `launchVerificationServer`'s own fresh temporary data directory and home; the outer `OMB_DATA_DIR` also protects launcher imports and Vite. No installed app or `~/.openmausbot` data was used. Chrome starts with Playwright's disposable profile and closes in `finally`.
+The backend uses `launchVerificationServer`'s own fresh temporary data directory and home; the outer `OMB_DATA_DIR` also protects launcher imports and Vite. No installed app or `~/.relayit` data was used. Chrome starts with Playwright's disposable profile and closes in `finally`.
 
 ## Remaining names and limits
 
-- Plain `OpenMausBot`/`MausBot` words remain for the separately scheduled `scripts/rebrand-to-relayit.mjs`; this work did not run or duplicate that global rename.
+- Plain `RelayIt`/`RelayIt` words remain for the separately scheduled `scripts/rebrand-to-relayit.mjs`; this work did not run or duplicate that global rename.
 - `mascot*`, `MausColor`, `MausAvatar`, `runOn: "maus"`, the `mascot` crop and old body IDs remain as persisted settings, wire/file-format values, compatibility type names, locale keys or test fixtures. They do not select or render upstream art. `.mausbackup.json` / `.mausteam.json` name supported legacy import formats.
 - `mouse`, `MouseEvent`, pointer-input methods, and German `Maus` describe the hardware pointing device. The two remaining German locale values concern screen/mouse/keyboard actions.
 - `CursorMark.tsx` is the third-party Cursor provider's mark, used only to identify that engine. It is unrelated to the removed character renderer.

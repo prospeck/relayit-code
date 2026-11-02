@@ -30,7 +30,7 @@ const PRICING_V2 = PRICING.replace("rounded-2xl border p-5", "rounded-2xl border
 
 beforeAll(async () => {
 
-  globalThis.fetch = (input, init = {}) => realFetch(input, { ...init, headers: { ...Object.fromEntries(new Headers(init.headers)), "x-openmausbot-desktop-owner": owner } });
+  globalThis.fetch = (input, init = {}) => realFetch(input, { ...init, headers: { ...Object.fromEntries(new Headers(init.headers)), "x-relayit-desktop-owner": owner } });
   fixture = await launchVerificationServer({ ...process.env, OMB_TEST_DESKTOP_OWNER_TOKEN: owner,
      }, undefined, undefined, undefined, undefined, { scripted: true });
 }, 90_000);
@@ -41,7 +41,7 @@ afterAll(async () => {
 });
 
 it("shows a jsx page, takes what the person pointed at to the bot as records, replaces the page,", async () => {
-  const cli = (...args: string[]) => runControlOmb(args, { env: { OPENMAUSBOT_URL: fixture.info.url } }) as Promise<any>;
+  const cli = (...args: string[]) => runControlOmb(args, { env: { RELAYIT_URL: fixture.info.url } }) as Promise<any>;
   const api = async (path: string, init: RequestInit = {}) => {
     const response = await fetch(`${fixture.info.url}${path}`, { ...init, headers: { "content-type": "application/json" } });
     return { status: response.status, body: await response.json() as any };
@@ -73,7 +73,7 @@ it("shows a jsx page, takes what the person pointed at to the bot as records, re
   expect(first.status).toBe(200);
   expect(String(first.body.srcdoc).startsWith(`${CSP_META_PREFIX}${BOT_HTML_CSP}">`)).toBe(true);
   expect(first.body.srcdoc).toContain("<script type=\"importmap\">");
-  expect(first.body.srcdoc).toContain("data-mausbot-point");
+  expect(first.body.srcdoc).toContain("data-relayit-point");
   expect(first.body.srcdoc).toContain(JSON.stringify(PRICING).replace(/</g, "\\u003c"));
 
   plan([{ tool: "update_html", arguments: { app_id: appId, jsx: PRICING_V2 } }]);

@@ -3,7 +3,7 @@ import { ChevronLeft, Loader2, Menu } from "lucide-react";
 import { openBot, StoreProvider, useStore } from "@/state/store";
 import { useShowThreads } from "@/lib/thread-preferences";
 import { useWelcomeViewer, WelcomeGate } from "@/components/onboarding/WelcomeGate";
-import { MausBotWelcome } from "@/components/MausBotWelcome";
+import { RelayItWelcome } from "@/components/RelayItWelcome";
 
 import { spotlightsQuiet } from "@/lib/onboarding";
 import { FirstConversationTour } from "@/components/onboarding/FirstConversationTour";
@@ -417,7 +417,7 @@ function Application() {
           <Shell />
         </ThreadRefsProvider>
         <WelcomeGate viewer={viewer} />
-        <MausBotWelcome viewer={viewer} />
+        <RelayItWelcome viewer={viewer} />
 
         <GuidedTour />
         <LiveCallHost />
