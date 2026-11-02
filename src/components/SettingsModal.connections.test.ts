@@ -29,7 +29,10 @@ describe("Settings → Connections", () => {
   it("keeps the fallback warning through status frames and shows it in Settings", async () => {
     const { configStatusFromFrame } = await import("@/state/store");
     const credentialStorage = { protection: "key-file" as const, label: "Weaker protection: local key file", detail: "Shared credential store: encrypted, but anyone who can read its local key file and ciphertext can decrypt it." };
-    fixture.config = configStatusFromFrame({ credentialStorage });
+    fixture.config = configStatusFromFrame({
+      credentialStorage, composio: { configured: false }, box: { configured: false }, vps: { configured: false, sshAlias: "" },
+      rooms: { turnTimeoutMinutes: 10 }, mcp: { callTimeoutMinutes: 10 }, localVm: { mode: "shared", maxInstances: 1 },
+    });
     fixture.section = "general";
     expect(fixture.config.credentialStorage).toEqual(credentialStorage);
     const { SettingsModal } = await import("./SettingsModal");
