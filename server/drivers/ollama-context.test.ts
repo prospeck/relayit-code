@@ -45,7 +45,6 @@ describe("ollamaModelFor", () => {
     const { calls, fetcher } = server({ "/api/show": { body: { parameters: "temperature 0.7" } }, "/api/create": {} });
     const url = "http://127.0.0.1:11434/v1";
     expect(await ollamaModelFor(url, "qwen3:4b-instruct", fetcher)).toBe("relayit-qwen3-4b-instruct:8k");
-    expect(await ollamaModelFor(url, "qwen3:4b-instruct", fetcher)).toBe("relayit-qwen3-4b-instruct:8k");
     expect(calls.map((call) => call.path)).toEqual(["/api/show", "/api/create"]);
     expect(calls[1]!.body).toEqual({
       model: "relayit-qwen3-4b-instruct:8k",
@@ -53,6 +52,27 @@ describe("ollamaModelFor", () => {
       parameters: { num_ctx: 8192 },
       stream: false,
     });
+  });
+
+  it("reuses its copy, and makes it again if the person removed it", async () => {
+    const url = "http://127.0.0.1:11434/v1";
+    const up = server({ "/api/show": { body: {} }, "/api/create": {} });
+    expect(await ollamaModelFor(url, "m", up.fetcher)).toBe("relayit-m:8k");
+    const still = server({ "/api/show": { body: {} } });
+    expect(await ollamaModelFor(url, "m", still.fetcher)).toBe("relayit-m:8k");
+    expect(still.calls.map((call) => call.path)).toEqual(["/api/show"]);
+
+    let shows = 0;
+    const calls: string[] = [];
+    const removed = (async (input: string | URL) => {
+      const path = new URL(String(input)).pathname;
+      calls.push(path);
+      if (path === "/api/version") return new Response(JSON.stringify({ version: "0.40.13" }));
+      if (path === "/api/show" && ++shows === 1) return new Response("{}", { status: 404 });
+      return new Response("{}");
+    }) as typeof fetch;
+    expect(await ollamaModelFor(url, "m", removed)).toBe("relayit-m:8k");
+    expect(calls).toContain("/api/create");
   });
 
   it("uses a model as it is when its own window is already big enough", async () => {

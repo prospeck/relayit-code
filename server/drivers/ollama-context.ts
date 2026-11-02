@@ -62,7 +62,16 @@ export async function ollamaModelFor(baseUrl: string, model: string, fetcher: ty
   if (!origin || isOllamaContextCopy(model) || notOllama.has(origin)) return model;
   const key = `${origin} ${model}`;
   const known = prepared.get(key);
-  if (known) return known;
+  if (known === model) return model;
+  // The person can remove a model at any time, or clear old ones, so a copy we made may be gone.
+  if (known) {
+    try {
+      if ((await post(`${origin}/api/show`, { model: known }, fetcher, signal)).status !== 404) return known;
+      prepared.delete(key);
+    } catch {
+      return known;
+    }
+  }
   if (Date.now() < (retryAt.get(key) ?? 0)) return model;
   const failed = () => {
     retryAt.set(key, Date.now() + RETRY_AFTER_MS);
