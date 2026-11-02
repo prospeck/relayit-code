@@ -521,12 +521,15 @@ describe("seeing through a bridged call", () => {
 
   it("lists only the essentials on a small window, and no tool that sends goes behind it", () => {
     const named = (name: string) => ({ name, description: name, inputSchema: { type: "object" as const, properties: {} } });
-    const tools = ["memory_update", "request_sign_in", "coordinate_bots", "list_bots", "select_computer", "post_to_room"].map(named);
+    const tools = ["memory_update", "request_sign_in", "coordinate_bots", "list_bots", "select_computer", "post_to_room", "publish_page", "send_voice_note"].map(named);
     const lean = createToolBridge(tools, { lean: true });
     const listed = lean.listed.map((tool) => tool.name);
-    expect(listed).toEqual(expect.arrayContaining(["memory_update", "request_sign_in", "post_to_room", "find_tool", "use_tool"]));
+    expect(listed).toEqual(expect.arrayContaining(["memory_update", "request_sign_in", "send_voice_note", "find_tool", "use_tool"]));
     expect(listed).not.toContain("coordinate_bots");
     expect(listed).not.toContain("select_computer");
+    // Gone altogether rather than behind use_tool, where the host couldn't recognise them as sends.
+    expect(listed).not.toContain("post_to_room");
+    expect(lean.hidden.map((tool) => tool.name)).not.toContain("post_to_room");
     expect(createToolBridge(tools).listed.map((tool) => tool.name)).toContain("coordinate_bots");
   });
 });

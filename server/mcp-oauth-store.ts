@@ -95,12 +95,12 @@ export class McpOAuthStore {
   // Read through on every call: another process may have changed the file.
   private read(): StoreFile {
     const data = this.document.read() ?? { servers: {} };
-    for (const record of Object.values(data.servers)) holdCredentialValues(record.tokens);
+    for (const record of Object.values(data.servers)) { holdCredentialValues(record.tokens?.access); holdCredentialValues(record.tokens?.refresh); }
     return data;
   }
 
   private write(data: StoreFile): void {
-    for (const record of Object.values(data.servers)) holdCredentialValues(record.tokens);
+    for (const record of Object.values(data.servers)) { holdCredentialValues(record.tokens?.access); holdCredentialValues(record.tokens?.refresh); }
     this.document.write(data);
   }
 }

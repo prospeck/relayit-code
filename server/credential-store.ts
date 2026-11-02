@@ -53,14 +53,17 @@ addHeldSecretScrubber(text => {
   return out;
 });
 
+/** Held values are cut out of everything a person or model reads, by plain text match. A short value isn't a credential
+ * worth that: holding "1" or "ollama" would blank every price, ID and mention of it across the app. Saved website
+ * passwords and one-time codes have their own scrubber, which keeps short ones. */
+const MIN_HELD_CHARS = 8;
+
 /** Remember revoked values too: late provider errors must not leak credentials after rotation. */
 export function holdCredentialValues(value: unknown): void {
-  if (typeof value === "string" && value) {
+  if (typeof value === "string" && value.length >= MIN_HELD_CHARS) {
     held.add(value);
     try { held.add(encodeURIComponent(value)); } catch { /* JSON permits unpaired surrogates; redaction must still accept the original value. */ }
     held.add(JSON.stringify(value).slice(1, -1));
-  } else if (value && typeof value === "object") {
-    for (const item of Object.values(value)) holdCredentialValues(item);
   }
 }
 

@@ -6,7 +6,9 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { GoogleSecrets } from "./google/store.ts";
 import { HighLevelStore } from "./highlevel/store.ts";
-import { credentialStore } from "./credential-store.ts";
+import { holdConfigCredentialValues } from "./config-credentials.ts";
+import { credentialStore, holdCredentialValues } from "./credential-store.ts";
+import { scrubHeldSecrets } from "./redact.ts";
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "relayit-credential-migration-")); });
@@ -79,4 +81,21 @@ it("receives the desktop key on a fake private parent channel without losing sta
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout.trim()).toBe("private channel passed");
   expect(existsSync(join(dir, ".credentials/master-key"))).toBe(false);
+});
+
+it("masks real credentials, and never settings a config happens to hold", () => {
+  holdConfigCredentialValues({
+    mcpServers: { food: { env: { ELECTRON_RUN_AS_NODE: "1", NODE_ENV: "production", DEBUG: "true", HOME_DIR: "/opt/homebrew/Cellar/node/26.11.1_1", OPAQUE: "x9F2kLm81QzP7vRt4bNc" } } },
+    instances: { local: { environment: { K: "ollama", OLLAMA_API_KEY: "ollama-local-key-123" } } },
+  });
+  const text = "Margherita california-pizza-kitchen-1 costs ₹1495 in production via ollama, debug true at /opt/homebrew/Cellar/node/26.11.1_1";
+  expect(scrubHeldSecrets(text)).toBe(text);
+  expect(scrubHeldSecrets("key x9F2kLm81QzP7vRt4bNc here")).not.toContain("x9F2kLm81QzP7vRt4bNc");
+  expect(scrubHeldSecrets("key ollama-local-key-123 here")).not.toContain("ollama-local-key-123");
+});
+
+it("won't hold a value too short to be a credential", () => {
+  holdCredentialValues("1");
+  holdCredentialValues("Bearer");
+  expect(scrubHeldSecrets("1 Bearer token")).toBe("1 Bearer token");
 });

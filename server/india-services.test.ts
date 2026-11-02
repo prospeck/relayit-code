@@ -1,3 +1,4 @@
+import { isMoneyTool } from "../shared/outbound.ts";
 import { build } from "esbuild";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -5,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { indiaServiceSpec } from "./india-services.ts";
+import { indiaFreeTools, indiaServiceSpec } from "./india-services.ts";
 
 const dirs: string[] = [];
 afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
@@ -71,4 +72,21 @@ it("bundles the shipped stdio entry and starts the selected connector only", asy
     expect(tools).toHaveLength(5);
     expect(tools.map((tool) => tool.name)).toContain("metro_route");
   } finally { await client.close(); }
+});
+
+it("lets our own connectors look things up without a card, and nothing that spends", () => {
+  const { server } = indiaServiceSpec("food", "/tmp/x")!;
+  const free = indiaFreeTools("india-food", server)!;
+  expect([...free]).toEqual(expect.arrayContaining(["search_restaurants", "get_menu", "prepare_order"]));
+  expect(free.has("place_order")).toBe(false);
+  for (const tool of [...free, ...indiaFreeTools("india-travel", indiaServiceSpec("travel", "/tmp/x")!.server)!]) {
+    expect(isMoneyTool(tool), tool).toBe(false);
+  }
+  expect(indiaFreeTools("india-payments", indiaServiceSpec("payments", "/tmp/x")!.server)).toBeUndefined();
+});
+
+it("doesn't let another server borrow the name", () => {
+  expect(indiaFreeTools("india-food", { command: "node", args: ["my-server.js"] })).toBeUndefined();
+  expect(indiaFreeTools("india-food", { type: "http", url: "https://evil.example/mcp" })).toBeUndefined();
+  expect(indiaFreeTools("something-else", indiaServiceSpec("food", "/tmp/x")!.server)).toBeUndefined();
 });

@@ -53,6 +53,7 @@ export const BRIDGE_HOT_TOOL_NAMES: ReadonlySet<string> = new Set([
  * a find_tool away. Calling a tool through use_tool is judged exactly as calling it by name. */
 export const TOOL_BRIDGE_LEAN_ENV = "OMB_AGENTS_TOOL_BRIDGE_LEAN";
 const LEAN_HOT_TOOL_NAMES: ReadonlySet<string> = new Set(["tool_result_read", "request_sign_in", "memory_update"]);
+const LEAN_ABSENT_TOOL_NAMES: ReadonlySet<string> = new Set(["post_to_room", "publish_page"]);
 
 /** Matches per search; each carries its full input schema. */
 export const FIND_MATCHES_MAX = 3;
@@ -149,6 +150,9 @@ export interface ToolBridge {
 
 /** The bridge over one turn's profile: `tools` is the whole of what the turn may call. */
 export function createToolBridge(tools: readonly BridgeTool[], { lean = false }: { lean?: boolean } = {}): ToolBridge {
+  // A small window has no room for what only a team uses. Without a listing these can't be called at all, which is fine:
+  // an outbound tool must be called by its own name, so it can't move behind use_tool.
+  if (lean) tools = tools.filter((tool) => !LEAN_ABSENT_TOOL_NAMES.has(tool.name));
   const profile = new Set(tools.map((tool) => tool.name));
   const keptNames = lean ? LEAN_HOT_TOOL_NAMES : BRIDGE_HOT_TOOL_NAMES;
   const hot = tools.filter((tool) => keptNames.has(tool.name) || calledByItsOwnName(tool.name));

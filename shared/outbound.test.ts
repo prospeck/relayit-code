@@ -15,6 +15,7 @@ describe("isMoneyTool", () => {
       "RAZORPAY_CREATE_PAYMENT",
       "mcp__paytm__recharge_mobile",
       "buy_now",
+      "prepare_and_pay_order",
       "COMPOSIO_PROXY_EXECUTE",
     ]) {
       expect(isMoneyTool(name), name).toBe(true);
@@ -30,6 +31,8 @@ describe("isMoneyTool", () => {
       "mcp__irctc__search_trains",
       "mcp__swiggy__list_payment_methods",
       "mcp__food__preview_order",
+      "mcp__india-food__prepare_order",
+      "mcp__india-travel__irctc_booking_handoff",
       "GMAIL_SEND_EMAIL",
     ]) {
       expect(isMoneyTool(name), name).toBe(false);
@@ -182,8 +185,6 @@ describe("outboundCallsIn", () => {
 
 it.each([
   "mcp__india-food__place_order",
-  "mcp__india-food__prepare_order",
-  "mcp__india-travel__irctc_booking_handoff",
   "mcp__india-travel__book_ticket",
   "mcp__india-payments__payments_create_request",
   "mcp__india-payments__payments_mark_paid_by_user",

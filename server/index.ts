@@ -14,7 +14,7 @@ import { z } from "zod";
 import { selectReplay, replayToolCalls, DEFAULT_REBUILD_BYTES, MAX_SUMMARY_BYTES } from "./context-rebuild.ts";
 import { draftSummary, foldPoint } from "./compaction-summary.ts";
 import { TOOL_BRIDGE_LEAN_ENV } from "./drivers/agents-bridge.ts";
-import { keepsForSmallWindow, smallWindowMachine } from "./small-model-prompt.ts";
+import { indiaServersNotNeeded, keepsForSmallWindow, smallWindowMachine } from "./small-model-prompt.ts";
 import { compactBudget, compactionReading, contextWindowFor, shouldCompact } from "./context-budget.ts";
 import { autoCompactWindow } from "./drivers/claude.ts";
 import { RoomContextTracker, roomResetNote } from "./room-context.ts";
@@ -8529,6 +8529,8 @@ async function beginTurn(
       if (smallWindow) {
         delete integrations.data;
         if (integrations.agents?.env) integrations.agents.env[TOOL_BRIDGE_LEAN_ENV] = "1";
+        const recent = store.messagesFor(threadId).filter((message) => message.role === "user").slice(-3).map((message) => message.text ?? "");
+        for (const name of indiaServersNotNeeded([...recent, userTurnText].join("\n"))) delete integrations.custom?.[name];
       }
       const confined = proactive.fence.confines(threadId); if (confined) for (const key of Object.keys(integrations) as Array<keyof typeof integrations>) if (!READ_AND_DRAFT_TOOLS.has(key)) delete integrations[key];
       const prompt = buildSystemPrompt(persona, liveBot?.soul ?? bot.soul ?? "", [

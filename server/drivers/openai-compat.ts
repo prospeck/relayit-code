@@ -1,6 +1,6 @@
 // Transcript-replay driver for OpenRouter, Groq, Together, llama.cpp, and
 // other endpoints that speak the OpenAI chat-completions contract.
-import { isOllamaContextCopy, ollamaModelFor } from "./ollama-context.ts";
+import { contextTokensFor, isOllamaContextCopy, ollamaModelFor } from "./ollama-context.ts";
 import type { ModelCatalog, ProviderDriver } from "../contracts.ts";
 import { isLoopback } from "../provider-key-check.ts";
 import { lmStudioV1Catalog } from "./local-inject.ts";
@@ -241,7 +241,7 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
           options.push({
             id,
             label: openRouter ? freeLabel(label, row) : label,
-            ...(contextWindow ? { contextWindow } : {}),
+            ...(contextWindow ? { contextWindow } : onThisNetwork(config.url) ? { contextWindow: contextTokensFor() } : {}),
             ...(config.catalog === "openai" ? {} : { custom: true }),
           });
         }

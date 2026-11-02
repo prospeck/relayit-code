@@ -6,6 +6,7 @@ import { createServer as createNetServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
 import { join, dirname, isAbsolute, normalize } from "node:path";
 
+import { indiaFreeTools } from "../india-services.ts";
 import { DATA_DIR, stripWorkspaceCredentialEnv } from "../config.ts";
 import { openStartupModelCatalog, unconfirmedModelCatalog, writeStartupModelCache } from "../startup-model-catalog.ts";
 import { writeFileAtomic, writeFileAtomicIfChanged } from "../atomic.ts";
@@ -1168,6 +1169,9 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
       const permissionEnv = { ...NODE_ENV_FLAG, ...(turn.toolScope !== undefined ? { OMB_PERMISSION_TOOL_SCOPE: JSON.stringify(turn.toolScope) } : {}) };
       mcpServers.ogb = { command: process.execPath, args: [PERM_PROXY_PATH, socketPath], env: permissionEnv, alwaysLoad: true };
       allowed.push("mcp__ogb", ...gateQueryTools(mcpServers));
+      for (const [name, server] of Object.entries(turn.integrations?.custom ?? {})) {
+        if (Object.hasOwn(mcpServers, name)) allowed.push(...[...indiaFreeTools(name, server) ?? []].map((tool) => `mcp__${name}__${tool}`));
+      }
       // A guest pre-allows only harness tools; anything else (the browser can open file:) asks.
       if (turn.guestConfined) allowed.splice(0, allowed.length, ...allowed.filter((name) => name === "mcp__ogb" || name === "mcp__agents"));
       // The MCP config carries credentials and argv is readable via `ps`: a 0600 file, removed at settle.

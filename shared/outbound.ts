@@ -64,6 +64,8 @@ const MONEY_VERBS = new Set([
   "UPI",
 ]);
 
+const PAYS_ON_THE_SPOT = new Set(["PAY", "PAYMENT", "CHARGE", "BUY", "PURCHASE", "CHECKOUT", "TRANSFER", "PAYOUT", "REFUND", "DONATE", "RECHARGE", "TOPUP", "WITHDRAW"]);
+
 /** Creating one of these is sending it: a created comment is a comment
  * someone reads, a created invoice is one someone receives. */
 const CREATE_VERBS = new Set(["CREATE", "CREATION", "ADD", "NEW"]);
@@ -127,6 +129,8 @@ export function isMoneyTool(name: string): boolean {
   if (name === "COMPOSIO_PROXY_EXECUTE") return true;
   if (AGENTS_X_READS.test(name) || isReadOnlyTool(name)) return false;
   const tokens = actionTokens(name);
+  // Building a cart or a draft spends nothing, and a handoff only gives the person a link to do it themselves.
+  if ((tokens[0] === "PREPARE" || tokens.at(-1) === "HANDOFF") && !tokens.some((token) => PAYS_ON_THE_SPOT.has(token))) return false;
   if (tokens.some((token) => MONEY_VERBS.has(token))) return true;
   return tokens.some((token, i) => token === "CHECK" && tokens[i + 1] === "OUT");
 }

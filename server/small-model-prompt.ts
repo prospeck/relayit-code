@@ -13,3 +13,19 @@ const NOT_FOR_A_SMALL_WINDOW: ReadonlySet<string> = new Set([
 export const smallWindowMachine = (tokens: number = contextTokensFor()) => tokens <= 16_384;
 
 export const keepsForSmallWindow = (partId: string) => !NOT_FOR_A_SMALL_WINDOW.has(partId);
+
+const TRAVEL_WORDS = /\b(?:trains?|metro|irctc|railways?|stations?|pnr|cabs?|taxi|uber|ola|rapido|flights?|travel|trip|tatkal)\b/i;
+const FOOD_WORDS = /\b(?:food|eat|hungry|order|restaurants?|menu|lunch|dinner|breakfast|snack|pizza|biryani|burger|deliver(?:y)?)\b/i;
+const PAYMENT_WORDS = /\b(?:order|pay|payment|upi|qr|razorpay|checkout|paid)\b/i;
+
+/** A model on a small window can't hold every connector's tools, so a turn gets the ones its words point to. Food stays
+ * unless the words are plainly about travel: "get me something from Truffles" names no food word, and must still work. */
+export function indiaServersNotNeeded(recentUserText: string): string[] {
+  const travel = TRAVEL_WORDS.test(recentUserText);
+  const food = FOOD_WORDS.test(recentUserText);
+  return [
+    ...(travel ? [] : ["india-travel"]),
+    ...(travel && !food ? ["india-food"] : []),
+    ...(PAYMENT_WORDS.test(recentUserText) ? [] : ["india-payments"]),
+  ];
+}

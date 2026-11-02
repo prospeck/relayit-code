@@ -1,5 +1,6 @@
 // Per-turn MCP transport for the Chat Completions runtime: approval is the caller's, and only
 // registered, schema-validated calls arrive here.
+import { indiaFreeTools } from "../india-services.ts";
 import { createHash } from "node:crypto";
 import type { ValidateFunction } from "ajv";
 import { stripControlPlaneEnv } from "../config.ts";
@@ -48,7 +49,7 @@ export interface ChatToolSession {
 }
 
 type Server = { command: string; args: string[]; env: Record<string, string> };
-type RegisteredTool = { client: ChatMcpClient; server: string; launch: string; builtInBrowser: boolean; agents: boolean; hostComputer: boolean; name: string; schema: ValidateFunction; searched: boolean };
+type RegisteredTool = { client: ChatMcpClient; server: string; launch: string; builtInBrowser: boolean; agents: boolean; hostComputer: boolean; freeTools?: ReadonlySet<string>; name: string; schema: ValidateFunction; searched: boolean };
 function chatToolName(server: string, tool: string): string {
   return `${server}_${tool}`.toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 64) || "mcp_tool";
 }
@@ -431,7 +432,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
       // Harness mounts are known by descriptor, never by a name a configured server could claim. A grant
       // hashes the descriptor (no credential kept); machine bridges mint a bearer per turn, so theirs last a turn.
       const launch = createHash("sha256").update(JSON.stringify(descriptor)).digest("hex");
-      const origin: ToolOrigin = { client, server: name, launch, builtInBrowser: descriptor === integrations?.browser, agents: descriptor === agentsServer,
+      const origin: ToolOrigin = { client, server: name, launch, freeTools: indiaFreeTools(name, descriptor), builtInBrowser: descriptor === integrations?.browser, agents: descriptor === agentsServer,
         hostComputer: descriptor === integrations?.localComputer && integrations?.localComputer?.scope === "local-computer", searched: searchable.has(name) };
       return { origin, tools };
     }));
@@ -532,7 +533,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
   };
   const viewOf = (tool: RegisteredTool, args: Record<string, unknown>, title: string): ChatToolCallView => {
     const runs = target(tool, args);
-    if (runs === undefined || tool.agents || tool.server === "google") return { title, input: args, ask: false };
+    if (runs === undefined || tool.agents || tool.server === "google" || tool.freeTools?.has(runs)) return { title, input: args, ask: false };
     const grant = !tool.hostComputer ? JSON.stringify([tool.server, tool.launch, runs]) : undefined;
     if (!tool.searched || tool.name !== CALL_TOOL) return { title, input: args, ask: true, ...(grant ? { grant } : {}) };
     return { title: chatToolName(tool.server, runs), input: object(args.arguments) ? args.arguments : {}, ask: true, ...(grant ? { grant } : {}) };
