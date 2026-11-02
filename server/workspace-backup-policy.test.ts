@@ -61,6 +61,11 @@ describe("workspace backup data boundary", () => {
     for (const path of ["logins.json", "logins.md", "workspaces/bot/logins.json.enc", "attachments/logins-key"]) expect(excludedWorkspaceAuthPath(path)).toBe(false);
   });
 
+  it("never exports or restores Google credentials or their encryption key", () => {
+    for (const path of ["google.json.enc", "google-key", "google.json.enc.4242.05a7b3e0-1234-4abc-8def-0123456789ab.tmp", "google-key.12.05a7b3e0-1234.tmp"]) expect(excludedWorkspaceAuthPath(path)).toBe(true);
+    expect(excludedWorkspaceAuthPath("workspaces/bot/google.json.enc")).toBe(false);
+  });
+
   it("never exports or restores the HighLevel connection or its key", () => {
     for (const path of ["highlevel.json.enc", "highlevel-key", "highlevel.json.enc.4242.05a7b3e0-1234-4abc-8def-0123456789ab.tmp", "highlevel-key.12.05a7b3e0-1234.tmp"]) {
       expect(excludedWorkspaceAuthPath(path)).toBe(true);

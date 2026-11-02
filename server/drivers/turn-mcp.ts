@@ -33,6 +33,7 @@ export function turnStdioMcpServers(turn: SendTurnInput, options: { schemaProfil
   add(OWN_APPS_SERVER, turn.integrations?.composioOwn);
   add("browser", turn.integrations?.browser);
   add("data", turn.integrations?.data);
+  add("google", turn.integrations?.google);
   add("highlevel", turn.integrations?.highlevel);
   add("device", turn.integrations?.device);
   // Cua connections expose Cua Driver's own MCP server; a cloud turn runs on its boat, so none is mounted.

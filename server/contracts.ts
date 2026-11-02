@@ -157,6 +157,8 @@ export interface SendTurnInput {
   preloadBrowserTools?: boolean;
   /** Per-bot integrations the driver may hand to the agent as tools. */
   integrations?: {
+    /** Direct Google, with credentials held in the harness and actions approved there. */
+    google?: { command: string; args: string[]; env: Record<string, string> };
     /** A harness-owned stdio bridge to Composio, so connection requests become trusted chat cards. */
     composio?: { command: string; args: string[]; env: Record<string, string> };
     /** The same bridge to a Team Cloud member's own apps, only in that member's own turns. */

@@ -323,7 +323,7 @@ export async function checkGoogleAccess(
 ): Promise<{ issues: GoogleIssue[]; email: string | null }> {
   const granted = new Set(grantedScope.split(/\s+/).filter(Boolean));
   const missing = (service: GoogleService): GoogleIssue | null =>
-    granted.size > 0 && REQUIRED_SCOPES[service].some((scope) => !granted.has(scope))
+    REQUIRED_SCOPES[service].some((scope) => !granted.has(scope))
       ? {
           service,
           kind: "missing_permission",
@@ -332,9 +332,8 @@ export async function checkGoogleAccess(
       : null;
   const now = new Date();
   const [gmail, calendar] = await Promise.all([
-    missing("Gmail") ?? client.getProfile().catch((error: unknown) => issueFrom("Gmail", error)),
-    missing("Google Calendar") ??
-      client
+    client.getProfile().catch((error: unknown) => issueFrom("Gmail", error)),
+    client
         .listEvents(now.toISOString(), new Date(now.getTime() + 60_000).toISOString())
         .then(() => null)
         .catch((error: unknown) => issueFrom("Google Calendar", error)),
@@ -342,7 +341,7 @@ export async function checkGoogleAccess(
   const isIssue = (value: unknown): value is GoogleIssue =>
     typeof value === "object" && value !== null && "kind" in value;
   return {
-    issues: [gmail, calendar].filter(isIssue),
+    issues: [missing("Gmail"), missing("Google Calendar"), gmail, calendar].filter(isIssue).filter((issue, index, all) => all.findIndex((other) => other.service === issue.service && other.kind === issue.kind) === index),
     email: gmail && !isIssue(gmail) ? gmail.emailAddress : null,
   };
 }

@@ -153,8 +153,9 @@ const section = (title: string, rows: Node[], w: BriefWords, empty?: string, aft
 const openButton = (target: OpenTarget | undefined, w: BriefWords): Node[] => (target ? [button(w.open, { type: "open_thread", payload: target })] : []);
 const pageButton = (url: string | undefined, w: BriefWords): Node[] => { const link = httpsLink(url), open = link ? openUrl(link) : undefined; return open ? [button(w.openPage, open)] : []; };
 
-function emailRow(email: BriefEmail, w: BriefWords): Node {
-  const who = sender(email, BRIEF_TEXT.label, w);
+function emailRow(email: BriefEmail, w: BriefWords, number?: number): Node {
+  const name = sender(email, BRIEF_TEXT.label, w);
+  const who = number === undefined ? name : `${name} (${number})`;
   const gmail = email.threadId.length <= BRIEF_TEXT.link ? openUrl(gmailUrl(email.threadId)) : undefined;
   const note = email.needsReply ? (email.why ? `${w.waitingOnReply} · ${email.why}` : w.waitingOnReply) : email.why ?? w.important;
   return rowUnder(`${sender(email, BRIEF_TEXT.sender, w)}: ${email.subject || w.noSubject}`, note, [
@@ -172,11 +173,16 @@ export function briefCard(facts: BriefFacts): BuiltCard {
   const w = briefWords(language);
   const replies = facts.emails.filter((email) => email.needsReply);
   const important = facts.emails.filter((email) => !email.needsReply);
-  const needRows = [...replies.map((email) => emailRow(email, w)), ...facts.needs.map((row) => rowBeside(row.text, row.note, openButton(row.open, w)))];
+  const emailView = (email: BriefEmail): Node => {
+    const name = sender(email, BRIEF_TEXT.label, w);
+    const repeated = facts.emails.filter((other) => sender(other, BRIEF_TEXT.label, w) === name).length > 1;
+    return emailRow(email, w, repeated ? facts.emails.indexOf(email) + 1 : undefined);
+  };
+  const needRows = [...replies.map(emailView), ...facts.needs.map((row) => rowBeside(row.text, row.note, openButton(row.open, w)))];
   const meetings = [...(facts.meetings ?? [])].sort((a, b) => a.start - b.start);
   const meetingRows = meetings.map((meeting) => rowBeside(`${clockTime(meeting.start, zone, language)} · ${meeting.title}`, "", joinButton(meeting, w.join)));
   const waiting = facts.waiting === true ? w.waitingMany : facts.waiting ? w.waitingCount(facts.waiting) : undefined;
-  const importantRows = important.map((email) => emailRow(email, w));
+  const importantRows = important.map(emailView);
   const waitingNotice = waiting ? [caption(waiting)] : [];
   const routineRows = facts.routines.map((row) => rowBeside(row.text, row.note, [...pageButton(row.page, w), ...openButton(row.open, w)]));
   const ideaRows = (facts.ideas ?? []).map((row) => rowBeside(row.text, row.note, []));

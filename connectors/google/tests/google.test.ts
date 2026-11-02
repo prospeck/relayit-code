@@ -288,7 +288,7 @@ describe("Google refusals", () => {
     ]);
   });
 
-  it("spots unticked permission boxes without calling Google for them", async () => {
+  it("spots unticked permission boxes while probing both APIs", async () => {
     const calls: string[] = [];
     const client = clientReturning((url) => {
       calls.push(url);
@@ -299,8 +299,9 @@ describe("Google refusals", () => {
       "openid email https://www.googleapis.com/auth/calendar.events",
     );
     expect(issues.map((i) => [i.service, i.kind])).toEqual([["Gmail", "missing_permission"]]);
-    expect(email).toBeNull();
-    expect(calls.every((url) => url.includes("calendar.test"))).toBe(true);
+    expect(email).toBe("me@example.com");
+    expect(calls.some((url) => url.includes("gmail.test"))).toBe(true);
+    expect(calls.some((url) => url.includes("calendar.test"))).toBe(true);
   });
 
   it("names a permission refusal that Google reports at request time", async () => {

@@ -247,3 +247,14 @@ describe("token refresh and secret storage", () => {
     ).rejects.toThrow("reconnect required");
   });
 });
+
+it("cancels the loopback listener promptly without waiting for its sign-in timeout", async () => {
+  const controller = new AbortController();
+  let callback: string | null = null;
+  const pending = startGoogleAuth({ clientId: "fixture-client", scopes: GOOGLE_SCOPES, signal: controller.signal,
+    openUrl: (url) => { callback = new URL(url).searchParams.get("redirect_uri"); controller.abort(); },
+  });
+  await expect(pending).rejects.toThrow("cancelled");
+  expect(callback).toBeTruthy();
+  await expect(fetch(callback!)).rejects.toThrow();
+});

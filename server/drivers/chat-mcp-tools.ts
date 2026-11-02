@@ -345,6 +345,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
   if (integrations?.data && eligible("data")) servers.push(["data", integrations.data]);
   if (integrations?.highlevel && eligible("highlevel")) servers.push(["highlevel", integrations.highlevel]);
   if (integrations?.device && eligible("device")) servers.push(["device", integrations.device]);
+  if (integrations?.google && eligible("google")) servers.push(["google", integrations.google]);
   const builtIns = servers.length;
   const besideBrowser = servers.some(([, descriptor]) => descriptor === integrations?.browser);
   for (const [name, server] of Object.entries(integrations?.custom ?? {})) {
@@ -531,7 +532,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
   };
   const viewOf = (tool: RegisteredTool, args: Record<string, unknown>, title: string): ChatToolCallView => {
     const runs = target(tool, args);
-    if (runs === undefined || tool.agents) return { title, input: args, ask: false };
+    if (runs === undefined || tool.agents || tool.server === "google") return { title, input: args, ask: false };
     const grant = !tool.hostComputer ? JSON.stringify([tool.server, tool.launch, runs]) : undefined;
     if (!tool.searched || tool.name !== CALL_TOOL) return { title, input: args, ask: true, ...(grant ? { grant } : {}) };
     return { title: chatToolName(tool.server, runs), input: object(args.arguments) ? args.arguments : {}, ask: true, ...(grant ? { grant } : {}) };

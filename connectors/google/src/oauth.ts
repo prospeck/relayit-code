@@ -59,7 +59,7 @@ async function exchange(
 }
 
 const connectedHtml = `<!doctype html><html lang="en"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Connected to Google</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Google sign-in received</title>
 <style>body{margin:0;background:#f6f7f4;color:#27352d;font:18px system-ui;display:grid;place-items:center;min-height:100vh}main{max-width:440px;margin:24px;padding:40px;border-radius:20px;background:white;box-shadow:0 8px 40px #27352d0c}h1{font-size:26px;font-weight:600}p{line-height:1.6;color:#5a665e}</style>
 <main><h1>Sign-in received</h1><p>Return to RelayIt to check Gmail and Calendar access. You can close this tab.</p></main></html>`;
 
@@ -69,6 +69,7 @@ export async function startGoogleAuth(
     openUrl: (url: string) => void | Promise<void>;
     authBase?: string;
     timeoutMs?: number;
+    signal?: AbortSignal;
   },
 ): Promise<GoogleTokens> {
   const verifier = randomBytes(64).toString("base64url");
@@ -77,6 +78,7 @@ export async function startGoogleAuth(
   const server = createServer();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let handling = false;
+  let cancel: (() => void) | undefined;
   try {
     await new Promise<void>((resolve, reject) => {
       server.once("error", reject);
@@ -103,6 +105,9 @@ export async function startGoogleAuth(
       include_granted_scopes: "true",
     }).toString();
     const completion = new Promise<GoogleTokens>((resolve, reject) => {
+      cancel = () => { controller.abort(); reject(new Error("Google authorization cancelled")); };
+      options.signal?.addEventListener("abort", cancel, { once: true });
+      if (options.signal?.aborted) cancel();
       timer = setTimeout(
         () => {
           reject(new Error("Google authorization timed out"));
@@ -181,6 +186,7 @@ export async function startGoogleAuth(
     ]);
     return tokens;
   } finally {
+    if (cancel) options.signal?.removeEventListener("abort", cancel);
     if (timer) clearTimeout(timer);
     controller.abort();
     await new Promise<void>((resolve) => {
