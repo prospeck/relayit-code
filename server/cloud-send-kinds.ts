@@ -262,7 +262,7 @@ const librarySkillSchema = z.object({ text: z.string().max(512 * 1024), entry: z
 /** My Cloud sets a bot's move-only fields as they are on this computer: absent ones it clears, its own projects it keeps
  * beside the ones that arrive, and an engine, team or library skill it lacks it leaves out. */
 function applyBotFields(deps: MoveKindsDeps, id: string, raw: unknown): void {
-  const bot = deps.store.bot(id) ?? refuse(409, "This bot is not on My Cloud yet.");
+  const bot = deps.store.bot(id) ?? refuse(409, "This bot is not on the server yet.");
   const parsed = botFieldsSchema.safeParse(raw);
   if (!parsed.success) refuse(400, "send the bot's fields as this computer holds them");
   const fields = parsed.data!;
@@ -298,12 +298,12 @@ function applyBotFields(deps: MoveKindsDeps, id: string, raw: unknown): void {
 
 /** A routine as it arrives: off unless My Cloud switched it on, with its finished runs My Cloud lacks. */
 function adoptRoutine(deps: MoveKindsDeps, raw: unknown, runs: unknown, from: string, owner: CloudOwner): void {
-  const routines = deps.routines() ?? refuse(503, "My Cloud's routines are not ready yet.");
+  const routines = deps.routines() ?? refuse(503, "the server's routines are not ready yet.");
   const parsed = routineSchema.safeParse(raw);
   if (!parsed.success) refuse(400, "send the routine as this computer holds it");
   const routine = withCheckFields(rebased({ id: parsed.data!.id, ...pick(parsed.data!, ROUTINE_FIELDS) }, from, deps.dataDir) as unknown as Routine);
-  if (!deps.store.bot(routine.botId)) refuse(409, "This routine's bot is not on My Cloud yet.");
-  if (routine.target === "room-goal" && routine.groupId && !deps.store.group(routine.groupId)) refuse(409, "This routine's room is not on My Cloud yet.");
+  if (!deps.store.bot(routine.botId)) refuse(409, "This routine's bot is not on the server yet.");
+  if (routine.target === "room-goal" && routine.groupId && !deps.store.group(routine.groupId)) refuse(409, "This routine's room is not on the server yet.");
   const arriving = (Array.isArray(runs) ? runs : []).flatMap((run) => {
     const checked = runSchema.safeParse(run);
     return checked.success && checked.data.routineId === routine.id && FINISHED.has(checked.data.status) ? [rebased(checked.data, from, deps.dataDir) as unknown as RoutineRun] : [];
@@ -329,13 +329,13 @@ async function adopt(deps: MoveKindsDeps, kind: Kind, id: string, raw: unknown, 
   if (kind === "routine") return adoptRoutine(deps, raw, runs, from, owner);
   if (!same(raw) && kind !== "imported-skill" && kind !== "library-skill") refuse(400, "the record names another item");
   if (kind === "call") {
-    const calls = deps.calls() ?? refuse(503, "My Cloud's calls are not ready yet.");
+    const calls = deps.calls() ?? refuse(503, "the server's calls are not ready yet.");
     try { calls.adopt({ ...rebased(raw as unknown as CalendarCall, from, deps.dataDir), id }); }
     catch (error) { refuse(409, (error as Error).message); }
     return;
   }
   if (kind === "webhook") {
-    const webhooks = deps.webhooks() ?? refuse(503, "My Cloud's webhooks are not ready yet.");
+    const webhooks = deps.webhooks() ?? refuse(503, "the server's webhooks are not ready yet.");
     webhooks.adopt({ ...rebased(raw as unknown as WebhookTrigger, from, deps.dataDir), id });
     return;
   }
@@ -343,7 +343,7 @@ async function adopt(deps: MoveKindsDeps, kind: Kind, id: string, raw: unknown, 
   if (kind === "imported-skill") {
     const parsed = importedSkillSchema.safeParse(raw);
     if (!parsed.success || parsed.data.name !== id) refuse(400, "send the skill's files as this computer holds them");
-    if (!storeImportedSkills([parsed.data!])[0]?.stored) refuse(500, "My Cloud could not keep this skill.");
+    if (!storeImportedSkills([parsed.data!])[0]?.stored) refuse(500, "the server could not keep this skill.");
     return;
   }
   const parsed = librarySkillSchema.safeParse(raw);
@@ -357,7 +357,7 @@ async function adopt(deps: MoveKindsDeps, kind: Kind, id: string, raw: unknown, 
     : held.sha256 === sha256(text) ? setLibrarySkillReviewState(id, entry.reviewState)
       : updateLibrarySkill({ name: id, instructions: text, expectSha256: held.sha256, source: entry.source });
   if ("error" in outcome) refuse(400, outcome.error);
-  if ("stale" in outcome) refuse(409, "My Cloud's copy of this library skill changed while it was being replaced.");
+  if ("stale" in outcome) refuse(409, "the server's copy of this library skill changed while it was being replaced.");
   if (held && held.sha256 !== sha256(text) && held.reviewState !== entry.reviewState) {
     const state = setLibrarySkillReviewState(id, entry.reviewState);
     if ("error" in state) refuse(400, state.error);
@@ -380,7 +380,7 @@ export async function moveKindsRoute(deps: MoveKindsDeps, { req, res, path, meth
     }
     if (method === "PUT") {
       const owner = deps.owner(auth);
-      if (!owner) { json(res, 403, { error: "Only My Cloud's owner can move things into it." }); return true; }
+      if (!owner) { json(res, 403, { error: "Only the server's owner can move things into it." }); return true; }
       const body = putSchema.safeParse(await readBody(req, KIND_BODY_MAX));
       const key = body.success ? parseKey(body.data.key) : null;
       if (!body.success || !key) { json(res, 400, { error: "send { v: 1, key, dataDir, record }" }); return true; }

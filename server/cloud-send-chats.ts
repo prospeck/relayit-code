@@ -347,7 +347,7 @@ export async function cloudSendChatsRoute(deps: CloudSendChatsDeps, { req, res, 
     return true;
   }
   if (path === `${PREFIX}/settings` && method === "POST") {
-    if (!deps.owner?.(auth)) { json(res, 403, { error: "Only My Cloud's owner can set its conversations as they were." }); return true; }
+    if (!deps.owner?.(auth)) { json(res, 403, { error: "Only the server's owner can set its conversations as they were." }); return true; }
     const parsed = settingsSchema.safeParse(await readBody(req, 1024 * 1024));
     if (!parsed.success) { json(res, 400, { error: "send { v: 1, conversations: [{ threadId, settings }] }" }); return true; }
     json(res, 200, { v: 1, changed: adoptConversationSettings(store, parsed.data.conversations,
@@ -368,7 +368,7 @@ export async function cloudSendChatsRoute(deps: CloudSendChatsDeps, { req, res, 
   }
   if (path === `${PREFIX}/owner` && method === "POST") {
     const owner = deps.owner?.(auth) ?? null;
-    if (!owner) { json(res, 403, { error: "Only My Cloud's owner can say which of its lines are theirs." }); return true; }
+    if (!owner) { json(res, 403, { error: "Only the server's owner can say which of its lines are theirs." }); return true; }
     const parsed = idsSchema.safeParse(await readBody(req, 2 * 1024 * 1024));
     if (!parsed.success) { json(res, 400, { error: `send { v: 1, conversations: [{ threadId, ids }] }, at most ${VERIFY_IDS} ids of each` }); return true; }
     const { stamped, threads } = stampHeld(store, parsed.data.conversations, owner);

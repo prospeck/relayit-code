@@ -27,7 +27,7 @@ export function createMoveFreezeRoutes({ freeze, busy, restart, automationsOff }
     if (path === "/api/move/forget") {
       if (auth.kind !== "loopback") return json(res, 403, { error: "Only RelayIt on this computer can do this." });
       if (method !== "POST") return json(res, 405, { error: "method not allowed" });
-      if (!freeze.forget()) return json(res, 409, { error: "Only a computer whose bots moved to My Cloud deletes its copy." });
+      if (!freeze.forget()) return json(res, 409, { error: "Only a computer whose bots moved to the server deletes its copy." });
       json(res, 200, { forgot: true });
       restart();
       return;

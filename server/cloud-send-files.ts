@@ -156,7 +156,7 @@ async function takePart(deps: MoveFilesDeps, req: IncomingMessage, query: z.infe
   const { path, size, sha256, offset, mode, expect } = query;
   const botId = /^(?:workspaces|task-workspaces)\/([\w-]{1,128})\//u.exec(path)?.[1];
   if (!movedFilePath(path) || !botId) return { status: 400, body: { error: "not a bot file a move carries" } };
-  if (!deps.bots().some((bot) => bot.id === botId)) return { status: 409, body: { error: "This file's bot is not on My Cloud yet." } };
+  if (!deps.bots().some((bot) => bot.id === botId)) return { status: 409, body: { error: "This file's bot is not on the server yet." } };
   const partial = partialPath(deps.dataDir, sha256, size);
   await mkdir(staging(deps.dataDir), { recursive: true, mode: 0o700 });
   const held = (await stat(partial).catch(() => null))?.size ?? 0;
@@ -210,7 +210,7 @@ export async function moveFilesRoute(deps: MoveFilesDeps, { req, res, path, meth
     return true;
   }
   if (method !== "POST") { json(res, 405, { error: "method not allowed" }); return true; }
-  if (!deps.owner(auth)) { await rawBody(req, 0); json(res, 403, { error: "Only My Cloud's owner can move files into it." }); return true; }
+  if (!deps.owner(auth)) { await rawBody(req, 0); json(res, 403, { error: "Only the server's owner can move files into it." }); return true; }
   const query = putSchema.safeParse(Object.fromEntries(url.searchParams));
   if (!query.success) { await rawBody(req, 0); json(res, 400, { error: "send ?path, size, sha256, offset and mode" }); return true; }
   const answer = await takePart(deps, req, query.data);

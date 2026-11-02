@@ -11,7 +11,7 @@ import { clashPath, validWirePath, windowsProblem } from "./cloud-sync-rules.mjs
 import { sha256File } from "./cloud-sync-scan.mjs";
 import { assertOutsideProtected, insideGitInternals, protectedIdentities, sharedPath } from "./shared-computer-access.mjs";
 
-export const BESIDE_LABEL = "new from My Cloud";
+export const BESIDE_LABEL = "new from the server";
 
 const same = (a, b) => a && b && a.size === b.size && a.mtimeMs === b.mtimeMs && a.ino === b.ino;
 
@@ -65,7 +65,7 @@ export async function applyStaged({ client, folderId, folder, protectedPaths = [
 
 async function applyOne({ client, folderId, folder, change, protectedRoots, now, trashItem, markDownloaded, platform }) {
   if (!validWirePath(change.path) || (platform === "win32" && windowsProblem(change.path))) throw new Error("This computer can't hold that name.");
-  if (insideGitInternals(folder.path, change.path)) throw new Error("Files inside .git are never changed from My Cloud.");
+  if (insideGitInternals(folder.path, change.path)) throw new Error("Files inside .git are never changed from the server.");
   const target = await sharedPath(folder, change.path);
   await assertOutsideProtected(protectedRoots, target);
   fs.mkdirSync(path.dirname(target), { recursive: true });

@@ -28,7 +28,7 @@ export function movedFrom(dataDir: string): MovedFrom | null {
 }
 
 /** `place`: the server of the person's own the bot moved to, by the name they know it by; My Cloud without one. */
-export const webhookMovedLine = (name: string, place = "My Cloud", language?: string) =>
+export const webhookMovedLine = (name: string, place = "the server", language?: string) =>
   serverLine(language, "server.moves.webhookMoved", { name, place });
 
 export const webhookHomeLine = (name: string) =>
@@ -51,7 +51,7 @@ export async function arrivedRoute(deps: ArrivedDeps, { req, res, path, method, 
   const refuse = (status: number, error: string) => { json(res, status, { error }); return true; };
   if (method !== "POST") return refuse(405, "method not allowed");
   const owner = deps.owner(auth);
-  if (!owner) return refuse(403, "Only My Cloud's owner can finish a move into it.");
+  if (!owner) return refuse(403, "Only the server's owner can finish a move into it.");
   const body = arrivedBody.safeParse(await readBody(req, 64 * 1024));
   if (!body.success) return refuse(400, "send { v: 1, computer, webhooks }");
   const kept = movedFrom(deps.dataDir);
@@ -112,7 +112,7 @@ export async function automationsOffRoute(deps: AutomationsOffDeps, { req, res, 
   if (path !== "/api/cloud-send/automations-off") return false;
   const refuse = (status: number, error: string) => { json(res, status, { error }); return true; };
   if (method !== "POST") { req.resume(); return refuse(405, "method not allowed"); }
-  if (!deps.owner(auth)) { req.resume(); return refuse(403, "Only My Cloud's owner can stop its automations."); }
+  if (!deps.owner(auth)) { req.resume(); return refuse(403, "Only the server's owner can stop its automations."); }
   const body = offBody.safeParse(await readBody(req, 256 * 1024));
   if (!body.success) return refuse(400, "send { v: 1, keys }");
   json(res, 200, { v: 1, off: await switchAutomationsOff(deps.automations, new Set(body.data.keys)) });

@@ -27,7 +27,7 @@ export async function api<T = any>(path: string, init?: ApiInit): Promise<T> {
   const { timeoutMs, signal, background, headers, ...rest } = init ?? {};
   if (background && pageHidden()) return heldUntilShown<T>(path, init!);
   if (cloudAsleep()) {
-    if (background) throw new ApiError("My Cloud is asleep", 503, { error: "asleep" });
+    if (background) throw new ApiError("the server is asleep", 503, { error: "asleep" });
     markCloudAwake();
   }
   const sent = new Headers(headers ?? { "content-type": "application/json" });

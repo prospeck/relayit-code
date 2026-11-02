@@ -14,7 +14,7 @@ export const WAKING_SHOWN_AFTER_MS = 1_500;
 
 export class CloudAsleepError extends Error {
   constructor() {
-    super("My Cloud is asleep.");
+    super("the server is asleep.");
     this.name = "CloudAsleepError";
   }
 }

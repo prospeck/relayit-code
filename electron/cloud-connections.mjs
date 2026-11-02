@@ -66,9 +66,9 @@ export async function collectConnections(local) {
 }
 
 function refused(answer, fallback) {
-  if (answer.status === 401) return new ConnectionMoveError("refused", "My Cloud did not let this app make the change. Open My Cloud in this app once, then try again.");
+  if (answer.status === 401) return new ConnectionMoveError("refused", "the server did not let this app make the change. Open the server in this app once, then try again.");
   const said = sentence(answer.body?.error);
-  return new ConnectionMoveError("refused", said ? `My Cloud said: ${said}` : fallback, answer.status === 400 || answer.status === 403);
+  return new ConnectionMoveError("refused", said ? `the server said: ${said}` : fallback, answer.status === 400 || answer.status === 403);
 }
 
 async function secrets(local, item) {
@@ -131,7 +131,7 @@ export async function adoptComposioId(target, { local, here, there }) {
     body = { apiKey: own.apiKey, userId: own.userId, apps };
   }
   const answer = await target.call("POST", "/api/cloud-connections/connected-apps", body);
-  if (!answer.ok) throw refused(answer, "My Cloud did not take this computer's connected apps.");
+  if (!answer.ok) throw refused(answer, "the server did not take this computer's connected apps.");
   if (answer.body?.shared === true) return { shared: true };
   return { kept: true, missing: Array.isArray(answer.body?.missing) ? answer.body.missing.filter((slug) => typeof slug === "string" && SLUG.test(slug)) : [] };
 }
@@ -153,16 +153,16 @@ export async function adoptComposioId(target, { local, here, there }) {
  */
 export async function sendConnections(collected, target, { local, release = true, signIns = true, waitMs = ENGINE_WAIT_MS, onProgress = () => {} } = {}) {
   const answer = await target.call("GET", "/api/cloud-connections").catch(() => null);
-  if (answer?.status === 404) throw new ConnectionMoveError("outdated", "My Cloud needs an update before it can take this computer's apps and keys. It updates by itself.");
+  if (answer?.status === 404) throw new ConnectionMoveError("outdated", "the server needs an update before it can take this computer's apps and keys. It updates by itself.");
   let cloud = answer?.ok ? parseConnections(answer.body) : null;
-  if (!cloud) throw new ConnectionMoveError("unreachable", "My Cloud did not answer. Try again in a moment.");
+  if (!cloud) throw new ConnectionMoveError("unreachable", "the server did not answer. Try again in a moment.");
   const result = { moved: [], runsHere: [], kept: [], missing: [], failed: [], release: [], later: [], held: [] };
   const done = (item) => result.moved.push({ id: item.id, label: item.label });
 
   /** A sign-in to My Cloud; one that refreshes itself (`digest`) is then let go of here. My Cloud keeps one of its own. */
   async function moveSignIn(item, signIn, digest) {
     const put = await target.call("PUT", signInRoute(item), signIn);
-    if (!put.ok) throw refused(put, `My Cloud did not take ${item.label}'s sign-in.`);
+    if (!put.ok) throw refused(put, `the server did not take ${item.label}'s sign-in.`);
     if (put.body?.kept === true) return void result.kept.push({ id: item.id, label: item.label });
     if (!digest) return;
     const outcome = release ? await letGo(local, target, item, digest) : { released: false, digest };
@@ -175,7 +175,7 @@ export async function sendConnections(collected, target, { local, release = true
       if (!record(connection.config)) throw new ConnectionMoveError("local", `${item.label} could not be read on this computer.`);
 
       const saved = await target.call("PATCH", "/api/config", connection.config);
-      if (!saved.ok) throw refused(saved, `My Cloud did not take the ${item.label} key.`);
+      if (!saved.ok) throw refused(saved, `the server did not take the ${item.label} key.`);
 
       done(item);
       return false;
@@ -194,7 +194,7 @@ export async function sendConnections(collected, target, { local, release = true
         saved = await target.call("POST", "/api/mcp/servers", { name, ...definition, ...(runsOn ? { runsOn } : {}) });
         if (saved.ok && enabled === true) saved = await target.call("PATCH", `/api/mcp/servers/${name}`, { enabled: true });
       }
-      if (!saved.ok) throw refused(saved, `My Cloud did not take ${item.label}.`);
+      if (!saved.ok) throw refused(saved, `the server did not take ${item.label}.`);
       if (runsOn) return void result.runsHere.push({ id: item.id, label: item.label, ...(missing && !item.runsHere && !record(marked) ? { needs: missing } : {}) });
       done(item);
       if (record(signIn)) {

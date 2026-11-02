@@ -66,7 +66,7 @@ const RECONNECTING_MS = 60_000;
 const RECONNECT_WAIT_MS = 15_000;
 const OFFLINE = "This shared computer is offline. Keep its desktop app open; do not substitute files on the server.";
 const RESTARTING = "This server is restarting. Lending resumes by itself once it is back.";
-const lentButOffline = (name: string, seen: number, device: "PC" | "Mac" | "computer" = "computer") => `${name} is lent but has been offline for ${Math.max(1, Math.round((Date.now() - seen) / 60_000))} min: RelayIt on it is closed, the ${device} is asleep or locked, or its desktop app is signed out of RelayIt Cloud. Tell the person in one sentence to open RelayIt on that ${device}; do not substitute files on the server.`;
+const lentButOffline = (name: string, seen: number, device: "PC" | "Mac" | "computer" = "computer") => `${name} is lent but has been offline for ${Math.max(1, Math.round((Date.now() - seen) / 60_000))} min: RelayIt on it is closed, the ${device} is asleep or locked, or its desktop app is disconnected from this server. Tell the person in one sentence to open RelayIt on that ${device}; do not substitute files on the server.`;
 
 /** Aborts when the client of a long poll goes away before it is answered. */
 export function responseGone(res: { once(event: "close", listener: () => void): unknown; readonly writableEnded: boolean }): AbortSignal {
