@@ -22,6 +22,7 @@ import {
   installDesktopCrashListeners,
   readSafeLogTail,
 } from "./diagnostics.mjs";
+import { desktopMasterKey } from "./credential-store.mjs";
 import { migrateWorkspaceCredentials, workspaceCredentialEnv } from "./workspace-credentials.mjs";
 import { evictStartupCacheOnce } from "./startup-cache-eviction.mjs";
 import { activateExistingWindow, releaseSingleInstanceLock } from "./single-instance.mjs";
@@ -403,6 +404,7 @@ async function secureComposioConfig() {
     if (!config?.composio || typeof config.composio !== "object") return;
     let changed = false;
     const apiKey = config?.composio?.apiKey;
+    if (typeof apiKey === "string" && apiKey.startsWith("omb-credential:")) return;
     if (typeof apiKey === "string" && apiKey.trim().startsWith("ak_")) {
       if (!secureCredentials.composioApiKey) {
         secureCredentials.composioApiKey = apiKey.trim();
@@ -1137,6 +1139,12 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
     resourcesPath: process.resourcesPath,
     userData: app.getPath("userData"),
   });
+  const credentialMaster = await desktopMasterKey(dataDir, {
+    available: async () => (await safeStorage.isAsyncEncryptionAvailable()) &&
+      (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
+    encrypt: value => safeStorage.encryptStringAsync(value),
+    decrypt: value => safeStorage.decryptStringAsync(value),
+  });
   const childEnv = managedComposioChildEnvironment(composioBrokerUrl(), secureCredentials, {
     ...process.env,
     // The parent owns the data-dir lease; a child only validates it, so fallback-port children never replace it.
@@ -1189,6 +1197,7 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
   proc.once("spawn", () => {
     slog(`spawned pid=${proc.pid}`);
     if (!serverSupervisor.isCurrent(proc)) return;
+    proc.postMessage({ type: "openmausbot:credential-master", dataDir, master: credentialMaster });
     syncDesktopMutationToken(proc);
     syncPhoneSecretKey(proc); grantLocalComputer(proc, (child) => serverSupervisor.isCurrent(child));
   });
