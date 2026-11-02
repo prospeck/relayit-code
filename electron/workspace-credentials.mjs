@@ -26,7 +26,7 @@ export function migrateWorkspaceCredentials(config, credentials) {
     if (!home || typeof home !== "object" || Array.isArray(home)) continue;
     if (!Object.hasOwn(home, field)) continue;
     const value = home[field];
-    if (typeof value !== "string") continue;
+    if (typeof value !== "string" || value.startsWith("omb-credential:")) continue;
     const secret = value.trim();
     if (secret && nextCredentials[name] !== secret) {
       nextCredentials[name] = secret;

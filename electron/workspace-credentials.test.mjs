@@ -7,6 +7,10 @@ import {
 } from "./workspace-credentials.mjs";
 
 describe("workspace credential migration", () => {
+  it("leaves server encrypted-store references in config instead of treating them as credentials", () => {
+    const config = { tts: { key: "omb-credential:fixture-reference" } };
+    expect(migrateWorkspaceCredentials(config, {})).toEqual({ config, credentials: {}, configChanged: false, credentialsChanged: false });
+  });
   it("stores the router key separately while keeping provider settings", () => {
     const result = migrateWorkspaceCredentials({ imageGen: {
       provider: "custom", key: "openai-only", customApiKey: "router-only",

@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { createDecipheriv, createHash } from "node:crypto";
 import { closeSync, existsSync, fsyncSync, openSync, readFileSync, rmSync } from "node:fs";
 import { CredentialStorageError, EncryptedCredentialStore, credentialProtection, fallbackMasterKey, type CredentialMaster } from "../electron/credential-store.mjs";
@@ -39,7 +39,7 @@ export function listenDesktopPrivateMessages(receive: (event: { data?: object })
 function master(dataDir: string): CredentialMaster {
   if (desktop) {
     const child = relative(resolve(desktop.dataDir), resolve(dataDir));
-    if (child === "" || (!isAbsolute(child) && child !== ".." && !child.startsWith("../"))) return desktop.master;
+    if (child === "" || (!isAbsolute(child) && child !== ".." && !child.startsWith(`..${sep}`))) return desktop.master;
   }
   if (process.env.OMB_DESKTOP_PARENT === "1") throw new Error("Desktop credential key is unavailable for this workspace.");
   return fallbackMasterKey(dataDir);

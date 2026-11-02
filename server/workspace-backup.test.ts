@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { createServer as createNetServer } from "node:net";
 import { gzipSync } from "node:zlib";
 import { Header } from "tar";
+import { persistConfigCredentials } from "./config-credentials.ts";
 import { browserProfilesRoot } from "./browser-engine.ts";
 import { openRuntimeStore } from "./runtime/store.ts";
 import type { Assignment } from "./runtime/types.ts";
@@ -581,7 +582,7 @@ describe("encrypted full workspace backups", () => {
     mkdirSync(join(source, "custom-login"));
     writeFileSync(join(source, "custom-login", "auth.json"), "registered-source-secret");
     for (const field of ["configDir", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "HOME", "XDG_DATA_HOME"]) {
-      json(join(source, "config.json"), config(field));
+      persistConfigCredentials(source, { ...config(field), openai: { key: "fixture-backup-private" } });
       await expect(createWorkspaceBackup(source, { password: PASSWORD })).rejects.toThrow(/Provider authentication storage/);
       expect(existsSync(join(source, ".backups"))).toBe(false);
     }

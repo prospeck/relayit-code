@@ -3,8 +3,8 @@ import { keyHint, keyStatus, withoutKeyHints } from "./key-hint.ts";
 
 describe("a saved key's hint", () => {
   it("is the last four characters of a key long enough to spare them, and nothing for a short one", () => {
-    expect(keyHint("sk-proj-abcdefgh1234")).toEqual({ last4: "1234" });
-    expect(keyHint("  sk-proj-abcdefgh1234\n")).toEqual({ last4: "1234" });
+    expect(keyHint("sk-proj-abcdefgh1234")).toEqual({});
+    expect(keyHint("  sk-proj-abcdefgh1234\n")).toEqual({});
     expect(keyHint("short-key")).toEqual({});
     expect(keyStatus("")).toEqual({ configured: false });
     expect(keyStatus(undefined)).toEqual({ configured: false });

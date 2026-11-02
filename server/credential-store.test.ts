@@ -62,6 +62,7 @@ it("receives the desktop key on a fake private parent channel without losing sta
     await new Promise(resolve => setTimeout(resolve, 20));
     assert.deepEqual(messages, ["fixture-startup-message"]);
     assert.equal(module.credentialStorageStatus(process.env.OMB_DATA_DIR).protection, "os-keychain");
+    assert.throws(() => module.credentialStorageStatus(process.env.OMB_DATA_DIR + "/../outside"));
     module.credentialStore(process.env.OMB_DATA_DIR).write("fixture", { secret: "fixture-channel-private" });
     assert.deepEqual(module.credentialStore(process.env.OMB_DATA_DIR).read("fixture"), { secret: "fixture-channel-private" });
     console.log("private channel passed");
