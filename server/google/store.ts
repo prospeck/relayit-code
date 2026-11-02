@@ -1,52 +1,42 @@
-import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { SecretAccess } from "../../connectors/google/src/contract.ts";
-import { writeFileAtomic } from "../atomic.ts";
-import { decryptBrowserState, encryptBrowserState } from "../browser-sites.ts";
+import { CredentialDocument, holdCredentialValues } from "../credential-store.ts";
 
 const document = z.object({ version: z.literal(1), values: z.record(z.string(), z.string()) });
 
-/** Server-only encrypted storage, using the same AES-GCM format and private local key as saved logins and HighLevel.
- * No HTTP or MCP operation exposes get(); unreadable existing records fail closed rather than being overwritten. */
+/** Server-only access: no HTTP or MCP operation exposes get(). */
 export class GoogleSecrets implements SecretAccess {
-  private readonly file: string;
-  private readonly keyFile: string;
+  private readonly document: CredentialDocument<z.infer<typeof document>>;
   constructor(dataDir: string) {
-    this.file = join(dataDir, "google.json.enc");
-    this.keyFile = join(dataDir, "google-key");
-  }
-  private key(create: boolean): string {
-    if (existsSync(this.keyFile)) {
-      const key = readFileSync(this.keyFile, "utf8").trim();
-      if (/^[a-f0-9]{64}$/.test(key)) return key;
-      throw new Error("Google encrypted storage cannot be opened.");
-    }
-    if (!create) throw new Error("Google encrypted storage key is missing.");
-    const key = randomBytes(32).toString("hex");
-    mkdirSync(join(this.file, ".."), { recursive: true, mode: 0o700 });
-    writeFileAtomic(this.keyFile, key, { mode: 0o600 });
-    return key;
+    this.document = new CredentialDocument(dataDir, "google", {
+      file: join(dataDir, "google.json.enc"), keyFile: join(dataDir, "google-key"),
+    }, value => document.parse(value));
   }
   private read(): Record<string, string> {
-    if (!existsSync(this.file)) return {};
-    try {
-      return document.parse(JSON.parse(decryptBrowserState(readFileSync(this.file), this.key(false)))).values;
-    } catch {
-      throw new Error("Google encrypted storage cannot be opened. Restore its key before reconnecting.");
+    const values = this.document.read()?.values ?? {};
+    for (const [name, value] of Object.entries(values)) this.hold(name, value);
+    return values;
+  }
+  private hold(name: string, value: string): void {
+    if (name === "google.client.secret") holdCredentialValues(value);
+    if (name === "google.oauth.tokens") {
+      holdCredentialValues(value);
+      try {
+        const tokens = JSON.parse(value);
+        holdCredentialValues(tokens.accessToken);
+        holdCredentialValues(tokens.refreshToken);
+      } catch { /* Invalid legacy token text must still be redacted. */ }
     }
   }
   async get(name: string): Promise<string | null> { return this.read()[name] ?? null; }
   async set(name: string, value: string): Promise<void> {
-    const values = this.read();
-    values[name] = value;
-    writeFileAtomic(this.file, encryptBrowserState(JSON.stringify({ version: 1, values }), this.key(true)), { mode: 0o600 });
+    this.hold(name, value);
+    this.document.write({ version: 1, values: { ...this.read(), [name]: value } });
   }
   async delete(name: string): Promise<void> {
     const values = this.read();
     delete values[name];
-    if (!existsSync(this.file)) return;
-    writeFileAtomic(this.file, encryptBrowserState(JSON.stringify({ version: 1, values }), this.key(false)), { mode: 0o600 });
+    this.document.write({ version: 1, values });
   }
 }

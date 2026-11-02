@@ -1,6 +1,6 @@
-import { isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { createDecipheriv, createHash } from "node:crypto";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { closeSync, existsSync, fsyncSync, openSync, readFileSync, rmSync } from "node:fs";
 import { CredentialStorageError, EncryptedCredentialStore, credentialProtection, fallbackMasterKey, type CredentialMaster } from "../electron/credential-store.mjs";
 import { addHeldSecretScrubber, HELD_SECRET_MASK } from "../shared/redact.ts";
 
@@ -101,8 +101,13 @@ export class CredentialDocument<T> {
       }, () => {
         // Parse before removing originals, including when resuming an interrupted migration.
         this.parse(this.store.read(this.name));
+        const removed = existsSync(this.legacy.file) || Boolean(this.legacy.keyFile && existsSync(this.legacy.keyFile));
         rmSync(this.legacy.file, { force: true });
         if (this.legacy.keyFile) rmSync(this.legacy.keyFile, { force: true });
+        if (removed && process.platform !== "win32") {
+          const fd = openSync(dirname(this.legacy.file), "r");
+          try { fsyncSync(fd); } finally { closeSync(fd); }
+        }
       });
       return value === undefined ? undefined : this.parse(value);
     } catch { throw new CredentialStorageError(); }

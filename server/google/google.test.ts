@@ -22,16 +22,16 @@ const text = (result: any): string => result.content[0].text;
 it("encrypts client values and tokens, persists them privately, and refuses unreadable records", async () => {
   const secrets = new GoogleSecrets(directory);
   for (const [key, value] of Object.entries({ "google.client.id": "fixture-client-id", "google.client.secret": "fixture-client-secret", "google.oauth.tokens": "fixture-access-and-refresh" })) await secrets.set(key, value);
-  const ciphertext = readFileSync(join(directory, "google.json.enc"));
+  const ciphertext = readFileSync(join(directory, ".credentials/google.enc"));
   expect(ciphertext.toString()).not.toMatch(/fixture-|google\.client|oauth/);
-  if (process.platform !== "win32") for (const file of readdirSync(directory)) expect(statSync(join(directory, file)).mode & 0o777).toBe(0o600);
+  if (process.platform !== "win32") for (const file of readdirSync(join(directory, ".credentials"))) expect(statSync(join(directory, ".credentials", file)).mode & 0o777).toBe(0o600);
   expect(await new GoogleSecrets(directory).get("google.client.id")).toBe("fixture-client-id");
   await secrets.delete("google.oauth.tokens");
   expect(await new GoogleSecrets(directory).get("google.oauth.tokens")).toBeNull();
-  const saved = readFileSync(join(directory, "google.json.enc"));
-  writeFileSync(join(directory, "google-key"), "invalid fixture key");
-  await expect(secrets.set("new", "value")).rejects.toThrow("cannot be opened");
-  expect(readFileSync(join(directory, "google.json.enc"))).toEqual(saved);
+  const saved = readFileSync(join(directory, ".credentials/google.enc"));
+  writeFileSync(join(directory, ".credentials/master-key"), "invalid fixture key");
+  await expect(secrets.set("new", "value")).rejects.toThrow("could not be opened");
+  expect(readFileSync(join(directory, ".credentials/google.enc"))).toEqual(saved);
 });
 
 it("tries a demo without any account or external request, restores it and disconnects", async () => {
@@ -263,7 +263,7 @@ it("finishes loopback OAuth through a fake token endpoint, checks both APIs and 
     expect(probes).toHaveLength(2);
     const safe = JSON.stringify(await service.status());
     expect(safe).not.toMatch(/fixture-oauth-access|fixture-oauth-refresh|fixture-oauth-secret|fixture-oauth-client/);
-    expect(readFileSync(join(directory, "google.json.enc")).toString()).not.toContain("fixture-oauth");
+    expect(readFileSync(join(directory, ".credentials/google.enc")).toString()).not.toContain("fixture-oauth");
     const pending = await service.connect({});
     expect(pending.flow).toBeTruthy();
     await service.disconnect();
