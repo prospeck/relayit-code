@@ -4,7 +4,7 @@ import { closeSync, existsSync, fsyncSync, openSync, readFileSync, rmSync } from
 import { CredentialStorageError, EncryptedCredentialStore, credentialProtection, fallbackMasterKey, type CredentialMaster } from "../electron/credential-store.mjs";
 import { addHeldSecretScrubber, HELD_SECRET_MASK } from "../shared/redact.ts";
 
-type ParentPort = { on(event: "message", listener: (event: { data?: unknown }) => void): void; removeListener(event: "message", listener: (event: { data?: unknown }) => void): void };
+type ParentPort = { on(event: "message", listener: (event: { data?: unknown }) => void): void; removeListener(event: "message", listener: (event: { data?: unknown }) => void): void; postMessage(message: object): void };
 const parentPort = (process as NodeJS.Process & { parentPort?: ParentPort }).parentPort;
 let desktop: { dataDir: string; master: CredentialMaster } | undefined;
 const pending: Array<{ data?: unknown }> = [];
@@ -27,6 +27,7 @@ if (parentPort && process.env.OMB_DESKTOP_PARENT === "1") {
       accept({ dataDir: message.dataDir!, master: message.master! });
     };
     parentPort.on("message", receive);
+    parentPort.postMessage({ type: "openmausbot:credential-master-request" });
   });
 }
 

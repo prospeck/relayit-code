@@ -1186,6 +1186,10 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
   proc.on("message", (message) => {
     if (!serverSupervisor.isCurrent(proc)) return;
     try {
+      if (message?.type === "openmausbot:credential-master-request") {
+        proc.postMessage({ type: "openmausbot:credential-master", dataDir, master: credentialMaster });
+        return;
+      }
       if (trustedApprovalMode.receive(proc, message)) return;
       if (managedDesktopRelay.receive(proc, message)) return;
       if (orgLibrary?.receive(message)) return;
@@ -1197,7 +1201,6 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
   proc.once("spawn", () => {
     slog(`spawned pid=${proc.pid}`);
     if (!serverSupervisor.isCurrent(proc)) return;
-    proc.postMessage({ type: "openmausbot:credential-master", dataDir, master: credentialMaster });
     syncDesktopMutationToken(proc);
     syncPhoneSecretKey(proc); grantLocalComputer(proc, (child) => serverSupervisor.isCurrent(child));
   });

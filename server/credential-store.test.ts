@@ -49,14 +49,19 @@ it("receives the desktop key on a fake private parent channel without losing sta
     import { EventEmitter } from "node:events";
     const port = new EventEmitter();
     process.parentPort = port;
+    let requests = 0;
+    port.postMessage = message => {
+      assert.equal(message.type, "openmausbot:credential-master-request");
+      assert.ok(port.listenerCount("message") >= 2);
+      requests++;
+      setImmediate(() => {
+        port.emit("message", { data: { type: "openmausbot:credential-master", dataDir: process.env.OMB_DATA_DIR, master: { key: "a".repeat(64), protection: "os-keychain" } } });
+        port.emit("message", { data: { type: "fixture-startup-message" } });
+      });
+    };
     const imported = import(${JSON.stringify(new URL("./credential-store.ts", import.meta.url).href)});
-    const timer = setInterval(() => {
-      if (port.listenerCount("message") < 2) return;
-      clearInterval(timer);
-      port.emit("message", { data: { type: "openmausbot:credential-master", dataDir: process.env.OMB_DATA_DIR, master: { key: "a".repeat(64), protection: "os-keychain" } } });
-      port.emit("message", { data: { type: "fixture-startup-message" } });
-    }, 10);
     const module = await imported;
+    assert.equal(requests, 1);
     const messages = [];
     module.listenDesktopPrivateMessages(event => messages.push(event.data.type));
     await new Promise(resolve => setTimeout(resolve, 20));
