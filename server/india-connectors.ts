@@ -24,11 +24,15 @@ export async function runIndiaConnector(kind: string, dataDir: string, credentia
     razorpay = new RazorpayClient(keys);
   }
   if (!razorpay) {
-    const mock = await startMockCheckout();
-    razorpay = new RazorpayClient({ keyId: "rzp_test_local", keySecret: "unused-local-placeholder", baseUrl: mock.baseUrl });
+    const baseUrl = process.env.RELAYIT_MOCK_CHECKOUT_BASE_URL ?? (await startMockCheckout()).baseUrl;
+    if (!/^http:\/\/127\.0\.0\.1:\d+(?:\/api\/india\/mock-checkout)?\/v1$/.test(baseUrl)) throw new Error("Mock checkout must be local");
+    razorpay = new RazorpayClient({ keyId: "rzp_test_local", keySecret: "unused-local-placeholder", baseUrl });
   }
   const service = new PaymentService({ store: new SqlitePaymentStore(join(dataDir, "india-services", "payments.sqlite")), razorpay });
-  return paymentServer(service, (payment) => confirmPaidDemoOrder(foodDir, payment)).connect(new StdioServerTransport());
+  return paymentServer(service, (payment) => confirmPaidDemoOrder(foodDir, payment), async (input) => {
+    const order = await new MockFoodProvider(foodDir).getOrder(input.orderId);
+    return { ...input, amountInr: order.amountInr, payeeName: order.payee.name, payeeVpa: order.payee.vpa };
+  }).connect(new StdioServerTransport());
 }
 
 if (import.meta.main) {

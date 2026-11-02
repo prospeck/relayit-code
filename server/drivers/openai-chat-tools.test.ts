@@ -97,6 +97,7 @@ async function fixture(script: Script, provider: Provider = "openai-compat", api
   const requests: ChatRequest[] = [];
   const rpcStarted = deferred<{ name: string; args: Record<string, unknown> }>();
   const server = createServer(async (request, response) => {
+    if (request.url?.startsWith("/api/")) { response.statusCode = 404; response.end(); return; }
     if (request.url === "/v1/models") {
       response.setHeader("content-type", "application/json");
       response.end('{"data":[]}');
@@ -233,7 +234,7 @@ describe("bounded action announcement recovery", () => {
 });
 
 describe("a searched MCP catalog", () => {
-  it("asks about the tool call_tool runs, and never about a search", async () => {
+  it.each(["ask", "full"] as const)("asks about the tool call_tool runs, even in %s, and never about a search", async (approvalMode) => {
     const remote = await startFakeHttpMcp({ tools: whopLikeCatalog(300) });
     cleanups.push(() => remote.close());
     const f = await fixture((_body, response, round) => {
@@ -241,7 +242,7 @@ describe("a searched MCP catalog", () => {
       else if (round === 2) sse(response, [chunk({ content: null, tool_calls: [toolCall("whop_call_tool", '{"name":"payments_list","arguments":{"company_id":"biz_1"}}', "call_run")] }, "tool_calls")]);
       else answer(response);
     });
-    await f.start({ integrations: { custom: { whop: { type: "http", url: remote.url, headers: {} } } } });
+    await f.start({ approvalMode, integrations: { custom: { whop: { type: "http", url: remote.url, headers: {} } } } });
     const opened = await f.recorder.until((event) => event.type === "request.opened");
     expect(opened).toMatchObject({ requestType: "permission", tool: "whop_payments_list", summary: expect.stringContaining("biz_1") });
     expect(remote.calls).toEqual([]);

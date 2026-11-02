@@ -1,3 +1,4 @@
+import { isShippedIndiaConnector } from "./india-services.ts";
 import { join } from "node:path";
 import { parseToolScope, type ToolScope } from "../shared/tool-scope.ts";
 
@@ -158,7 +159,7 @@ export function gateServer(input: {
   if (!parsed.ok) throw new Error(parsed.error);
   const scoped = parsed.scope !== undefined;
   const remote = remoteMcpSpec(server) !== undefined;
-  if (budget <= 0 && !scoped && !apps && !schemaProfile && !limitsTools && !refuseOutbound) return null;
+  if (budget <= 0 && !scoped && !apps && !schemaProfile && !limitsTools && !refuseOutbound && !isShippedIndiaConnector(name, server)) return null;
   const directory = input.directory === true && remote;
   const proxyOptions = {
     nodeEnv: input.nodeEnv,

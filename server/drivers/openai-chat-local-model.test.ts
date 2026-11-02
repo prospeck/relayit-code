@@ -11,6 +11,8 @@ import type { ProviderInstance, SendTurnInput } from "../contracts.ts";
 import { removeTempDir } from "../testing/cleanup.ts";
 import { recordEvents } from "../testing/events.ts";
 import { GrokDriver } from "./grok.ts";
+import { MockFoodProvider } from "../../connectors/food/src/mock/provider.ts";
+import { indiaServiceSpec } from "../india-services.ts";
 import { OpenAICompatDriver } from "./openai-compat.ts";
 
 interface ChatRequest { messages: Array<{ role: string; content: unknown; tool_call_id?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> }> }
@@ -106,7 +108,7 @@ describe("a tool call a local model wrote as text", () => {
     expect(await f.completed()).toMatchObject({ ok: true });
     expect(f.effects()).toEqual([{ name: "receipt" }]);
     expect(f.shown()).not.toContain("tool_call");
-    expect(f.replies()).toEqual(["Saving it.", "Stored."]);
+    expect(f.replies()).toEqual(["Stored."]);
     const second = f.requests[1]!.messages;
     const call = second.find((message) => message.tool_calls)!.tool_calls![0]!;
     expect(call.function.name).toBe("audit_write");
@@ -138,7 +140,8 @@ describe("a tool call a local model wrote as text", () => {
     expect(await f.completed()).toMatchObject({ ok: true });
     expect(f.effects()).toEqual([]);
     expect(f.requests).toHaveLength(1);
-    expect(f.shown()).toBe(quote);
+    expect(f.shown()).toBe("");
+    expect(f.replies()).toEqual([quote]);
   });
 
   it("does not run a call cut off at the token limit", async () => {
@@ -163,7 +166,8 @@ describe("a tool call a local model wrote as text", () => {
     expect(f.requests).toHaveLength(2);
     expect(JSON.stringify(f.requests[1]!.messages.at(-1))).toContain("could not be read");
     expect(f.effects()).toEqual([]);
-    expect(f.shown()).toBe(broken);
+    expect(f.shown()).toBe("");
+    expect(f.replies()).toEqual([broken]);
   });
 
   it("never does any of this for a hosted model", async () => {
@@ -234,9 +238,10 @@ describe("a local model repeating itself", () => {
     await f.start({ approvalMode: "ask" });
     const ask = await f.recorder.until((event) => event.type === "request.opened");
     await f.respond(ask.requestId!, "deny");
-    expect(await f.completed()).toMatchObject({ ok: false });
-    expect(f.requests).toHaveLength(2);
+    expect(await f.completed()).toMatchObject({ ok: true, stopReason: "refused" });
+    expect(f.requests).toHaveLength(1);
     expect(f.effects()).toEqual([]);
+    expect(f.replies()).toEqual(["The action was declined. I stopped; it was not executed."]);
   });
 
   it("a hosted model's failed turn ends as before", async () => {
@@ -245,5 +250,42 @@ describe("a local model repeating itself", () => {
     await f.start();
     expect(await f.completed()).toMatchObject({ ok: false, stopReason: "tool_error" });
     expect(f.requests).toHaveLength(2);
+  });
+});
+
+
+describe("stored-cart approvals on the local model path", () => {
+  it.each(["allow", "deny", "failed-preview"] as const)("handles %s without executing an unapproved order", async (behavior) => {
+    const dir = mkdtempSync(join(tmpdir(), "relayit-card-gate-"));
+    cleanups.push(() => removeTempDir(dir));
+    const provider = new MockFoodProvider(join(dir, "india-services", "food"));
+    const restaurant = (await provider.searchRestaurants({ query: "California Pizza" }))[0]!;
+    const menu = await provider.getMenu(restaurant.id);
+    const cart = await provider.quote({ restaurantId: restaurant.id, items: [{ itemId: menu.categories[0]!.items[0]!.id, qty: 1 }], deliveryAddress: { label: "Home", line: "12 Demo Road, Bengaluru" } });
+    const f = await fixture((_body, response, round) => round === 1
+      ? sse(response, [chunk({ tool_calls: [{ index: 0, id: "order", type: "function", function: { name: "india_food_place_order", arguments: JSON.stringify({ cartId: behavior === "failed-preview" ? "missing" : cart.cartId, amountInr: 1 }) } }] }, "tool_calls")])
+      : say(response, "The demo order awaits payment."));
+    await f.start({ integrations: { custom: { "india-food": indiaServiceSpec("food", dir)!.server } }, approvalMode: "ask" });
+    if (behavior !== "failed-preview") {
+      const ask = await f.recorder.until((event) => event.type === "request.opened");
+      if (ask.type !== "request.opened") throw new Error("Expected a permission card");
+      expect(ask.summary).toContain(`Total: ₹${cart.totalInr.toFixed(2)}`);
+      await f.respond(ask.requestId!, behavior);
+    }
+    expect(await f.completed()).toMatchObject({ ok: true });
+    const state = JSON.parse(readFileSync(join(dir, "india-services", "food", "food-state.json"), "utf8"));
+    expect(Object.values(state.orders)).toHaveLength(behavior === "allow" ? 1 : 0);
+    expect(f.requests).toHaveLength(behavior === "allow" ? 2 : 1);
+    if (behavior === "failed-preview") {
+      expect(f.opened()).toEqual([]);
+      expect(f.replies().join(" ")).toContain("card can't be shown");
+    }
+  });
+  it("never streams or publishes an invented price before checking it", async () => {
+    const f = await fixture((_body, response, round) => say(response, round === 1 ? "Your meal costs ₹9999." : "I need a menu price first."));
+    await f.start();
+    expect(await f.completed()).toMatchObject({ ok: true });
+    expect(f.shown()).toBe("");
+    expect(f.replies()).toEqual(["I need a menu price first."]);
   });
 });

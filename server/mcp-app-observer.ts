@@ -68,7 +68,8 @@ export function toolVisibility(tool: unknown): AppVisibility[] {
 }
 
 export function modelVisible(tool: unknown): boolean {
-  return toolVisibility(tool).includes("model");
+  return !(isRecord(tool) && isRecord(tool._meta) && tool._meta["relayit/previewOnly"] === true)
+    && toolVisibility(tool).includes("model");
 }
 
 export function withoutAppOnlyTools<T>(result: T): T {

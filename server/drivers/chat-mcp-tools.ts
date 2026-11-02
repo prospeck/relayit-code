@@ -1,6 +1,8 @@
 // Per-turn MCP transport for the Chat Completions runtime: approval is the caller's, and only
 // registered, schema-validated calls arrive here.
-import { indiaFreeTools } from "../india-services.ts";
+import { isOutboundTool } from "../../shared/outbound.ts";
+import { isShippedIndiaConnector, indiaFreeTools } from "../india-services.ts";
+import { readableToolArguments, serverApprovalPreview } from "../tool-approval-preview.ts";
 import { createHash } from "node:crypto";
 import type { ValidateFunction } from "ajv";
 import { stripControlPlaneEnv } from "../config.ts";
@@ -44,12 +46,13 @@ export interface ChatToolSession {
   validate(name: string, args: unknown): void;
   /** Directory reads and OpenMausBot's own agents server need no card; call_tool shows the tool it runs. */
   view(name: string, args: Record<string, unknown>): ChatToolCallView;
+  approvalSummary(name: string, args: Record<string, unknown>): Promise<string>;
   execute(name: string, args: Record<string, unknown>, signal: AbortSignal): Promise<ChatToolResult>;
   close(): Promise<void>;
 }
 
 type Server = { command: string; args: string[]; env: Record<string, string> };
-type RegisteredTool = { client: ChatMcpClient; server: string; launch: string; builtInBrowser: boolean; agents: boolean; hostComputer: boolean; freeTools?: ReadonlySet<string>; name: string; schema: ValidateFunction; searched: boolean };
+type RegisteredTool = { client: ChatMcpClient; server: string; launch: string; builtInBrowser: boolean; agents: boolean; hostComputer: boolean; freeTools?: ReadonlySet<string>; trustedPreview?: boolean; previewTool?: unknown; name: string; schema: ValidateFunction; searched: boolean };
 function chatToolName(server: string, tool: string): string {
   return `${server}_${tool}`.toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 64) || "mcp_tool";
 }
@@ -292,7 +295,7 @@ function omitBlankDefaults(builtInBrowser: boolean, tool: string, args: unknown)
 }
 
 type CheckedTool = { tool: Record<string, unknown> & { name: string; inputSchema: Record<string, unknown> }; schema: ValidateFunction };
-type ToolOrigin = Omit<RegisteredTool, "name" | "schema">;
+type ToolOrigin = Omit<RegisteredTool, "name" | "schema" | "previewTool">;
 const ARGUMENTS_MISFIT = "Tool arguments do not match the advertised input schema; use its required fields and types";
 
 function checkedTools(tools: readonly unknown[]): CheckedTool[] {
@@ -398,7 +401,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
       const description = (typeof listed.description === "string" ? listed.description : "Configured MCP tool") +
         (Object.keys(constraints).length ? " Additional argument constraints (validated before execution): " + JSON.stringify(constraints) : "");
       const name = uniqueName(chatToolName(origin.server, tool.name), (candidate) => registered.has(candidate) || staged.some((entry) => entry.definition.function.name === candidate));
-      staged.push({ tool: { ...origin, name: tool.name, schema }, definition: { type: "function", function: { name, description, parameters } } });
+      staged.push({ tool: { ...origin, previewTool: object(tool._meta) ? tool._meta["relayit/previewTool"] : undefined, name: tool.name, schema }, definition: { type: "function", function: { name, description, parameters } } });
     }
     if (Buffer.byteLength(JSON.stringify([...definitions, ...staged.map((entry) => entry.definition)])) > CATALOG_BYTES) throw new Error("MCP tool catalog exceeds the 1MB limit");
     for (const { tool, definition } of staged) {
@@ -432,7 +435,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
       // Harness mounts are known by descriptor, never by a name a configured server could claim. A grant
       // hashes the descriptor (no credential kept); machine bridges mint a bearer per turn, so theirs last a turn.
       const launch = createHash("sha256").update(JSON.stringify(descriptor)).digest("hex");
-      const origin: ToolOrigin = { client, server: name, launch, freeTools: indiaFreeTools(name, descriptor), builtInBrowser: descriptor === integrations?.browser, agents: descriptor === agentsServer,
+      const origin: ToolOrigin = { client, server: name, launch, freeTools: indiaFreeTools(name, descriptor), trustedPreview: isShippedIndiaConnector(name, descriptor), builtInBrowser: descriptor === integrations?.browser, agents: descriptor === agentsServer,
         hostComputer: descriptor === integrations?.localComputer && integrations?.localComputer?.scope === "local-computer", searched: searchable.has(name) };
       return { origin, tools };
     }));
@@ -484,7 +487,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
       for (const { origin, tools } of searched) {
         for (const { tool, schema } of tools) {
           const name = uniqueName(chatToolName(origin.server, tool.name), (candidate) => catalog.has(candidate));
-          catalog.set(name, { ...origin, name: tool.name, schema });
+          catalog.set(name, { ...origin, previewTool: object(tool._meta) ? tool._meta["relayit/previewTool"] : undefined, name: tool.name, schema });
           entries.push({ ...tool, name });
         }
       }
@@ -534,7 +537,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
   const viewOf = (tool: RegisteredTool, args: Record<string, unknown>, title: string): ChatToolCallView => {
     const runs = target(tool, args);
     if (runs === undefined || tool.agents || tool.server === "google" || tool.freeTools?.has(runs)) return { title, input: args, ask: false };
-    const grant = !tool.hostComputer ? JSON.stringify([tool.server, tool.launch, runs]) : undefined;
+    const grant = !tool.hostComputer && !isOutboundTool(runs) ? JSON.stringify([tool.server, tool.launch, runs]) : undefined;
     if (!tool.searched || tool.name !== CALL_TOOL) return { title, input: args, ask: true, ...(grant ? { grant } : {}) };
     return { title: chatToolName(tool.server, runs), input: object(args.arguments) ? args.arguments : {}, ask: true, ...(grant ? { grant } : {}) };
   };
@@ -573,6 +576,17 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
   const answer = (result: DirectoryResult): ChatToolResult => ({ text: boundedText(result.content.map((part) => part.text).join("\n")), ok: result.isError !== true });
   return {
     definitions, skipped, trimmed, budget, validate, view, close,
+    async approvalSummary(name, args) {
+      validate(name, args);
+      const call = directoryNames.get(name) === CALL_TOOL ? searchedCall(args) : undefined;
+      const tool = call?.tool ?? registered.get(name);
+      const input = call?.args ?? args;
+      if (tool?.trustedPreview && tool.previewTool !== undefined) {
+        return serverApprovalPreview(tool.previewTool, input, (preview, sameArgs) =>
+          tool.client.call("tools/call", { name: preview, arguments: sameArgs }, signal, Math.min(callTimeoutMs, 15_000)));
+      }
+      return readableToolArguments(view(name, args).input);
+    },
     async execute(name, args, callSignal) {
       validate(name, args);
       if (callSignal.aborted) { await close(); throw aborted(); }
