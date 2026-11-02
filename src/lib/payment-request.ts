@@ -10,9 +10,14 @@ const card = z.object({
 export type PaymentRequest = z.infer<typeof card>;
 
 export function paymentRequest(name: string, output: string | undefined): PaymentRequest | null {
-  if (!/^mcp__india-payments__payments_(?:create_request|check_status|mark_paid_by_user)$/.test(name) || !output || output.length > 64_000) return null;
+  if (!/^(?:(?:mcp__)?india[-_]payments(?:_openmausbot\d*)?(?:__|_))?payments_(?:create_request|check_status|mark_paid_by_user)$/.test(name) || !output || output.length > 64_000) return null;
   function parse(value: unknown, depth = 0): PaymentRequest | null {
-    if (depth > 4) return null;
+    if (depth > 8) return null;
+    if (Array.isArray(value)) {
+      for (const entry of value.slice(0, 40)) { const result = parse(entry, depth + 1); if (result) return result; }
+      return null;
+    }
+    if (value && typeof value === "object" && ("isError" in value && value.isError === true || "ok" in value && value.ok === false)) return null;
     if (typeof value === "string") {
       try { return parse(JSON.parse(value), depth + 1); } catch { return null; }
     }
@@ -32,10 +37,10 @@ export function paymentRequest(name: string, output: string | undefined): Paymen
         return payment;
       } catch { return null; }
     }
-    if (value && typeof value === "object" && "content" in value && Array.isArray(value.content)) {
-      for (const part of value.content) {
-        if (part?.type === "text") { const result = parse(part.text, depth + 1); if (result) return result; }
-      }
+    if (value && typeof value === "object") {
+      if ("result" in value) return parse(value.result, depth + 1);
+      if ("content" in value) return parse(value.content, depth + 1);
+      if ("type" in value && value.type === "text" && "text" in value) return parse(value.text, depth + 1);
     }
     return null;
   }

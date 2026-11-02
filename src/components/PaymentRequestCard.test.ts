@@ -21,6 +21,11 @@ describe("UPI chat card", () => {
     expect(render({ ...card, qrSvg: "<script>bad()</script>" })).not.toContain("<script>");
     expect(render(card, false)).toBe("");
   });
+  it.each(["payments_create_request", "india_payments_payments_create_request", "india-payments__payments_create_request", "mcp__india-payments__payments_create_request"])("accepts the native driver projection %s", (toolName) => {
+    expect(paymentRequest(toolName, JSON.stringify({ ok: true, result: card }))).toMatchObject({ id: card.id });
+    expect(paymentRequest(toolName, JSON.stringify([{ type: "content", content: { type: "text", text: JSON.stringify(card) } }]))).toMatchObject({ id: card.id });
+    expect(paymentRequest(toolName, JSON.stringify({ ok: false, result: card }))).toBeNull();
+  });
   it("refuses mismatched amounts, non-payment tools and unsafe checkout links", () => {
     expect(render({ ...card, upiUri: card.upiUri + "&pa=other%40bank" })).toBe("");
     expect(render({ ...card, amountInr: 999 })).toBe("");
