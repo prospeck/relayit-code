@@ -122,6 +122,17 @@ function matcher(table: Readonly<Record<string, LanguageWords>>): (text: string 
   };
 }
 
+/** Buttons that spend the person's money. Getting to a cart or a checkout page is fine; these are the last press. */
+const MONEY_ACTIONS: Readonly<Record<string, LanguageWords>> = {
+  en: { words: ["pay", "pay now", "buy", "buy now", "purchase", "place order", "place your order", "order now", "confirm order", "complete order",
+    "confirm and pay", "confirm & pay", "proceed to pay", "complete purchase", "book now", "confirm booking", "book ticket", "reserve now", "subscribe",
+    "donate", "send money", "transfer", "recharge now", "top up", "start order"] },
+  hi: { words: ["भुगतान करें", "भुगतान", "अभी खरीदें", "खरीदें", "ऑर्डर करें", "ऑर्डर दें", "बुक करें", "पैसे भेजें"], unspaced: true },
+};
+
+/** True when a label names the press that spends money. */
+export const namesMoneyAction = matcher(MONEY_ACTIONS);
+
 /** True when a label or title names a final, can't-undo action in any language this app ships. */
 export const namesFinalAction = matcher(FINAL_ACTIONS);
 

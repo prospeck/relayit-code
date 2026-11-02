@@ -21,21 +21,28 @@ before, and so does every read in a guest's turn, since a bot's folder holds its
 owner's memory. On a Cloud the bot's box also shows it its own `SOUL.md`,
 read-only.
 
-Every bot and conversation starts at **Full access**, the default T3 Code uses
-too: each engine runs in its own most permissive mode, and a real question or
-a missing credential still reaches you. That covers a bot made in New bot,
-through the API or by onboarding, each new thread, a Chief's new teammates,
-and bots imported from a team backup, a shared team file or the organization
-library. A level a person picks stays until someone changes it. On a hosted
-company workspace the default stays Ask, because Full access there comes only
-from the operator's dedicated policy.
+Every bot and conversation starts at **Ask for approval**. Other levels are a choice the
+person makes.
+
+**Sends and money always ask, at every level.** Emails, messages, posts, orders, bookings and
+payments through connected apps show their card even at Full access, and a daily allowance can
+cover sends but never money. On Full access turns, engines that run tools without asking (Claude,
+Codex, Antigravity and others) cannot show a card, so a send or payment through a custom MCP server
+is refused and the bot is told to ask the person to switch the chat to Ask. In the bots' browser,
+the press that spends money (Pay, Place order, Buy now, Book now and their like) belongs to the
+person: the bot stops, and they press it themselves in the browser panel.
+
+Tool names and button labels are read by word lists, so a tool or button with an unusual name can
+get past them. A bot with shell access at Full access can also run commands that nothing here
+reads, and control of the person's own computer is outside the browser rule. Keep Full access for
+bots you trust with that.
 
 | Level | Behavior |
 | --- | --- |
 | **Ask for approval** | Requests approval for commands and file changes, the way the provider's supervised mode does. |
 | **Auto-accept edits** | Approves file edits automatically; other actions can still require approval. Offered where the provider has such a mode (Claude, Grok, Antigravity). |
 | **Approve for me** | Uses the provider's automatic review on Codex, Claude, Cursor, and Grok to approve routine actions and ask about others. Providers without an equivalent fall back to asking. |
-| **Full access** | Enables the provider's permissive mode for commands, edits, and selected-computer actions, including potentially destructive or sensitive work. Residual native permission prompts are answered for you. OMB profile changes, routine actions, team setup, bot deletion, and enabled skill authoring apply without a second approval. Peer-review prompts are skipped within the bot's authorized scope. Sends through connected apps (email, messages, posts, payments) go out without the "Send on your behalf?" card or a daily allowance; apps outside the bot's connected-app scope are still refused. Work handed on with `coordinate_bots` uses the receiving bot's setting, never the sender's — except from a Chief of Staff, whose level flows down (below). Actual questions and missing credentials still need your input. |
+| **Full access** | Enables the provider's permissive mode for commands, edits, and selected-computer actions, including potentially destructive or sensitive work. Residual native permission prompts are answered for you. OMB profile changes, routine actions, team setup, bot deletion, and enabled skill authoring apply without a second approval. Peer-review prompts are skipped within the bot's authorized scope. Sends and money through connected apps still show the "Send on your behalf?" card; apps outside the bot's connected-app scope are still refused. Work handed on with `coordinate_bots` uses the receiving bot's setting, never the sender's — except from a Chief of Staff, whose level flows down (below). Actual questions and missing credentials still need your input. |
 | **Custom (`config.toml`)** | Codex only. OpenMausBot reads and reapplies the effective approval and sandbox settings from your Codex configuration. |
 
 Full access applies the moment you pick it: no confirmation dialog, no second
@@ -45,9 +52,7 @@ calling the local API where local calls count as you (development, the CLI, a
 self-hosted server). Picked in bot settings, it applies to the bot and every
 one of its existing threads at once; picked in the composer, to that thread;
 Refresh permissions copies it onto one thread. Every engine runs it (see
-Provider mappings). On a hosted company workspace, Full access still comes
-only from the operator's dedicated policy
-([guarded messages](verification/guarded-messages.md)).
+Provider mappings).
 
 Custom is different: it can only be entered or left from a packaged local
 desktop app, where the choice crosses a private process channel rather than the

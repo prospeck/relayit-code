@@ -5,6 +5,7 @@
 // (full text in third_party/t3-code/LICENSE); modified: one in-process host instead of a broker, tabs that belong to
 // the profile, the CDP driver instead of Playwright, and OpenMausBot's page-change and page-health lines.
 import { describePageChange, sanitizeUrl, type PageState } from "../browser-tool-shape.ts";
+import { namesMoneyAction } from "../saved-steps/screen-words.ts";
 import type { CdpBrowser } from "./cdp/browser.ts";
 import type { Download } from "./cdp/downloads.ts";
 import { DriverError, isUnanswered } from "./cdp/errors.ts";
@@ -28,6 +29,36 @@ const OBSERVE_TEXT_CHARS = 200_000;
 const NAVIGATION_FOLLOW_MS = 10_000;
 const OBSERVE_PAGE = `({ url: location.href, title: document.title, text: (document.body ? document.body.innerText : "").slice(0, ${OBSERVE_TEXT_CHARS}) })`;
 const ELEMENT_TEXT = "function () { return String(this.innerText ?? this.textContent ?? this.value ?? ''); }";
+
+/** What a press on this element would really press: its button or link, by what a person reads on it. */
+const PRESS_LABEL = `function () {
+  const control = this.closest?.("button, a, input, [role=button], [role=link], [role=menuitem]") ?? this;
+  return [control.innerText, control.value, control.getAttribute?.("aria-label"), control.title].filter(Boolean).join(" ").slice(0, 300);
+}`;
+/** The same for Enter or Space on whatever has focus, and the button that would submit its form. */
+const FOCUS_LABEL = `(() => {
+  const focused = document.activeElement;
+  if (!focused || focused === document.body) return "";
+  const submit = focused.form?.querySelector("button:not([type=button]):not([type=reset]), input[type=submit]");
+  return [focused.innerText, focused.value, focused.getAttribute("aria-label"), focused.title, submit?.innerText, submit?.value]
+    .filter(Boolean).join(" ").slice(0, 300);
+})()`;
+const POINT_LABEL = (x: number, y: number) => `(() => {
+  const at = document.elementFromPoint(${x}, ${y});
+  const control = at?.closest("button, a, input, [role=button], [role=link], [role=menuitem]") ?? at;
+  return control ? [control.innerText, control.value, control.getAttribute("aria-label"), control.title].filter(Boolean).join(" ").slice(0, 300) : "";
+})()`;
+/** Scripts that press things go through agent_browser_click, where the money rule can read the button. */
+const PRESSES_FROM_SCRIPT = /\.\s*(?:click|submit|requestSubmit)\s*\(|dispatchEvent\s*\(/;
+
+export const MONEY_PRESS_REFUSAL = "RelayIt did not press this: it spends money, and only the person presses that. Stop here, tell them the page is ready, and ask them to check the details and press it themselves in the browser panel.";
+export const SCRIPT_PRESS_REFUSAL = "agent_browser_eval can't press buttons or submit forms. Use agent_browser_click or agent_browser_press.";
+
+async function pressesMoney(tab: Tab, target: { ref?: string; selector?: string } | { x: number; y: number }): Promise<boolean> {
+  if ("x" in target) return namesMoneyAction(await valueInWorld<string>(tab.page.frames, tab.page.frames.mainFrameId, POINT_LABEL(target.x, target.y)));
+  const handle = await resolveElement(tab.page.frames, tab.page.refs, target);
+  return namesMoneyAction(await callOnNode<string>(tab.page.frames, handle, PRESS_LABEL));
+}
 
 export const SECRET_ON_PAGE_EVAL = "A saved password was just filled on this page, so agent_browser_eval is refused here for now. Submit the form or open another page first; to read this page, use agent_browser_snapshot or agent_browser_read.";
 
@@ -298,6 +329,7 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
       const tab = tabOf(context, call.input.tab);
       const target = element(call.input);
       return act(context, tab, async () => {
+        if (await pressesMoney(tab, target)) return errorResult(MONEY_PRESS_REFUSAL);
         const clicked = await tab.page.click(target, { button: call.input.button ?? "left", clickCount: call.input.clickCount ?? 1, timeoutMs: remaining(context), pointer: context.pointer(tab) });
         return textResult(`Clicked ${"ref" in target ? target.ref : "selector" in target ? JSON.stringify(target.selector) : `${Math.round(clicked.x)},${Math.round(clicked.y)}`}${clicked.dialog ? "; it opened a dialog" : ""}.`);
       }, { observeChange: true });
@@ -307,6 +339,9 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
       const target = element(call.input, false) as { ref: string } | { selector: string };
       return act(context, tab, async () => {
         await tab.page.fill(target, call.input.text);
+        if (call.input.submit && namesMoneyAction(await valueInWorld<string>(tab.page.frames, tab.page.frames.mainFrameId, FOCUS_LABEL))) {
+          return errorResult(MONEY_PRESS_REFUSAL);
+        }
         if (call.input.submit) await tab.page.press("Enter");
         return textResult(`Filled the field${call.input.submit ? " and pressed Enter" : ""}.`);
       }, { observeChange: true });
@@ -324,6 +359,10 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
       const tab = tabOf(context, call.input.tab);
       const chord = [...(call.input.modifiers ?? []), call.input.key].join("+");
       return act(context, tab, async () => {
+        if (/^(?:Enter|Return| |Space)$/i.test(call.input.key)
+          && namesMoneyAction(await valueInWorld<string>(tab.page.frames, tab.page.frames.mainFrameId, FOCUS_LABEL))) {
+          return errorResult(MONEY_PRESS_REFUSAL);
+        }
         const pressed = await tab.page.press(chord);
         return textResult(`Pressed ${chord}${pressed.dialog ? "; it opened a dialog" : ""}.`);
       }, { observeChange: true });
@@ -398,6 +437,7 @@ export async function executeTool(context: ToolContext, call: ToolCall): Promise
       const tab = tabOf(context, call.input.tab);
       return act(context, tab, async () => {
         if (await context.secretOnPage(tab)) return errorResult(SECRET_ON_PAGE_EVAL);
+        if (PRESSES_FROM_SCRIPT.test(call.input.expression)) return errorResult(SCRIPT_PRESS_REFUSAL);
         const value = await tab.page.evaluate(call.input.expression, { world: call.input.world ?? "isolated", timeoutMs: remaining(context) });
         return textResult(value === undefined ? "undefined" : JSON.stringify(value));
       });

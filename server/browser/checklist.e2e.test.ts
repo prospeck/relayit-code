@@ -55,6 +55,30 @@ suite("the bots' browser service on real Chrome", () => {
   };
   const refOf = (snapshot: string, role: string, name: string) => new RegExp(`${role} "${name}" \\[ref=(e\\d+)\\]`).exec(snapshot)?.[1];
 
+  it("leaves the press that spends money to the person, however the bot tries it", async () => {
+    const target = bot();
+    const url = page("/pay", `<p id="out">waiting</p><a href="#" onclick="out.textContent='cart'">Add to cart</a>
+      <button id="go" onclick="out.textContent='PAID'"><span id="inner">Pay ₹450</span></button>
+      <form onsubmit="out.textContent='PAID';return false"><input id="note"><button>Place order</button></form>
+      <button id="bare" aria-label="Buy now" onclick="out.textContent='PAID'">→</button>`);
+    const opened = real.text(await real.call(target, "agent_browser_open", { url }));
+    const refused = /only the person presses/;
+    const out = async () => real.text(await real.call(target, "agent_browser_read", { selector: "#out" }));
+
+    expect(real.text(await real.call(target, "agent_browser_click", { selector: "#go" }))).toMatch(refused);
+    expect(real.text(await real.call(target, "agent_browser_click", { selector: "#inner" }))).toMatch(refused);
+    expect(real.text(await real.call(target, "agent_browser_click", { selector: "#bare" }))).toMatch(refused);
+    expect(real.text(await real.call(target, "agent_browser_click", { ref: refOf(opened, "button", "Place order") }))).toMatch(refused);
+    expect(real.text(await real.call(target, "agent_browser_fill", { selector: "#note", text: "no onions", submit: true }))).toMatch(refused);
+    await real.call(target, "agent_browser_eval", { expression: "document.querySelector('#go').focus()", world: "main" });
+    expect(real.text(await real.call(target, "agent_browser_press", { key: "Enter" }))).toMatch(refused);
+    expect(real.text(await real.call(target, "agent_browser_eval", { expression: "document.querySelector('#go').click()" }))).toMatch(/can't press buttons/);
+    expect(await out()).toContain("waiting");
+
+    await real.call(target, "agent_browser_click", { selector: "a" });
+    expect(await out()).toContain("cart");
+  });
+
   it("opens a page with its tree and refs, fills and clicks by ref, and says what the click changed", async () => {
     const target = bot();
     const url = page("/form", `<label>Name <input id="n"></label><button onclick="document.querySelector('#out').textContent = 'Hello ' + document.querySelector('#n').value">Go</button><p id="out"></p>`);
