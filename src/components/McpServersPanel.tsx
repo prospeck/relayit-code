@@ -23,6 +23,8 @@ import { completeMcpSignIn, mcpSignInLink, runMcpSignIn, type McpSignInStatus } 
 import { listenLiveFrames } from "@/lib/live-events";
 import { api, useStore } from "@/state/store";
 
+import { McpPresetCards } from "./McpPresetCards";
+import type { MCP_PRESETS } from "../../shared/mcp-presets";
 import { McpAppsSwitch } from "./McpAppsSwitch";
 import { Switch } from "./SettingsPrimitives";
 import { ClaudeCodeSwitches } from "./ClaudeCodeSwitches";
@@ -362,6 +364,27 @@ export function McpServersPanel({ embedded = false, whopCard = false, hideWhop =
     }
   }
 
+  const connectPreset = async (preset: typeof MCP_PRESETS[number]) => {
+    if (!servers || busy !== null || signingIn !== null) return;
+    const existing = servers.find((server) => isRemoteMcpListing(server) && server.url === preset.url);
+    if (existing) { await signIn(existing); return; }
+    setBusy(`preset:${preset.id}`);
+    loadGeneration.current += 1;
+    setError(null);
+    let added: McpServerListing | undefined;
+    try {
+      let name = preset.id as string;
+      for (let suffix = 2; servers.some((server) => server.name === name); suffix += 1) name = `${preset.id}-${suffix}`;
+      const result = await api("/api/mcp/servers", { method: "POST", body: JSON.stringify({ name, type: "http", url: preset.url, enabled: false }) });
+      if (!mounted.current) return;
+      added = listed(result.servers).find((server) => server.name === name);
+      if (!added) throw new Error(t("india.presets.failed"));
+    } catch (cause) {
+      if (mounted.current) setError(cause instanceof Error ? cause.message : String(cause));
+    } finally { if (mounted.current) setBusy(null); }
+    if (added && mounted.current) await signIn(added);
+  };
+
   const connectWhop = async () => {
     if (!servers || busy !== null || signingIn !== null) return;
     const existing = servers.find((server) => isRemoteMcpListing(server) && isWhopServer(server));
@@ -522,6 +545,7 @@ export function McpServersPanel({ embedded = false, whopCard = false, hideWhop =
       className={embedded ? "" : "min-h-0 flex-1 overflow-y-auto px-6 pb-7 pt-5 sm:px-8"}
     >
       <div className={embedded ? "" : "mx-auto max-w-[840px]"}>
+        <McpPresetCards servers={servers ?? []} disabled={servers === null || busy !== null || signingIn !== null || restricted} connect={connectPreset} />
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-[1_1_280px]">
             <h3 id="mcp-servers-title" className="text-[15px] font-semibold text-ink">{t("mcp.title")}</h3>
