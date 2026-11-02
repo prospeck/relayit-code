@@ -5,8 +5,9 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const MARK_FILES = readdirSync(here).filter((name) => /Mark\.tsx$|^ProviderIcons\.tsx$/.test(name));
+const MARK_FILES = readdirSync(here).filter((name) => name !== "RelayMark.tsx" && /Mark\.tsx$|^ProviderIcons\.tsx$/.test(name));
 
+// RelayMark is drawn on its own coloured tile, not on the page, so white is the right ink there.
 describe("provider marks", () => {
   it("paints no mark in a colour a light skin cannot show", () => {
     expect(MARK_FILES.length).toBeGreaterThan(1);
