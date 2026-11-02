@@ -23,10 +23,10 @@ type Bot = { id: string; name: string; modelSelection: { instanceId: string } };
 
 /** The system prompt a read-and-draft run keeps: who the person is, where its files are, its connected apps and what a
  * routine run is. No memory, recent work, team notes, skills or tool guides: less to leak, and a smaller turn. */
-export const READ_AND_DRAFT_PARTS: ReadonlySet<string> = new Set(["user-profile", "files", "composio", "routine-execution", "automation-reply", "webhook"]);
+export const READ_AND_DRAFT_PARTS: ReadonlySet<string> = new Set(["user-profile", "files", "composio", "google", "routine-execution", "automation-reply", "webhook"]);
 /** The integrations a read-and-draft run keeps: OpenMausBot's own tools (fenced by route), the connected apps (fenced
  * by call) and the engine's hooks. */
-export const READ_AND_DRAFT_TOOLS: ReadonlySet<string> = new Set(["agents", "composio", "hooks"]);
+export const READ_AND_DRAFT_TOOLS: ReadonlySet<string> = new Set(["agents", "composio", "google", "hooks"]);
 
 export const READ_AND_DRAFT_REFUSAL = "This work reads and drafts only: OpenMausBot refused this. Do not try another way.";
 const RULE = "read-and-draft";
@@ -39,6 +39,7 @@ const ROUTES: ReadonlySet<string> = new Set([
   "POST /api/internal/tool-result",
   "POST /api/internal/hook",
   "POST /api/internal/connectors/mcp",
+  "POST /api/internal/google/mcp",
 ]);
 
 /** Composio's meta tools that only describe tools; connecting an account waits for a person, so it is not here. */
@@ -50,7 +51,7 @@ export const DRAFT_TOOL = "GMAIL_CREATE_EMAIL_DRAFT";
 const OTHER_RECIPIENTS = ["cc", "bcc", "extra_recipients", "recipients"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
-const mayRead = (slug: string): boolean => READ_APPS.some((app) => slug.startsWith(app)) && (KNOWN_READ_SLUGS.has(slug) || isReadOnlyTool(slug));
+const mayRead = (slug: string): boolean => ["gmail_search", "gmail_read_thread", "gmail_triage", "calendar_list_events"].includes(slug) || READ_APPS.some((app) => slug.startsWith(app)) && (KNOWN_READ_SLUGS.has(slug) || isReadOnlyTool(slug));
 
 export interface ReadAndDraftDeps {
   /** The routine run this conversation belongs to, if any. */
@@ -90,7 +91,9 @@ export function refusedConnectorCall(frame: unknown, draft: (reply: DraftReply) 
   if (!calls.length) return call.name;
   for (const one of calls) {
     if (mayRead(one.slug)) continue;
-    const reply = one.slug === DRAFT_TOOL ? draftReply(one.arguments) : null;
+    const direct = one.slug === "gmail_draft_reply" && isRecord(one.arguments) && one.arguments.replyAll !== true && typeof one.arguments.threadId === "string"
+      ? { threadId: one.arguments.threadId } : null;
+    const reply = direct ?? (one.slug === DRAFT_TOOL ? draftReply(one.arguments) : null);
     if (!reply || !draft(reply)) return one.slug;
   }
   return null;

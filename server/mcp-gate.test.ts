@@ -269,6 +269,18 @@ describe("mcp-gate", () => {
     expect(readFileSync(join(scratch, "reply.json.calls"), "utf8")).toBe("search_restaurants\n");
   });
 
+  it("protects the built-in Google names on Full access while allowing drafts and reads", async () => {
+    start({}, { OMB_GATE_NAME: "google", OMB_GATE_REFUSE_OUTBOUND: "1", OMB_GATE_BUDGET: "0" }, SCOPED_UPSTREAM);
+    for (const [i, tool] of ["gmail_send", "calendar_create_event", "calendar_update_event", "calendar_cancel_event"].entries()) {
+      expect((await call(tool, i + 1)).error).toMatchObject({ code: -32602, message: expect.stringContaining("switch this chat to Ask") });
+    }
+    expect(existsSync(join(scratch, "reply.json.calls"))).toBe(false);
+    for (const [i, tool] of ["gmail_search", "gmail_read_thread", "gmail_draft_reply", "gmail_triage", "calendar_list_events"].entries()) {
+      expect((await call(tool, i + 10)).result.content[0].text).toBe("executed");
+    }
+    expect(readFileSync(join(scratch, "reply.json.calls"), "utf8").trim().split("\n")).toHaveLength(5);
+  });
+
   it("filters each catalog page and rejects a withheld call before upstream execution", async () => {
     start({}, selected, SCOPED_UPSTREAM);
     send({ jsonrpc: "2.0", id: 1, method: "tools/list" });

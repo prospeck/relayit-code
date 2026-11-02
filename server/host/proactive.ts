@@ -13,7 +13,7 @@ import type { Notification } from "../../shared/notification.ts";
 import type { RequestAuth } from "../request-auth.ts";
 import { writeFileAtomic } from "../atomic.ts";
 import type { AppConfig } from "../config.ts";
-import { createConnectedReads, READ_APPS, type ReadApp } from "../connected-reads.ts";
+import { createConnectedReads, READ_APPS, type ReadApp, type ConnectedReads } from "../connected-reads.ts";
 import { evaluateConnectorTools } from "../connector-verdict.ts";
 import type { DecisionRow } from "../decision-log.ts";
 import type { ProviderAdapter } from "../contracts.ts";
@@ -25,7 +25,7 @@ import type { Extractor } from "../extractor/index.ts";
 import { createBrief, type BriefDeps, type MorningDeps } from "./brief.ts";
 import { WATCH_EVERY_MINUTES, WATCH_INSTRUCTIONS, WATCH_NAME } from "./default-watch.ts";
 import { createHelperSuggestion } from "./helper-suggestion.ts";
-import { createInboxTriage } from "./inbox-triage.ts";
+import { createInboxTriage, type InboxTriage } from "./inbox-triage.ts";
 import { mainChief, proactiveOwner } from "./proactive-owner.ts";
 import { createRoutineChecks } from "./routine-checks.ts";
 import type { ValueKind } from "./value-ledger.ts";
@@ -59,6 +59,7 @@ export interface ProactiveDeps {
     connectedServices(cfg: AppConfig): Promise<Record<string, { connected: boolean }>>;
     relayMcp(cfg: AppConfig, payload: never, transportSessionId?: string, beforeSend?: () => void, signal?: AbortSignal): Promise<{ status: number; bytes: Uint8Array; transportSessionId?: string }>;
   };
+  directGoogle?: { reads: ConnectedReads; configured(): boolean; mayRead(botId: string, app: ReadApp): boolean; inbox: Pick<InboxTriage, "ready" | "triage"> };
   registry: { get(instanceId: string): { driverKind: string; adapter: ProviderAdapter } | null | undefined };
   dataDir: string;
   /** A hosted team workspace or a Team Cloud. */
@@ -92,7 +93,8 @@ export interface ProactiveDeps {
 
 export function createProactive(deps: ProactiveDeps) {
   const { store, cfg, composio } = deps;
-  const reads = createConnectedReads({
+  const configured = () => deps.directGoogle ? deps.directGoogle.configured() : composio.configured(cfg);
+  const reads = deps.directGoogle?.reads ?? createConnectedReads({
     connected: async () => {
       if (!composio.configured(cfg)) return null;
       const services = await composio.connectedServices(cfg);
@@ -103,6 +105,7 @@ export function createProactive(deps: ProactiveDeps) {
 
   /** Connected apps are on for this bot, and its own app switches and tool grants let it read this app. */
   function mayRead(botId: string, app: ReadApp): boolean {
+    if (deps.directGoogle) return deps.directGoogle.mayRead(botId, app);
     const bot = store.bot(botId);
     if (!bot || bot.composio === false || !composio.configured(cfg)) return false;
     const slug = READ_SLUG[app];
@@ -124,7 +127,7 @@ export function createProactive(deps: ProactiveDeps) {
     store, dataDir: deps.dataDir, hosted: deps.team, watching, mainThread: deps.mainThread, threadBusy: deps.threadBusy, runs,
     needsYou: deps.needsYou, engineName: deps.engineName, hostTimeZone: deps.hostTimeZone, language: () => cfg.language,
     notify: (bot, threadId, detail) => deps.notify(briefNotification(bot, threadId, detail)),
-    session: () => (composio.configured(cfg) ? reads.session() : null),
+    session: () => (configured() ? reads.session() : null),
     address: () => checks.address(),
     failRun: (runId, why) => deps.routines()?.rejectResult(runId, why),
     keep: (key) => checks.commit(key),
@@ -133,7 +136,7 @@ export function createProactive(deps: ProactiveDeps) {
     prepped: () => deps.counted?.("prepped", 1),
     ...(deps.morning ? { morning: deps.morning } : {}),
   });
-  const inbox = deps.helpers ? createInboxTriage({ ...deps.helpers, config: () => cfg }) : undefined;
+  const inbox = deps.directGoogle ? deps.directGoogle.inbox : deps.helpers ? createInboxTriage({ ...deps.helpers, config: () => cfg }) : undefined;
   const suggestion = createHelperSuggestion({
     store, dataDir: deps.dataDir, cloud: deps.cloud !== false || deps.team, owner, mainThread: deps.mainThread, threadBusy: deps.threadBusy,
     // Set up and on, or switched off on purpose: either way there is nothing to suggest.
@@ -143,7 +146,7 @@ export function createProactive(deps: ProactiveDeps) {
     dataDir: deps.dataDir, reads, mayRead, fenced, runs, timeZone: brief.timeZone, dismissedFrom: brief.dismissedFrom,
     report: async (found) => {
       await brief.report(found);
-      if (found.gmail) suggestion.consider({ gmailConnected: found.gmail.connected, ...(found.gmail.address ? { inbox: found.gmail.address } : {}) });
+      if (found.gmail && !deps.directGoogle) suggestion.consider({ gmailConnected: found.gmail.connected, ...(found.gmail.address ? { inbox: found.gmail.address } : {}) });
     },
     ...(inbox ? { inbox } : {}),
     sorted: (routineId, count) => {
@@ -228,7 +231,7 @@ export function createProactive(deps: ProactiveDeps) {
       console.warn(`watch: not handed over yet: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
-    if (!composio.configured(cfg) || watchRecord().createdAt) return null;
+    if (!configured() || watchRecord().createdAt) return null;
     const existing = manager.listRoutines().find((routine) => routine.botId === bot.id && isWatch(routine));
     const routine = existing ?? manager.create({
       name: WATCH_NAME, prompt: WATCH_INSTRUCTIONS, botId: bot.id, enabled: true, timeoutMinutes: 15,

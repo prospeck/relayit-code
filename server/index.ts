@@ -93,6 +93,10 @@ import { chartRenderer, compileChart, dataEngine, validateVegaLite } from "./dat
 import { BUILT_IN_DATA_SYSTEM_PROMPT } from "./data/instructions.ts";
 import { DATA_INTERNAL_MCP_PATH, dataRpc } from "./data/rpc.ts";
 import { createHighLevelHost } from "./highlevel/host.ts";
+import { GoogleService } from "./google/service.ts";
+import { createGoogleHost } from "./google/host.ts";
+import { createGoogleRoutes } from "./routes/google.ts";
+import { GOOGLE_INSTRUCTIONS } from "../shared/google.ts";
 import { HIGHLEVEL_INTERNAL_MCP_PATH } from "./highlevel/rpc.ts";
 import { createHighLevelService } from "./highlevel/service.ts";
 import { createHighLevelRoutes } from "./routes/highlevel.ts"; import { createPostizRoutes } from "./routes/postiz.ts"; import { createPostiz } from "./postiz/service.ts";
@@ -729,6 +733,8 @@ const commandAllowlist = new CommandAllowlistStore(join(DATA_DIR, "command-allow
 // Every saved login value is scrubbed from whatever a bot or a transcript can read.
 const logins = new LoginStore({ dataDir: DATA_DIR });
 const highlevel = createHighLevelService({ dataDir: DATA_DIR });
+const google = new GoogleService(DATA_DIR);
+void google.health().catch(() => {});
 const heldSecrets = new HeldSecrets(logins);
 addHeldSecretScrubber((text) => heldSecrets.scrub(text));
 const onePassword = new OnePasswordLogins({
@@ -1640,7 +1646,7 @@ type InternalCapability = {
   threadId: string;
   generation: string;
   depth: number;
-  kind: "agents" | "connectors" | "computer" | "browser" | "hooks" | "phone" | "data" | "highlevel" | "device";
+  kind: "agents" | "connectors" | "computer" | "browser" | "hooks" | "phone" | "data" | "highlevel" | "device" | "google";
   skillAuthoring: boolean;
   createdBots: number;
   createdRooms?: number;
@@ -3031,6 +3037,7 @@ function previewSystemPrompt(bot: BotRecord) {
     }, { note: previewPlan.note, cloudHome: Boolean(CLOUD_HOME) }) },
     { id: "cloud-home", label: "My Cloud", text: CLOUD_HOME ? cloudHomePrompt(agentsMounted && lendingEnabled(), syncedFolders(DATA_DIR), sharedComputers.known(CLOUD_HOME_LENDER), CLOUD_PERSONAL) + firstHourHooks.prompt(bot.id, bot.threadId) : "" },
     { id: "composio", label: "Connected apps", text: caps?.composioMcp && bot.composio !== false && composio.configured(cfg) ? composioSystemPrompt(bot.connectorTools) + describeConnectorScopes(bot.connectorScopes) : "" },
+    { id: "google", label: "Google", text: caps?.customMcp && bot.composio !== false && google.configured() ? GOOGLE_INSTRUCTIONS : "" },
     { id: "highlevel", label: "HighLevel", text: caps?.highlevelMcp === true && highlevelHost.mounts(bot) ? highlevelHost.prompt(bot) : "" },
     ...phones.previewParts(bot, caps?.deviceMcp === true),
     { id: "mcp", label: "MCP servers", text: caps?.customMcp ? customMcpPrompt(Object.keys(engineMcpServers(bot)), mcpServersHost.off(bot)) : "" }, { id: "to-connect", label: "Connections to make", text: cloudConnections.prompt(bot) },
@@ -5665,7 +5672,30 @@ const reviewAnswerThreads = new Set<string>(); const firstHourHooks = createFirs
 let routines: RoutineManager | null = null;
 const automationReports = createAutomationReports({ store, routines: () => routines, busy: threadBusy, wrote: markTaskContextExternallyUpdated, brief: (run, turnId) => proactive.runSettled(run, turnId), threadLanguage,
   notify: (kind, bot, threadId, detail) => notify(buildNotification(kind, bot, threadId, detail, { avatarUrl: bot.avatarUrl }), { routine: true }) });
-const proactive = createProactive({ store, cfg, composio, registry, dataDir: DATA_DIR, ideas: (botId) => memoryUpkeep.ideas(botId), ...firstHourHooks.proactive, team: Boolean(HOSTED_WORKSPACE || CLOUD_TEAM), frozen: moveFreeze.frozen, routines: () => routines, mainThread: botMainThread, threadBusy, notify, helpers: { decider, extractor }, cloud: Boolean(CLOUD_HOME || HOSTED_WORKSPACE || CLOUD_TEAM),
+const googleHost = createGoogleHost({
+  service: google,
+  bot: (id) => !sharedMembership() && managedPolicy.appAllowed("gmail") && managedPolicy.appAllowed("googlecalendar") ? store.bot(id) : undefined,
+  fullAccess: fullAccessForSource,
+  confined: (id, threadId, frame) => {
+    const bot = store.bot(id);
+    return !bot || proactive.fence.refusesConnectorCall(bot, threadId, frame);
+  },
+  approve: async (botId, threadId, tool, preview, active) => {
+    const bot = store.bot(botId);
+    if (!bot) return false;
+    const answer = await outboundHold.hold({ bot: { ...bot, outbound: { policy: "ask", dailyCap: 25 } }, threadId, tool,
+      calls: [{ slug: tool, arguments: preview }], opaque: false,
+      active: () => { try { active(); return true; } catch { return false; } },
+    });
+    active();
+    return answer.ok && answer.approved;
+  },
+});
+function googleIntegration(botId: string, threadId: string, generation: string) {
+  if (!managedPolicy.appAllowed("gmail") || !managedPolicy.appAllowed("googlecalendar") || sharedMembership()) return null;
+  return googleHost.integration(botId, threadId, () => mintInternalCapability({ botId, threadId, generation, kind: "google", depth: 0, skillAuthoring: false, createdBots: 0, openedThreads: 0 }), `http://127.0.0.1:${PORT}`);
+}
+const proactive = createProactive({ store, cfg, composio, registry, directGoogle: { reads: googleHost.reads, inbox: googleHost.inbox, configured: () => google.connected(), mayRead: googleHost.mayRead }, dataDir: DATA_DIR, ideas: (botId) => memoryUpkeep.ideas(botId), ...firstHourHooks.proactive, team: Boolean(HOSTED_WORKSPACE || CLOUD_TEAM), frozen: moveFreeze.frozen, routines: () => routines, mainThread: botMainThread, threadBusy, notify, helpers: { decider, extractor }, cloud: Boolean(CLOUD_HOME || HOSTED_WORKSPACE || CLOUD_TEAM),
   engineName: (instanceId) => engineName(instanceId), hostTimeZone: () => (CLOUD_HOME ? undefined : hostTimeZone()), decide: (row) => appendDecision(DATA_DIR, row), stale: shouldIgnoreProviderEvent, release: (threadId) => watchdog.setWaitingOnHuman(threadId, false),
   owned: (routine) => { (cloudRoutineAuthors ?? phones.routineAuthors)?.record(routine.id, routine); if (CLOUD_OWNER_KEY) cloudRoutineAuthors?.wrote(routine.id, CLOUD_OWNER_KEY); }, needsYou: () => needsYouNow({ bots: store.bots, groups: store.groups, routines, parked: coordinator.active(), engines: registry.instances().map((instance) => ({ instanceId: instance.instanceId, snapshot: registry.lastSnapshot(instance.instanceId) })) }, { admin: true, thread: () => true, routine: () => true }) });
 let calendarCalls: CalendarCallManager | null = null;
@@ -8033,6 +8063,10 @@ async function beginTurn(
       if (dispatchContext.handoff) handoffs.begin(threadId, dispatchClaimId, dispatchContext.handoff);
 
       const integrations: NonNullable<Parameters<typeof instance.adapter.sendTurn>[0]["integrations"]> = {};
+      if (instance.adapter.capabilities.customMcp === true) {
+        const directGoogle = googleIntegration(bot.id, threadId, dispatchClaimId);
+        if (directGoogle) integrations.google = directGoogle;
+      }
       let browser: Awaited<ReturnType<typeof browserIntegration>> = null;
       const skills = availableSkills(), phoneOffered = usbPhoneOffered(instance, skills) && !proactive.fence.confines(threadId);
       const selectedSkills = selectBundledSkills(
@@ -8505,6 +8539,7 @@ async function beginTurn(
         { id: "mcp", label: "MCP servers", text: customMcpPrompt(Object.keys(integrations.custom ?? {}), mcpServersHost.off(bot)) }, { id: "to-connect", label: "Connections to make", text: cloudConnections.prompt(liveBot ?? bot) + teamConnections.prompt(threadId, dispatchClaimId, integrations) },
         { id: "browser", label: "Browser", text: integrations.browser ? browserPromptFor(bot, Boolean(integrations.agents)) : "" },
         { id: "data", label: "Data", text: integrations.data ? BUILT_IN_DATA_SYSTEM_PROMPT : "" },
+        { id: "google", label: "Google", text: integrations.google ? GOOGLE_INSTRUCTIONS : "" },
         { id: "highlevel", label: "HighLevel", text: integrations.highlevel ? highlevelHost.prompt(liveBot ?? bot) : "" },
         ...phones.promptParts(liveBot ?? bot, {
           mounted: Boolean(integrations.device), offered: instance.adapter.capabilities.deviceMcp === true, turn: { botId: bot.id, threadId, generation: dispatchClaimId },
@@ -9887,6 +9922,10 @@ async function runClaimedGroupMemberTurn(
   assertWithinBudget(cfg, DATA_DIR);
   assertModelVariantSupported(preparedSelection, instance.adapter.capabilities);
   const integrations: NonNullable<Parameters<typeof instance.adapter.sendTurn>[0]["integrations"]> = {};
+  if (instance.adapter.capabilities.customMcp === true) {
+    const directGoogle = googleIntegration(bot.id, threadId, internalGeneration);
+    if (directGoogle) integrations.google = directGoogle;
+  }
   const skillAuthoring =
     skillAuthoringEnabled(cfg) &&
     hop === 0 &&
@@ -10327,6 +10366,7 @@ async function runClaimedGroupMemberTurn(
     { id: "cloud-home", label: "My Cloud", text: CLOUD_HOME ? cloudHomePrompt(Boolean(integrations.agents) && lendingEnabled(), syncedFolders(DATA_DIR), sharedComputers.known(CLOUD_HOME_LENDER), CLOUD_PERSONAL) : "" },
     { id: "browser", label: "Browser", text: integrations.browser ? browserPromptFor(bot, Boolean(integrations.agents)) : "" },
     { id: "data", label: "Data", text: integrations.data ? BUILT_IN_DATA_SYSTEM_PROMPT : "" },
+    { id: "google", label: "Google", text: integrations.google ? GOOGLE_INSTRUCTIONS : "" },
     { id: "highlevel", label: "HighLevel", text: integrations.highlevel ? highlevelHost.prompt(readyBot) : "" },
     ...phones.promptParts(readyBot, {
       mounted: Boolean(integrations.device), offered: instance.adapter.capabilities.deviceMcp === true,
@@ -12307,7 +12347,7 @@ ROUTES.push(createBotLifecycleRoutes({
   activeGroupTurnForBot, cancelGroupTurnOperations, runningTurnInstance, closeOpenApprovals, deleteBotWithLifecycle,
 }));
 ROUTES.push(createBotSkillsRoutes({ store, cfg, listBotSkills, readBotSkillFile, stagedSkillListing }));
-ROUTES.push(createHighLevelRoutes({ service: highlevel }));
+ROUTES.push(createHighLevelRoutes({ service: highlevel }), createGoogleRoutes(google));
 ROUTES.push(phones.routes);
 ROUTES.push(createSkillShareRoutes({ enabled: () => skillsHost.mode() !== "off", botExists: (id) => Boolean(store.bot(id)),
   cardRefusal: (auth, threadId, requestId) => cardAnswerRefusal(auth, threadId, requestId, "allow"), shareFromReceipt: skillsHost.shareFromReceipt, shareFromBot: skillsHost.shareFromBot }));
@@ -13056,7 +13096,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const parsed = z.object({
         botId: z.string().regex(/^[\w-]{1,128}$/),
         threadId: z.string().regex(/^[\w-]{1,128}$/),
-        kind: z.enum(["agents", "connectors", "computer", "data", "highlevel", "device"]).default("agents"),
+        kind: z.enum(["agents", "connectors", "computer", "data", "highlevel", "device", "google"]).default("agents"),
         depth: z.number().int().min(0).max(MAX_COMMS_DEPTH).default(0),
         skillAuthoring: z.boolean().default(false),
         deliversSavedFiles: z.boolean().default(false),
@@ -13109,6 +13149,8 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         ? "browser"
         : path === DATA_INTERNAL_MCP_PATH
         ? "data"
+        : path === "/api/internal/google/mcp"
+        ? "google"
         : path === HIGHLEVEL_INTERNAL_MCP_PATH
         ? "highlevel"
         : path === PHONE_INTERNAL_MCP_PATH
@@ -13343,6 +13385,9 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
             });
           },
         }) });
+      }
+      if (method === "POST" && path === "/api/internal/google/mcp") {
+        return json(res, 200, { result: await googleHost.handle(await readInternalBody(), internalCapability, requireActiveInternalCapability) });
       }
       // The CRM tokens stay here; the agent process holds only the turn's capability, and every call gets the live bot's verdict.
       if (method === "POST" && path === HIGHLEVEL_INTERNAL_MCP_PATH) {
@@ -15263,7 +15308,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
     if (method === "GET" && path === "/api/connectors/tools") {
       const availability = composio.connectorAvailability(cfg);
-      const highlevelTools = { ...highlevelHost.toolListing(), ...phones.toolListing() };
+      const highlevelTools = { ...highlevelHost.toolListing(), ...phones.toolListing(), ...googleHost.toolListing() };
       if (availability !== "configured") {
         return json(res, 200, { configured: Object.keys(highlevelTools).length > 0, services: highlevelTools });
       }
@@ -15708,7 +15753,7 @@ const gracefulShutdown = createGracefulShutdown({
       // Invalidate turn bearers before any cleanup reaches an await: child MCP processes and the listener may outlive it.
       revokeAllInternalCapabilities();
       sharedComputers.close(); deviceLinks.close(); stopCloudTeamPolicy();
-      phones.close();
+      phones.close(); void google.close();
       sharedComputerControl.close();
       browserLive.closeAll();
       desktopViewer.closeAll();

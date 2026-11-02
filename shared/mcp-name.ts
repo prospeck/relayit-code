@@ -5,6 +5,7 @@ export const RESERVED_MCP_NAMES: ReadonlySet<string> = new Set([
   "agents",
   "composio",
   "data",
+  "google",
   "browser",
   "phone",
   "dweb",

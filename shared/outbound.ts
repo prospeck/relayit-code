@@ -73,6 +73,10 @@ const READ_VERBS = new Set(["GET", "LIST", "FETCH", "SEARCH", "READ", "FIND", "R
 
 /** Composio reads known by slug, since some put the noun first (GOOGLECALENDAR_EVENTS_LIST lists events). */
 export const KNOWN_READ_SLUGS: ReadonlySet<string> = new Set([
+  "gmail_search",
+  "gmail_read_thread",
+  "gmail_triage",
+  "calendar_list_events",
   "GMAIL_FETCH_EMAILS",
   "GMAIL_GET_PROFILE",
   "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID",
@@ -106,7 +110,7 @@ function actionTokens(name: string): string[] {
  * narrower than "not outbound": updates, deletes and other writes do not
  * become reads merely because they send nothing to another person. */
 export function isReadOnlyTool(name: string): boolean {
-  if (KNOWN_READ_SLUGS.has(name.replace(/^mcp__(?:composio|own_apps)__/, ""))) return true;
+  if (KNOWN_READ_SLUGS.has(name.replace(/^mcp__(?:composio|own_apps|google)__/, ""))) return true;
   const tokens = actionTokens(name);
   return tokens.length > 0 && READ_VERBS.has(tokens[0]);
 }
@@ -131,6 +135,9 @@ export function isOutboundTool(name: string): boolean {
   // nothing here can read which; it is treated as a send.
   if (name === "COMPOSIO_PROXY_EXECUTE") return true;
   if (AGENTS_X_READS.test(name)) return false;
+  const googleName = name.replace(/^mcp__google__/, "");
+  if (googleName === "gmail_draft_reply") return false;
+  if (["gmail_send", "calendar_create_event", "calendar_update_event", "calendar_cancel_event"].includes(googleName)) return true;
   const tokens = actionTokens(name);
   if (tokens.length === 0) return false;
   if (isReadOnlyTool(name)) return false;
