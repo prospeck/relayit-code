@@ -1,4 +1,0 @@
-
-> openmausbot@0.1.139 typecheck /Users/work/relayit-next
-> tsc -b && tsc -p tsconfig.server.json
-

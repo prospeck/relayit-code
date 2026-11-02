@@ -1,7 +1,0 @@
-import {fs,ts,edit,tests,members,variables,cleanImports,namedImports} from './.relayit-edit.mjs';
-const p='server/decider/helper-backends.test.ts';tests(p,title=>title.startsWith('through the included token,')||title.startsWith("the relay's 413 is too large"));namedImports(p,['RELAY_SEAM_HEADER']);let s=fs.readFileSync(p,'utf8').replaceAll('headers[RELAY_SEAM_HEADER]','headers["x-omb-seam"]').replace('toBe(RELAY_SEAM_HEADER)','toBe("x-omb-seam")').replace('["no Jev or Workers AI key", without("key", "workersAiToken"), "jev", `${RELAY}/v1/systemone`, `Bearer ${INCLUDED}`]','["no Jev or Workers AI key", without("key", "workersAiToken"), "openrouter", "https://openrouter.ai/api/alpha/decisions", `Bearer ${OR_KEY}`]');fs.writeFileSync(p,s);cleanImports(p);
-variables('server/x-research.e2e.test.ts',['isProbe']);
-edit('server/index.ts',(n,c)=>{if(ts.isPropertyAssignment(n)&&n.name.getText()==='xResearch'&&ts.isObjectLiteralExpression(n.initializer)){const obj=n.initializer,kept=obj.properties.filter(m=>!['cloudHome','researchOff'].includes(m.name?.getText()));if(kept.length!==obj.properties.length){c(obj,`{${kept.map(m=>m.getText()).join(', ')}}`);return false;}}});
-let q='src/components/PlacesRail.tsx';s=fs.readFileSync(q,'utf8').replaceAll('t("rail.add")','t("rail.own")');fs.writeFileSync(q,s);
-q='src/components/PlacesRail.test.ts';s=fs.readFileSync(q,'utf8').replaceAll('Add a Cloud or your own server','Add your own server');fs.writeFileSync(q,s);
-console.log('Removed the last type references to retired relay options');

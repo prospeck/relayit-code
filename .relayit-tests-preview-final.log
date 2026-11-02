@@ -1,9 +1,0 @@
-
- RUN  v4.1.11 /Users/work/relayit-next
-
-
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  23:21:32
-   Duration  5.07s (transform 704ms, setup 411ms, import 614ms, tests 3.83s, environment 0ms)
-

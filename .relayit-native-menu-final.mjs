@@ -1,7 +1,0 @@
-import {fs,ts,edit,fold,variables,tests,cleanImports} from './.relayit-edit.mjs';
-let p='electron/menu.mjs';fold(p,{'home':null});variables(p,['others','away','homeServer']);let s=fs.readFileSync(p,'utf8').replace('onOrganizationSignIn, ','').replace('onAddCloud, ','').replace('home = null, ','').split('\n').filter(l=>!l.includes('...(onAddCloud ?')&&!l.includes('input.onOrganizationSignIn')).join('\n');fs.writeFileSync(p,s);
-p='electron/menu.test.mjs';tests(p,title=>title.startsWith('once My Cloud is home,')||title.startsWith('mirrors Add a Cloud…'));cleanImports(p);
-// Retired session/UI state no longer has native consumers.
-p='electron/main.mjs';variables(p,['companionDesiredThisLaunch','menuDate','rememberedHome']);edit(p,(n,c)=>{if(ts.isExpressionStatement(n)&&ts.isBinaryExpression(n.expression)&&n.expression.left.getText()==='companionDesiredThisLaunch'){c(n);return false;}if(ts.isObjectBindingPattern(n)){const kept=n.elements.filter(e=>!['otherPlaces','withEnvironmentLook','withOwnCloud','withTeam'].includes(e.name.getText()));if(kept.length!==n.elements.length){c(n,`{ ${kept.map(e=>e.getText()).join(', ')} }`);return false;}}});s=fs.readFileSync(p,'utf8').replace(', ...(({}))','');fs.writeFileSync(p,s);
-p='electron/cloud-connections.mjs';s=fs.readFileSync(p,'utf8').replace(',\n    ...(({}))','');fs.writeFileSync(p,s);
-console.log('Removed remaining native purchase and hosted-home menu branches');
