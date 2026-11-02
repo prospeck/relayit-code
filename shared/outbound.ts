@@ -43,6 +43,8 @@ const MONEY_VERBS = new Set([
   "PAY",
   "PAYS",
   "PAYMENT",
+  "PAYMENTS",
+  "PAID",
   "PAYOUT",
   "TRANSFER",
   "BUY",
