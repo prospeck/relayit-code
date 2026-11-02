@@ -23,7 +23,9 @@ export const confirmInput = z.object({
 
 export function paymentOutput(payment: Payment) {
   const { id, orderId, amountInr, payeeName, payeeVpa, status, upiUri, checkoutUrl, externalRef } = payment;
-  return { type: "payment" as const, demo: payeeName.endsWith(" (demo)"), id, orderId, amountInr, payeeName, payeeVpa, status, upiUri, checkoutUrl, externalRef };
+  const demo = payeeName.endsWith(" (demo)");
+  // A demo merchant has nobody behind it, so a demo result never carries a link that a payment app would act on.
+  return { type: "payment" as const, demo, id, orderId, amountInr, payeeName, payeeVpa, status, upiUri: demo ? null : upiUri, checkoutUrl, externalRef };
 }
 
 export function registerTools(server: McpServer, service: PaymentService, settled?: (payment: Payment) => Promise<void>, resolveRequest?: (input: CreatePaymentRequest) => Promise<CreatePaymentRequest>) {

@@ -47,4 +47,11 @@ describe("UPI chat card", () => {
     try { setLocale("hi"); expect(render(card)).toContain("Pay in your UPI app"); }
     finally { setLocale("en"); }
   });
+
+  it("takes a demo payment with no UPI link, and refuses a real one without it", () => {
+    const checkoutUrl = "http://127.0.0.1:9999/pay/x";
+    expect(paymentRequest("payments_create_request", JSON.stringify({ ...card, upiUri: null, demo: true, checkoutUrl }))).toMatchObject({ upiUri: null, demo: true });
+    expect(paymentRequest("payments_create_request", JSON.stringify({ ...card, upiUri: null, demo: false, checkoutUrl }))).toBeNull();
+    expect(paymentRequest("payments_create_request", JSON.stringify({ ...card, upiUri: null }))).toBeNull();
+  });
 });

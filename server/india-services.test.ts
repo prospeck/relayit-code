@@ -128,7 +128,9 @@ it("lets our own connectors look things up without a card, and nothing that spen
   for (const tool of [...free, ...indiaFreeTools("india-travel", indiaServiceSpec("travel", "/tmp/x")!.server)!]) {
     expect(isMoneyTool(tool), tool).toBe(false);
   }
-  expect(indiaFreeTools("india-payments", indiaServiceSpec("payments", "/tmp/x")!.server)).toBeUndefined();
+  const payments = indiaFreeTools("india-payments", indiaServiceSpec("payments", "/tmp/x")!.server)!;
+  expect([...payments]).toEqual(["payments_check_status"]);
+  expect(isMoneyTool("payments_check_status")).toBe(false);
 });
 
 it("doesn't let another server borrow the name", () => {

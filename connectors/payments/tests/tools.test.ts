@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.ts";
-import { createInput, lookupInput, confirmInput } from "../src/tools.ts";
+import { createInput, lookupInput, confirmInput, paymentOutput } from "../src/tools.ts";
 
 const input = { orderId: "order-tools", amountInr: 450, payeeName: "Asha", payeeVpa: "asha@bank", note: "Groceries" };
 it("validates payment input, lookup and UTR", () => {
@@ -38,4 +38,12 @@ describe("payment MCP tools", () => {
       expect((await call("payments_check_status", { paymentId: payment.id })).status).toBe("user_confirmed");
     } finally { await client.close(); await server.close(); }
   });
+});
+
+it("never hands the model a payable link for a demo merchant", () => {
+  const base = { id: "p", orderId: "o", amountInr: 100, payeeVpa: "cpk@demo.invalid", status: "pending", upiUri: "upi://pay?pa=cpk%40demo.invalid", checkoutUrl: "http://127.0.0.1:1/x", externalRef: null } as never;
+  const demo = paymentOutput({ ...(base as object), payeeName: "CPK (demo)" } as never);
+  expect(demo.upiUri).toBeNull();
+  expect(JSON.stringify(demo)).not.toContain("upi://");
+  expect(paymentOutput({ ...(base as object), payeeName: "A real shop" } as never).upiUri).toContain("upi://pay?");
 });

@@ -5,7 +5,7 @@ const card = z.object({
   type: z.literal("payment"), id: z.string().min(1), orderId: z.string().min(1),
   amountInr: z.number().positive().max(100_000), payeeName: z.string().min(1), payeeVpa: z.string().min(1),
   status: z.enum(["pending", "paid", "user_confirmed", "cancelled", "expired", "failed"]),
-  upiUri: z.string().max(4_096), checkoutUrl: z.string().nullable(), demo: z.boolean().optional(),
+  upiUri: z.string().max(4_096).nullable(), checkoutUrl: z.string().nullable(), demo: z.boolean().optional(),
 });
 export type PaymentRequest = z.infer<typeof card>;
 
@@ -25,9 +25,13 @@ export function paymentRequest(name: string, output: string | undefined): Paymen
     if (parsed.success) {
       const payment = parsed.data;
       try {
-        const upi = parseUpiUri(payment.upiUri);
-        if (buildUpiUri(upi) !== payment.upiUri) return null;
-        if (upi.amountInr !== payment.amountInr || upi.vpa !== payment.payeeVpa || upi.payeeName !== payment.payeeName) return null;
+        if (payment.upiUri === null) {
+          if (payment.demo !== true) return null;
+        } else {
+          const upi = parseUpiUri(payment.upiUri);
+          if (buildUpiUri(upi) !== payment.upiUri) return null;
+          if (upi.amountInr !== payment.amountInr || upi.vpa !== payment.payeeVpa || upi.payeeName !== payment.payeeName) return null;
+        }
         if (payment.checkoutUrl) {
           const url = new URL(payment.checkoutUrl);
           const loopback = ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);

@@ -12,9 +12,9 @@ export function PaymentRequestCard({ name, output, ok }: { name: string; output?
     <p className="text-sm">{payment.payeeName} · {payment.payeeVpa}</p>
     <p className="text-xs text-ink-secondary">{t("india.payment.status", { status: t(`india.payment.status.${payment.status}`) })}</p>
     {payment.demo && <p className="text-sm">{t("india.payment.demo")}</p>}
-    {payment.status === "pending" && (demoCheckout || !payment.demo) && <>
-      <QRCodeSVG value={demoCheckout ?? payment.upiUri} size={180} marginSize={2} title={t(demoCheckout ? "india.payment.checkout" : "india.payment.qr")} />
-      {!payment.demo && <a href={payment.upiUri} className="block text-sm text-accent underline">{t("india.payment.open")}</a>}
+    {payment.status === "pending" && (demoCheckout || (!payment.demo && payment.upiUri)) && <>
+      <QRCodeSVG value={demoCheckout ?? payment.upiUri ?? ""} size={180} marginSize={2} title={t(demoCheckout ? "india.payment.checkout" : "india.payment.qr")} />
+      {!payment.demo && payment.upiUri && <a href={payment.upiUri} className="block text-sm text-accent underline">{t("india.payment.open")}</a>}
     </>}
     {payment.checkoutUrl && payment.status === "pending" && <a href={payment.checkoutUrl} target="_blank" rel="noopener noreferrer" className="block text-sm text-accent underline">{t("india.payment.checkout")}</a>}
     <p className="text-xs text-ink-secondary">{t("india.payment.warning")}</p>

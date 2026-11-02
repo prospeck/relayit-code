@@ -189,7 +189,8 @@ export class MockFoodProvider implements FoodProvider {
       restaurant: cart.restaurant,
       payee: {
         name: `${cart.restaurant.name} (demo)`,
-        vpa: `${cart.restaurant.id}@okaxis`,
+        // ".invalid" is reserved and no bank handles it, so this can never reach a real account.
+        vpa: `${cart.restaurant.id}@demo.invalid`,
         merchantCode: "5812",
       },
       etaMin: cart.etaMin,

@@ -116,6 +116,8 @@ function actionTokens(name: string): string[] {
 export function isReadOnlyTool(name: string): boolean {
   if (KNOWN_READ_SLUGS.has(name.replace(/^mcp__(?:composio|own_apps|google)__/, ""))) return true;
   const tokens = actionTokens(name);
+  // Whatever it's named after, asking for a status only reads. CHECK alone isn't a read verb, because of CHECK_OUT.
+  if (tokens.at(-2) === "CHECK" && tokens.at(-1) === "STATUS") return true;
   return tokens.length > 0 && READ_VERBS.has(tokens[0]);
 }
 

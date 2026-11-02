@@ -33,6 +33,7 @@ describe("isMoneyTool", () => {
       "mcp__food__preview_order",
       "mcp__india-food__prepare_order",
       "mcp__india-travel__irctc_booking_handoff",
+      "mcp__india-payments__payments_check_status",
       "GMAIL_SEND_EMAIL",
     ]) {
       expect(isMoneyTool(name), name).toBe(false);
