@@ -271,7 +271,7 @@ posixOnly("usage attribution e2e", () => {
     const send = async (sendId: string, extra: Record<string, unknown> = {}) => {
       const page = await api("GET", `/api/threads/${bot.threadId}/messages?limit=0`);
       return api("POST", `/api/bots/${bot.id}/messages/guarded`, {
-        threadId: bot.threadId, sendId, text: `guarded ${sendId}`, expectedActiveLeafId: page.body.activeLeafId, expectedApprovalMode: "full", ...extra,
+        threadId: bot.threadId, sendId, text: `guarded ${sendId}`, expectedActiveLeafId: page.body.activeLeafId, expectedApprovalMode: "ask", ...extra,
       });
     };
     const refused = await send("guarded-send-invalid-0001", { onBehalfOf: {} });
