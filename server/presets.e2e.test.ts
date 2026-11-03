@@ -1,10 +1,9 @@
-import { createHash, randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
 
 import { launchVerificationServer } from "../scripts/control-omb.ts";
-import { canonicalJson, parsePackageDocument } from "../shared/package-format.ts";
+import { parsePackageDocument } from "../shared/package-format.ts";
 import { NO_PRESETS_MESSAGE } from "./package-import.ts";
 import { ORG_PRESET_REMOVE_MESSAGE, PRESET_UNAVAILABLE_MESSAGE } from "./presets.ts";
 

@@ -14,8 +14,6 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 /** The Admin relay's refusal envelope (boatError in relayit-cloud). */
 const refusal = (status: number, code: string, message: string) =>
   ({ status, body: { ok: false, type: "sandbox.error", status, code, message, error: { code, message, status } } });
-const HOURS = refusal(429, "limit_reached", "Your Pro plan's 50 cloud computer hours for October are used up. They reset on 1 November.");
-const AT_ONCE = refusal(429, "limit_reached", "Your Personal plan includes 1 cloud computer at once. Delete one to start another.");
 const DOWN = refusal(503, "service_unavailable", "Cloud computers are temporarily unavailable. Try again later.");
 
 describe("a cloud computer that can't start, against the real server", () => {

@@ -1,12 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { expect, it } from "vitest";
 import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
-import { removeTempDir } from "./testing/cleanup.ts";
 import { openSse } from "./testing/sse.ts";
 
 async function launch(boat?: string, enterprise?: { dir: string; licenseKey: string }) {
