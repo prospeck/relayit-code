@@ -97,11 +97,20 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   }
 
   const parentPort = `data:text/javascript,${encodeURIComponent(`
+    import { createHash } from "node:crypto";
     const listeners = [];
     Object.defineProperty(process, "parentPort", { value: {
       on(event, listener) { if (event === "message") listeners.push(listener); },
       removeListener(event, listener) { const at = listeners.indexOf(listener); if (event === "message" && at >= 0) listeners.splice(at, 1); },
-      postMessage(message) { process.send?.(message); },
+      postMessage(message) {
+        // The credential master key is asked of the parent before the server starts: answer as the app does, stably per data dir.
+        if (message?.type === "relayit:credential-master-request") {
+          const key = createHash("sha256").update("fixture-credential-master:" + process.env.OMB_DATA_DIR).digest("hex");
+          queueMicrotask(() => { for (const listener of [...listeners]) listener({ data: { type: "relayit:credential-master", dataDir: process.env.OMB_DATA_DIR, master: { key, protection: "key-file" } } }); });
+          return;
+        }
+        process.send?.(message);
+      },
     } });
     process.on("message", (data) => { for (const listener of listeners) listener({ data }); });
     process.channel?.unref();
