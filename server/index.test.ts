@@ -9014,8 +9014,8 @@ describe("harness HTTP API", () => {
       expect(plain).not.toHaveProperty("always");
 
       const firstLinear = raise("ask-linear-list-1", "list KAT issues", { team: "KAT" }, "mcp__linear__list_issues");
-      const linearCard = await expect.poll(async () => (await messages()).find((m) => m.card?.subtitle === "list KAT issues")?.card).toBeTruthy()
-        .then(async () => (await messages()).find((m) => m.card?.subtitle === "list KAT issues")!.card!);
+      const linearCard = await expect.poll(async () => (await messages()).find((m) => m.card?.subtitle?.includes("list KAT issues"))?.card).toBeTruthy()
+        .then(async () => (await messages()).find((m) => m.card?.subtitle?.includes("list KAT issues"))!.card!);
       expect(linearCard.allowKey).toMatch(/^provider-tool:claude:linear:list_issues:/);
       expect((await api("POST", `/api/bots/${bot.id}/always-allow`, {
         threadId: bot.threadId,
@@ -9029,11 +9029,11 @@ describe("harness HTTP API", () => {
 
       const repeatedLinear = raise("ask-linear-list-2", "list KAT issues again", { team: "KAT" }, "mcp__linear__list_issues");
       await expect(repeatedLinear).resolves.toMatchObject({ behavior: "allow" });
-      expect((await messages()).find((m) => m.card?.subtitle === "list KAT issues again")).toBeUndefined();
+      expect((await messages()).find((m) => m.card?.subtitle?.includes("list KAT issues again"))).toBeUndefined();
 
       const linearWrite = raise("ask-linear-create", "create KAT issue", { team: "KAT" }, "mcp__linear__create_issue");
-      await expect.poll(async () => (await messages()).find((m) => m.card?.subtitle === "create KAT issue")?.card?.title).toBe("Approval needed");
-      const writeCard = (await messages()).find((m) => m.card?.subtitle === "create KAT issue")!.card!;
+      await expect.poll(async () => (await messages()).find((m) => m.card?.subtitle?.includes("create KAT issue"))?.card?.title).toBe("Approval needed");
+      const writeCard = (await messages()).find((m) => m.card?.subtitle?.includes("create KAT issue"))!.card!;
       expect(writeCard.allowKey).toBeUndefined();
       expect((await api("POST", `/api/bots/${bot.id}/respond`, { requestId: writeCard.requestId, behavior: "deny" })).status).toBe(200);
       await expect(linearWrite).resolves.toMatchObject({ behavior: "deny" });
