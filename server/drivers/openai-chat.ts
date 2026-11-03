@@ -849,7 +849,9 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
                 if (refused) { skipRepeatCount = true; throw new Error(refused); }
                 tools.validate(call.function.name, args);
                 const shown = tools.view(call.function.name, args as Record<string, unknown>); title = shown.title;
-                const shownPreview = await tools.approvalSummary(call.function.name, args as Record<string, unknown>);
+                // The readable summary is built from the raw arguments, so a configured credential the model echoed into them is
+                // redacted here, before it reaches the approval card, the events or the log.
+                const shownPreview = safeText(await tools.approvalSummary(call.function.name, args as Record<string, unknown>));
                 // This runtime has no provider reviewer, so Full access is honoured here, except for sends and money.
                 const full = (turn.approvalModeNow?.() ?? turn.approvalMode) === "full";
                 const floored = approval.floored({ full, threadId: turn.threadId, botId: turn.botId, shown, summary: shownPreview });
