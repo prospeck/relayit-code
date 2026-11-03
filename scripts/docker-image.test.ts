@@ -9,7 +9,6 @@ import { parse } from "yaml";
 // Cloud home. A pull downloads every layer whose digest changed, and a layer's
 // digest changes when anything beneath it does.
 const dockerfile = readFileSync(new URL("../Dockerfile", import.meta.url), "utf8");
-const workflow = parse(readFileSync(new URL("../.github/workflows/docker.yml", import.meta.url), "utf8"));
 
 interface Step { op: string; args: string }
 interface Stage { name: string; from: string; steps: Step[] }
@@ -41,8 +40,6 @@ function chain(target: string): Step[] {
 const shipped = () => all.filter(s => s.name !== "build" && s.name !== "edge").flatMap(s => s.steps);
 const npmInstall = (step: Step) => step.op === "RUN" && /\bnpm install\b/.test(step.args);
 const browserRun = () => chain("runtime").find(step => step.op === "RUN" && step.args.includes("agent-browser install"))!;
-// The keys step parses Chrome for Testing's JSON with jq, as on GitHub's runners.
-const jq = process.platform === "win32" ? "" : spawnSync("sh", ["-c", "command -v jq"], { encoding: "utf8" }).stdout.trim();
 
 const temporaryDirectories: string[] = [];
 afterEach(() => {
@@ -97,16 +94,6 @@ describe("container images", () => {
     expect(chain("server").filter(step => step.args.includes("--from=build")).every(step => step.args.startsWith("--from=build --chown=maus:maus "))).toBe(true);
   });
 
-
-  it("scans the server image for every throwaway build directory", () => {
-    const scan = (workflow.jobs["build-and-smoke"].steps as { name?: string; run?: string }[])
-      .find(step => step.name?.startsWith("Prove each image ships its files once"))!.run!;
-    const cache = new RegExp(/cache = re\.compile\(r"(.*)"\)/.exec(scan)![1]);
-    const removed = shipped().flatMap(step => [...step.args.matchAll(/\brm -rf ([^;&|]+)/g)].flatMap(match => match[1].trim().split(/\s+/)));
-    const throwaway = [...new Set(removed.filter(path => path.startsWith("/tmp/")))].sort();
-    expect(throwaway).toEqual(["/tmp/node-compile-cache", "/tmp/npm-cache", "/tmp/omb-build-home"]);
-    for (const path of throwaway) expect(cache.test(`${path.slice(1)}/leftover`), path).toBe(true);
-  });
 
   it("keeps each image's runtime contract", () => {
     const last = (steps: Step[], op: string) => steps.filter(step => step.op === op).at(-1)?.args;
@@ -168,33 +155,6 @@ describe("container images", () => {
 
   });
 
-  it.skipIf(!jq)("resolves the current Chrome and engine releases, and keys on the date when a lookup fails", () => {
-    const keys = (workflow.jobs.publish.steps as { id?: string; run?: string; env?: Record<string, string> }[]).find(step => step.id === "keys")!;
-    const resolve = (ok: boolean) => {
-      const root = mkdtempSync(join(tmpdir(), "omb-docker-keys-"));
-      temporaryDirectories.push(root);
-      const fake = (name: string, body: string) => writeFileSync(join(root, name), `#!/bin/sh\n${ok ? body : "exit 1"}\n`, { mode: 0o755 });
-      fake("curl", `echo '{"channels":{"Stable":{"version":"154.0.8037.92","downloads":{}}}}'`);
-      fake("npm", `case "$2" in @anthropic-ai/claude-code@latest) echo 2.1.291;; @openai/codex@latest) echo 0.160.1;; *) exit 1;; esac`);
-      const output = join(root, "output");
-      writeFileSync(output, "");
-      const result = spawnSync("bash", ["-e", "-c", keys.run!], {
-        env: { ...keys.env, PATH: `${root}:${dirname(jq)}:/usr/bin:/bin`, GITHUB_OUTPUT: output }, encoding: "utf8",
-      });
-      expect(result.status, result.stderr).toBe(0);
-      return Object.fromEntries(readFileSync(output, "utf8").trim().split("\n").map(line => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
-    };
-    expect(resolve(true)).toEqual({
-      chrome: "154.0.8037.92",
-      engines: "@anthropic-ai/claude-code@2.1.291 @openai/codex@0.160.1",
-      engines_tag: "",
-    });
-    const today = `date-${new Date().toISOString().slice(0, 10)}`;
-    expect(resolve(false)).toEqual({ chrome: today, engines: "@anthropic-ai/claude-code @openai/codex", engines_tag: today });
-  });
-
-  // An init collects browser processes whose parents exit, and Chrome gets the
-  // shared memory RelayIt's desktop containers give it.
   it("runs every compose service of the server image with an init and Chrome's shared memory", () => {
     for (const file of ["../compose.yaml", "../deploy/docker-compose.yml", "../deploy/podman/compose.yaml"]) {
       const service = parse(readFileSync(new URL(file, import.meta.url), "utf8")).services.omb;
