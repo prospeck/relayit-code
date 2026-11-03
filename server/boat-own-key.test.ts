@@ -1,12 +1,9 @@
-// Cloud Pro's included Boat computers, over HTTP against one stub that plays
-// both Boat (/boat) and the Admin's relay (/relay). The relay knows only the
-// Admin's account, so the person's own key must never reach it and the
-// included token must never reach Boat; the own key always wins.
+// Cloud computers on the person's own Boat key, over HTTP against one stub that plays Boat (/boat) and, to prove it is
+// never used, an Admin relay (/relay) that no longer exists: leftover relay settings are ignored, and the key goes only to Boat.
 import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AppConfig } from "./config.ts";
 
 const INCLUDED = "box_omb_included-relay-token";
 const LIMIT = "Your Pro plan's 200 cloud computer hours for September are used up. They reset on 1 October.";
@@ -98,22 +95,21 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("included Boat computers", () => {
-  it("with no own key, uses the included token and only the relay", async () => {
-    await boat.execOnBoat({}, botId, "true");
-    expect(underRelay().length).toBeGreaterThan(0);
-    expect(underBoat()).toEqual([]);
-    expect(requests.every((request) => request.auth === `Bearer ${INCLUDED}`)).toBe(true);
+describe("Boat computers on the person's own key", () => {
+  it("with no own key there is no cloud computer: a leftover relay token is ignored and nothing is sent anywhere", async () => {
+    await expect(boat.execOnBoat({}, botId, "true")).rejects.toThrow(/Boat is not configured|Could not reach Boat/);
+    expect(boat.boatConfigured({})).toBe(false);
+    expect(requests).toEqual([]);
   });
 
-  it("an own key saved in Settings wins and goes only to Boat", async () => {
+  it("an own key saved in Settings goes only to Boat", async () => {
     await boat.execOnBoat({ box: { token: "box_own" } }, botId, "true");
     expect(underBoat().length).toBeGreaterThan(0);
     expect(underRelay()).toEqual([]);
     expect(requests.every((request) => request.auth === "Bearer box_own")).toBe(true);
   });
 
-  it("an own key from the environment (BOX_TOKEN) wins and goes only to Boat", async () => {
+  it("an own key from the environment (BOX_TOKEN) goes only to Boat", async () => {
     vi.stubEnv("BOX_TOKEN", "box_from_env");
     const cfg = loadConfig();
     expect(cfg.box?.token).toBe("box_from_env");
@@ -122,50 +118,17 @@ describe("included Boat computers", () => {
     expect(requests.every((request) => request.path.startsWith("/boat/") && request.auth === "Bearer box_from_env")).toBe(true);
   });
 
-  it("removing the own key falls back to the included one", async () => {
-    const cfg: AppConfig = { box: { token: "box_own" } };
-    await boat.execOnBoat(cfg, botId, "true");
-    expect(underRelay()).toEqual([]);
-    requests.length = 0;
-    cfg.box!.token = "";
-    await boat.execOnBoat(cfg, botId, "true");
-    expect(underBoat()).toEqual([]);
-    expect(requests.every((request) => request.auth === `Bearer ${INCLUDED}`)).toBe(true);
-  });
-
-  it("a cloud computer tool call with the included token still reaches only the relay", async () => {
-    await boat.runCommand({ box: { token: boat.boatAccount({})!.token } }, boxId, "true");
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ path: `/relay/api/box/v1/boxes/${boxId}/commands`, auth: `Bearer ${INCLUDED}` });
-  });
-
-  it("speaks v1 to Boat and the relay's own box dialect to a relay wired at /api/box/v1", async () => {
+  it("speaks v1 to Boat", async () => {
     await boat.execOnBoat({ box: { token: "box_own" } }, botId, "true");
-    await boat.execOnBoat({}, botId, "true");
     expect(underBoat().every((request) => request.path.startsWith("/boat/api/v1/sandboxes"))).toBe(true);
-    expect(underRelay().every((request) => request.path.startsWith("/relay/api/box/v1/boxes"))).toBe(true);
-    for (const side of [underBoat(), underRelay()]) {
-      expect(side.filter((request) => request.method === "POST" && request.path.endsWith(`/${boxId}/commands`))).toHaveLength(1);
-    }
-  });
-
-  it("follows a delete through the box-dialect relay to completion", async () => {
-    const owners = [{ botId, name: "Included", inUse: false }];
-    await expect(boat.deleteManagedBoat({}, owners, boxId, machineName, undefined, { pollDelaysMs: [] })).resolves.toEqual({ ok: true });
-    expect(requests.filter((request) => request.method === "DELETE").map((request) => request.path)).toEqual([`/relay/api/box/v1/boxes/${boxId}`]);
-    expect(underBoat()).toEqual([]);
+    expect(underBoat().filter((request) => request.method === "POST" && request.path.endsWith(`/${boxId}/commands`))).toHaveLength(1);
+    expect(underRelay()).toEqual([]);
   });
 
   it("speaks only v1 with an own key, whatever its base is called", async () => {
     vi.stubEnv("OMB_BOAT_API", `${base}/boat/api/box/v1`);
     await boat.runCommand({ box: { token: "box_own" } }, boxId, "true");
     expect(requests).toEqual([{ method: "POST", path: `/boat/api/box/v1/sandboxes/${boxId}/commands`, auth: "Bearer box_own" }]);
-  });
-
-  it("speaks v1 to a relay once the Admin wires a v1 base", async () => {
-    vi.stubEnv("OMB_CLOUD_BOAT_URL", `${base}/relay/api/v1`);
-    await boat.runCommand({}, boxId, "true");
-    expect(requests).toEqual([{ method: "POST", path: `/relay/api/v1/sandboxes/${boxId}/commands`, auth: `Bearer ${INCLUDED}` }]);
   });
 
   it("verifies a key being saved against Boat only, never the relay", async () => {
@@ -186,54 +149,52 @@ describe("included Boat computers", () => {
     expect(await boat.verifyToken("boat_maybe")).toEqual({ ok: false, message: "boat.dev returned 500 for that token — try again in a moment." });
   });
 
-  it("lists the computers with the included wording when the relay rejects its token", async () => {
+  it("tells the person to update a rejected key in Settings", async () => {
     rejectCredentials = true;
-    expect((await boat.listManagedBoats({}, [])).problem).toBe("The cloud computers included with your Cloud plan aren't available right now. Try again later.");
     expect((await boat.listManagedBoats({ box: { token: "box_own" } }, [])).problem).toMatch(/update it in Settings/);
   });
 
-  it("lists again once after a dropped connection, and names RelayIt Cloud's computer service when it stays unreachable", async () => {
-    const lists = () => requests.filter((request) => request.path === "/relay/api/box/v1/boxes");
+  it("lists again once after a dropped connection, and names boat.dev when it stays unreachable", async () => {
+    const own = { box: { token: "box_own" } };
+    const lists = () => requests.filter((request) => request.path === "/boat/api/v1/sandboxes");
     dropLists = 1;
-    await expect(boat.findBoat({}, "unlisted-bot")).resolves.toBeNull();
+    await expect(boat.findBoat(own, "unlisted-bot")).resolves.toBeNull();
     expect(lists()).toHaveLength(2);
     dropLists = 2;
-    await expect(boat.findBoat({}, "unlisted-bot")).rejects.toMatchObject({
-      message: "Could not reach RelayIt Cloud's computer service to list cloud computers — check your connection and refresh", status: 503, transient: true,
+    await expect(boat.findBoat(own, "unlisted-bot")).rejects.toMatchObject({
+      message: "Could not reach Boat to list cloud computers — check your connection and refresh", status: 503, transient: true,
     });
     expect(lists()).toHaveLength(4);
     dropLists = 2;
-    expect((await boat.listManagedBoats({ box: { token: "box_own" } }, [])).problem).toBe("Could not reach boat.dev to list cloud computers — check your connection and refresh");
+    expect((await boat.listManagedBoats(own, [])).problem).toBe("Could not reach Boat to list cloud computers — check your connection and refresh");
     rejectCredentials = true;
-    await expect(boat.findBoat({}, "unlisted-bot")).rejects.toMatchObject({ transient: false });
+    await expect(boat.findBoat(own, "unlisted-bot")).rejects.toMatchObject({ transient: false });
   });
 
-  it("reports configured and included to Settings, never the token", () => {
-    expect(boat.describeBoatAccount({})).toEqual({ configured: true, included: true });
+  it("reports only whether a key is configured to Settings, never the token or an included plan", () => {
     expect(boat.describeBoatAccount({ box: { token: "box_own" } })).toEqual({ configured: true });
-    expect(JSON.stringify(boat.describeBoatAccount({}))).not.toContain(INCLUDED);
-    vi.stubEnv("OMB_CLOUD_BOAT_TOKEN", undefined);
-    expect(boat.boatConfigured({})).toBe(false);
+    expect(JSON.stringify(boat.describeBoatAccount({ box: { token: "box_own" } }))).not.toContain("box_own");
     expect(boat.describeBoatAccount({})).toEqual({ configured: false });
   });
 });
 
 describe("waking a sleeping computer", () => {
-  it("reports a refused resume with the relay's own words instead of waiting out the budget", async () => {
+  it("reports a refused resume with Boat's own words instead of waiting out the budget", async () => {
     state = "archived";
     resumeReplies = [{ status: 429, body: { ok: false, type: "sandbox.error", status: 429, code: "limit_reached", message: LIMIT, error: { code: "limit_reached", message: LIMIT, status: 429 } } }];
     const started = Date.now();
-    await expect(boat.readyBoat({}, botId)).rejects.toThrow(LIMIT);
-    await expect(boat.joinBoat({}, botId)).rejects.toThrow(LIMIT);
+    const own = { box: { token: "box_own" } };
+    await expect(boat.readyBoat(own, botId)).rejects.toThrow(LIMIT);
+    await expect(boat.joinBoat(own, botId)).rejects.toThrow(LIMIT);
     expect(Date.now() - started).toBeLessThan(4_000);
     expect(requests.filter((request) => request.path.endsWith("/resume"))).toHaveLength(2);
-    expect(underBoat()).toEqual([]);
+    expect(underRelay()).toEqual([]);
   });
 
   it("keeps waiting through a conflict, which is a wake already under way", async () => {
     state = "archived";
     resumeReplies = [{ status: 409, body: { ok: false, code: "conflict", message: "already resuming" } }];
-    await expect(boat.readyBoat({}, botId, 1)).resolves.toBeNull();
+    await expect(boat.readyBoat({ box: { token: "box_own" } }, botId, 1)).resolves.toBeNull();
   });
 
   it("retries a server error on the next poll, as Boat asks, and wakes", async () => {
@@ -242,7 +203,6 @@ describe("waking a sleeping computer", () => {
       { status: 503, body: { ok: false, code: "unavailable", message: "Boat is busy" } },
       { status: 202, body: { ok: true } },
     ];
-    // Own key here: this is everyone's wake path, not only Cloud Pro's.
     await expect(boat.readyBoat({ box: { token: "box_own" } }, botId)).resolves.toMatchObject({ id: boxId, state: "idle" });
     expect(requests.filter((request) => request.path.endsWith("/resume"))).toHaveLength(2);
   }, 15_000);
@@ -271,10 +231,9 @@ describe("waking a sleeping computer", () => {
     expect(requests.filter((request) => request.path.endsWith("/resume")).length).toBeGreaterThanOrEqual(2);
   }, 15_000);
 
-  it("never asks the person to fix a key they never pasted when the relay rejects the included token", async () => {
+  it("asks the person to fix a rejected key", async () => {
     state = "archived";
     resumeReplies = [{ status: 401, body: { ok: false, code: "unauthorized", message: "This cloud computer key is not valid." } }];
-    await expect(boat.readyBoat({}, botId)).rejects.toThrow("The cloud computers included with your Cloud plan aren't available right now. Try again later.");
     await expect(boat.readyBoat({ box: { token: "box_own" } }, botId)).rejects.toThrow("boat.dev rejected your Boat API key — paste a current one in Settings → API keys");
   });
 });

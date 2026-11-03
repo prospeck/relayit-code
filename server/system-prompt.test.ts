@@ -354,7 +354,7 @@ describe("cloudHomePrompt", () => {
   it("says the bot runs in the cloud, offers what works there, and never asks for a place that cannot exist", () => {
     for (const tools of [true, false]) {
       const text = cloudHomePrompt(tools);
-      expect(text).toMatch(/^ You run on the user's My Cloud, their always-on RelayIt in the cloud, not on their own computer\./);
+      expect(text).toMatch(/^ You run on the user's own server, separate from their personal computer\./);
       expect(text.startsWith(` You run on ${CLOUD_HOME_PLACE}.`)).toBe(true);
       expect(text).toContain("Offer what works here: the built-in browser and their cloud computer, a desktop in the cloud. Call it their cloud computer, as the app does.");
       expect(text).not.toMatch(/\bOMB\b|\bBoat\b|\bbox\b/);
@@ -365,7 +365,7 @@ describe("cloudHomePrompt", () => {
 
   it("points to a lent computer only when the turn has the shared-computer tools", () => {
     expect(cloudHomePrompt(true)).toContain("check list_shared_computers: a computer they share with the Cloud is reachable through shared_computer");
-    expect(cloudHomePrompt(true)).toContain("otherwise ask them to open RelayIt on that computer, signed in to RelayIt Cloud: it shares that computer with you by itself");
+    expect(cloudHomePrompt(true)).toContain("otherwise ask them to open RelayIt on that computer, paired with this server: it shares that computer with you by itself");
     expect(cloudHomePrompt(true)).not.toContain("use-my-computer");
     expect(cloudHomePrompt(true)).not.toContain("Settings →");
     expect(cloudHomePrompt(true)).toContain("use its say field when it has one");
@@ -385,7 +385,7 @@ describe("cloudHomePrompt", () => {
   it("names the person's computer by its platform, never a Mac unless it is one, and the product by its name", () => {
     const pc = cloudHomePrompt(true, [], [{ name: "ASH-PC", platform: "win32" }]);
     expect(pc).toContain("If they ask for something on their PC (ASH-PC), check list_shared_computers");
-    expect(pc).toContain("otherwise ask them to open RelayIt on that PC, signed in to RelayIt Cloud: it shares that PC with you by itself. It is a PC: call it that, never a Mac unless it is one.");
+    expect(pc).toContain("otherwise ask them to open RelayIt on that PC, paired with this server: it shares that PC with you by itself. It is a PC: call it that, never a Mac unless it is one.");
     const mac = cloudHomePrompt(false, [], [{ name: "Ash’s MacBook", platform: "darwin" }, { name: "ASH-PC", platform: "win32" }]);
     expect(mac).toContain("You cannot see or use their Mac (Ash’s MacBook), its screen or its files from here.");
     for (const text of [pc, mac, cloudHomePrompt(true), cloudHomePrompt(true, [], [{ name: "box", platform: "linux" }])]) {

@@ -335,6 +335,9 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
           // the loopback engine above: a turn there stays busy until a save
           // that changes the workspace OpenAI-compatible key replaces it
           helperCompat: { driver: "openai-compat", config: { model: "fake-model" } },
+          // the same loopback engine as a hosted provider: a loopback OpenAI-compatible URL is held to the local-model guards,
+          // which stop a repeating model after a few rounds, long before the step cap this one is here to reach
+          helperHosted: { driver: "cerebras", config: { url: compatUrl }, environment: { CEREBRAS_API_KEY: "comms-compat-key" } },
           // turns hold open until the gate file exists, then echo their prompt
           helperGate: {
             driver: "grokAgent",
@@ -548,7 +551,8 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
         section: "Launch",
         autoApprove: false,
         approvePeerComms: false,
-        approvalMode: "full",
+        // a bot a Chief creates starts on Ask, like every new bot
+        approvalMode: "ask",
         modelSelection: defaultSelection,
       });
       expect(operator.chiefOfStaff).toBeFalsy();
@@ -1029,7 +1033,7 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
       compatAnswer = "steps";
       try {
         await hideAll();
-        const helper = await named("CapHelper", { modelSelection: { instanceId: "helperCompat", model: "fake-model" } });
+        const helper = await named("CapHelper", { modelSelection: { instanceId: "helperHosted", model: "fake-model" } });
         const asker = await named("Asker", { modelSelection: DELEGATOR });
         expect((await startRoutine(asker.id, "hey @CapHelper please pick this up")).status).toBe(201);
 

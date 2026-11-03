@@ -22,6 +22,8 @@ const lastUser = (request: ChatRequest) => {
 it("says in words that a turn nobody stopped was cut off, and retries the room request a client abort stopped", async () => {
   const requests: ChatRequest[] = [];
   const upstream = createServer(async (req, res) => {
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { res.statusCode = 404; res.end(); return; }
     if (req.url === "/v1/models") {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ data: [{ id: "fixture-model" }] }));
@@ -75,7 +77,8 @@ it("says in words that a turn nobody stopped was cut off, and retries the room r
   };
   const messages = async (threadId: string) => (await api("GET", `/api/threads/${threadId}/messages?limit=100`)).messages as any[];
   try {
-    await api("PATCH", "/api/config", { openaiCompat: { key: "synthetic-fixture-key", url: `http://127.0.0.1:${address.port}/v1`, model: "fixture-model" } });
+    // Reached as 0.0.0.0, not 127.x: a loopback engine is held to the local-model guards, and this journey models a hosted provider.
+    await api("PATCH", "/api/config", { openaiCompat: { key: "synthetic-fixture-key", url: `http://0.0.0.0:${address.port}/v1`, model: "fixture-model" } });
 
     const { bot } = await control(["new-bot", "--name", "Stopper"]);
     await control(["set-model", "--bot", bot.id, "--instance", "openaiCompat", "--model", "fixture-model"]);

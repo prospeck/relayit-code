@@ -46,6 +46,8 @@ it("learns a server's apps, observes its tool call into an app row, and runs its
     expect((await api("GET", "/api/mcp/servers")).servers.find((server: any) => server.name === "board")).toMatchObject({ enabled: true, apps: true });
 
     const bot = (await api("POST", "/api/bots", { name: "Scout" }, 201)).bot;
+    // A new bot starts on Ask and its apps can then only look; this journey runs a change, so it is set to Full access.
+    await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "full" }, 200);
     await api("POST", `/api/bots/${bot.id}/messages`, { threadId: bot.threadId, text: "Show me the board", sendId: "apps-mcp-e2e-send-0001" }, 202);
     let mounts: any;
     await expect.poll(() => {

@@ -143,7 +143,7 @@ describe("cloudLendingRefusalText", () => {
   const mac = { room: false, fromBefore: false, device: "Mac" as const };
   const room = { ...mac, room: true };
   it("names the reason the person can act on, and never offers Use my Mac", () => {
-    expect(cloudLendingRefusalText("someone-else", { ...mac, fromBefore: true })).toBe("This conversation has messages from before My Cloud, so it can't use your Mac. Start a new conversation with this bot to use it.");
+    expect(cloudLendingRefusalText("someone-else", { ...mac, fromBefore: true })).toBe("This conversation has messages from before the server, so it can't use your Mac. Start a new conversation with this bot to use it.");
     expect(cloudLendingRefusalText("someone-else", mac)).toBe("Someone else wrote in this conversation, so it can't use your Mac. Start a new conversation to use it.");
     expect(cloudLendingRefusalText("not-owner", mac)).toBe("Only conversations you start with a bot, and routines you wrote, can use your Mac. Start a new conversation with this bot to use it.");
     expect(cloudLendingRefusalText("memory-changed", room)).toBe("This bot's memory was changed in a conversation you didn't write. Review it in Memory to use your Mac again.");
@@ -152,7 +152,7 @@ describe("cloudLendingRefusalText", () => {
     }
   });
   it("in a group chat, points to a new thread there or to asking there", () => {
-    expect(cloudLendingRefusalText("someone-else", { ...room, fromBefore: true })).toBe("This conversation has messages from before My Cloud, so it can't use your Mac. Start a new thread in this group chat to use it.");
+    expect(cloudLendingRefusalText("someone-else", { ...room, fromBefore: true })).toBe("This conversation has messages from before the server, so it can't use your Mac. Start a new thread in this group chat to use it.");
     expect(cloudLendingRefusalText("someone-else", room)).toBe("Someone else wrote in this conversation, so it can't use your Mac. Start a new thread in this group chat to use it.");
     expect(cloudLendingRefusalText("unproven", room)).toBe("Only your own messages in a group chat, and the bots that answer them there, can use your Mac. Ask here yourself to use it.");
   });

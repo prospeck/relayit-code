@@ -38,7 +38,8 @@ it.each([false, true])("adds a Boat account only for an opted-in Boat fixture, a
     expect(instances.filter(instance => instance.driverKind === "boxAgent" || instance.instanceId === "computer")).toEqual([]);
     expect(config.instances).not.toHaveProperty("computer");
     if (withBoat) {
-      expect(config.box).toEqual({ token: "box_verification_fixture" });
+      // the server keeps the key in the credential store and leaves a reference in the file
+      expect(config.box).toEqual({ token: expect.stringMatching(/^omb-credential:/) });
     } else {
       expect(config).not.toHaveProperty("box");
       expect(calls).toEqual([]);

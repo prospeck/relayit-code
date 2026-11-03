@@ -1627,7 +1627,6 @@
   "composer.mention.everyoneOne": "1 bot neste chat",
   "composer.mention.everyoneMany": "{count} bots neste chat",
   "composer.mention.devs": "Desenvolvedores",
-  "composer.mention.devsDesc": "Relatar um bug ao RelayIt",
   "devs.report.received": "Relato de erro enviado · Recebemos, estamos analisando",
   "devs.report.fixedSoon": "Relato de erro · Corrigido, chega em uma atualização",
   "devs.report.fixedComing": "Relato de erro · Corrigido na {version}, chega na sua próxima atualização",

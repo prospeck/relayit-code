@@ -211,7 +211,10 @@ export async function verifyWorkspaceBackup(report: (event: unknown) => void = (
     assert.deepEqual((await api(destination, "GET", `/api/bots/${bot.id}/skills`)).body, sourceSkills);
     const restoredConfig = JSON.parse(readFileSync(join(destination.info.dataDir, "config.json"), "utf8"));
     assert.equal(restoredConfig.profile.name, "Workspace backup fixture");
-    assert.deepEqual(restoredConfig.tts, destinationConfig.tts);
+    // the voice key lives in the credential store: the restored file holds a reference, not the key
+    assert.match(restoredConfig.tts.key, /^omb-credential:/);
+    assert.deepEqual({ ...restoredConfig.tts, key: undefined }, { ...destinationConfig.tts, key: undefined });
+    assert.ok(!readFileSync(join(destination.info.dataDir, "config.json"), "utf8").includes(destinationConfig.tts.key));
     assert.deepEqual(restoredConfig.instances, destinationConfig.instances);
     assert.equal((await api(destination, "GET", "/api/config")).body.tts.configured, true);
     const status = (await api(destination, "GET", "/api/workspace-backup/status")).body;

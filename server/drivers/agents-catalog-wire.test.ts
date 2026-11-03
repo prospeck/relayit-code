@@ -353,7 +353,7 @@ describe("agents proxy tools/list golden", () => {
   it("writes the trigger fields out once, for every action of the trigger tool", () => {
     type TriggerTool = Tool & { inputSchema: { properties: Record<string, unknown> } };
     const trigger = toolsOf(wires[FULL]!).find((tool) => tool.name === "trigger") as TriggerTool;
-    expect(Object.keys(trigger.inputSchema.properties)).toEqual(expect.arrayContaining(["action", "trigger_id", "when", "name", "instructions", "schedule", "filter", "event_config", "run_on", "timeout_minutes", "clear_timeout", "continuity", "overlap", "run_on_startup", "for_bot_id"]));
+    expect(Object.keys(trigger.inputSchema.properties)).toEqual(expect.arrayContaining(["action", "trigger_id", "when", "name", "instructions", "schedule", "run_on", "timeout_minutes", "clear_timeout", "continuity", "overlap", "run_on_startup", "for_bot_id"]));
     expect(trigger.inputSchema.properties).not.toHaveProperty("changes");
     for (const wire of Object.values(wires)) expect(wire.match(/"every_minutes":/g)).toHaveLength(1);
   });

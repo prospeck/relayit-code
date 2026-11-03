@@ -1,4 +1,4 @@
-// A bot on the person's own Cloud that needs their computer (its apps and screen, its files, or its terminal) when it
+// A bot on the person's own server that needs their computer (its apps and screen, its files, or its terminal) when it
 // isn't available asks once with a card: what it wants and why, why it isn't available, and the one-tap fix. The English
 // mirrors src/locales/en.json `computerAsk.*` exactly (a test holds them together): the server has no i18n.
 
@@ -40,7 +40,7 @@ export interface ComputerAskCard {
 }
 
 export interface ComputerAskField {
-  /** A bot on the person's own Cloud asks to turn on what it needs from their computer. */
+  /** A bot on the person's own server asks to turn on what it needs from their computer. */
   computerAsk?: ComputerAskCard;
 }
 

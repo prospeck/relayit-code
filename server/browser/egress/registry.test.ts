@@ -168,7 +168,7 @@ describe("one gate per browser session", () => {
     }
   });
 
-  it("on RelayIt Cloud says once, and only for those sites, when they load from the Cloud's own connection because the computer is away", async () => {
+  it("on a server says once, and only for those sites, when they load from the Cloud's own connection because the computer is away", async () => {
     let device: { open(target: { host: string; port: number }): Promise<{ refused: string }> } | { away: string } | { unshared: true } | null = { away: "Mac" };
     const cloud = new BrowserEgress();
     cloud.configure({ host: "cloud", config: () => ({}), listeners: new OwnListeners("cloud", { env: {}, ...noScans }), ownership, resolve: async () => [], device: () => device });
@@ -178,7 +178,7 @@ describe("one gate per browser session", () => {
       expect(cloud.takeNotice("bot-1"), "a site that loads from My Cloud anyway: nothing to say").toBeNull();
       expect(await socksCode(port, "www.instagram.com", 443), "from the Cloud's own connection, where this name does not resolve").toBe(4);
       expect(await socksCode(port, "www.youtube.com", 443)).toBe(4);
-      expect(cloud.takeNotice("bot-1")).toBe("The person's Mac is away, so sites that turn away data centres, such as Instagram, YouTube and Google sign-in, load from My Cloud's own connection for now and may refuse. They open through the Mac again once it is back.");
+      expect(cloud.takeNotice("bot-1")).toBe("The person's Mac is away, so sites that turn away data centres, such as Instagram, YouTube and Google sign-in, load from the server's own connection for now and may refuse. They open through the Mac again once it is back.");
       expect(await socksCode(port, "www.instagram.com", 443)).toBe(4);
       expect(cloud.takeNotice("bot-1"), "said once while it stays away").toBeNull();
       device = { open: async () => ({ refused: "port" }) };
@@ -194,7 +194,7 @@ describe("one gate per browser session", () => {
       expect(cloud.takeNotice("bot-1"), "a site that loads from My Cloud anyway: nothing to say").toBeNull();
       await socksCode(port, "www.instagram.com", 443);
       expect(cloud.takeNotice("bot-1")).toBe(UNSHARED_NOTICE);
-      expect(UNSHARED_NOTICE).toContain("these sites open through their own computer's internet connection while RelayIt is open on it, signed in to RelayIt Cloud");
+      expect(UNSHARED_NOTICE).toContain("these sites open through their own computer's internet connection while RelayIt is open on it, paired with this server");
       expect(UNSHARED_NOTICE).not.toContain("use-my-computer");
       await socksCode(port, "www.instagram.com", 443);
       expect(cloud.takeNotice("bot-1"), "said once while none shares").toBeNull();

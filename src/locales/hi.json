@@ -656,7 +656,6 @@
   "composer.mention.agent": "एजेंट",
   "composer.mention.person": "व्यक्ति",
   "composer.mention.devs": "डेवलपर",
-  "composer.mention.devsDesc": "RelayIt को बग की रिपोर्ट करें",
   "devs.report.received": "बग रिपोर्ट भेजी गई · मिल गई, हम देख रहे हैं",
   "devs.report.fixedSoon": "बग रिपोर्ट · ठीक हो गया, अपडेट के साथ आएगा",
   "devs.report.fixedComing": "बग रिपोर्ट · {version} में ठीक हुआ, आपके अगले अपडेट के साथ आएगा",

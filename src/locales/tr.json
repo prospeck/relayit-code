@@ -1487,7 +1487,6 @@
   "composer.mention.everyoneOne": "Bu sohbetteki 1 bot",
   "composer.mention.everyoneMany": "Bu sohbetteki {count} bot",
   "composer.mention.devs": "Geliştiriciler",
-  "composer.mention.devsDesc": "RelayIt'a hata bildir",
   "devs.report.received": "Hata bildirimi gönderildi · Aldık, inceliyoruz",
   "devs.report.fixedSoon": "Hata bildirimi · Düzeltildi, bir güncellemeyle gelecek",
   "devs.report.fixedComing": "Hata bildirimi · {version} sürümünde düzeltildi, sonraki güncellemeyle gelecek",

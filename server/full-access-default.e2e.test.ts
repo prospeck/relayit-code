@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import { launchVerificationServer, runControlOmb, verificationServerEnvironment } from "../scripts/control-omb.ts";
 import { waitForExit } from "./testing/cleanup.ts";
 
-it("starts new bots and threads at Full access on each engine family, and keeps a person's Ask", async () => {
+it("starts new bots and threads at Ask on each engine family, runs Full access on each where a person sets it, and keeps a person's Ask", async () => {
   const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, undefined, ["codex"]);
   const { dataDir, url, logPath } = fixture.info;
   const codexDump = join(dataDir, "codex-dump.json");
@@ -59,8 +59,12 @@ it("starts new bots and threads at Full access on each engine family, and keeps 
     const bots: Record<string, any> = {};
     for (const instanceId of ["claude", "codex", "droid"]) {
       bots[instanceId] = (await api("POST", "/api/bots", { name: `Default ${instanceId}`, modelSelection: model(instanceId) }, 201)).bot;
-      expect(bots[instanceId].approvalMode).toBe("full");
+      // new bots start on Ask, and the default is not written into the bot
+      expect(bots[instanceId].approvalMode).toBe("ask");
       expect(stored(bots[instanceId].id).approvalMode).toBeUndefined();
+      expect((await api("POST", `/api/bots/${bots[instanceId].id}/tasks`, { title: `Default ${instanceId} thread` }, 201)).task.approvalMode).toBe("ask");
+      // the person turns Full access on for this bot: every thread of it, and the threads made next
+      expect((await api("PATCH", `/api/bots/${bots[instanceId].id}`, { approvalMode: "full", applyToAllThreads: true })).bot.approvalMode).toBe("full");
     }
     const threads: Record<string, string> = {};
     for (const [instanceId, bot] of Object.entries(bots)) {
@@ -82,9 +86,9 @@ it("starts new bots and threads at Full access on each engine family, and keeps 
     expect(await openCard(threads.droid)).toBeUndefined();
 
     const starter = (await api("GET", "/api/bots?messages=0")).bots.find((bot: any) => !Object.values(bots).some((mine: any) => mine.id === bot.id));
-    expect(starter.approvalMode).toBe("full");
+    expect(starter.approvalMode).toBe("ask");
     expect(stored(starter.id).approvalMode).toBeUndefined();
-    await api("PATCH", `/api/bots/${starter.id}`, { modelSelection: model("codex") });
+    await api("PATCH", `/api/bots/${starter.id}`, { modelSelection: model("codex"), approvalMode: "full", applyToAllThreads: true });
     await send(starter.id, starter.threadId);
     expect((await wait(starter.id, starter.threadId)).status).toBe("settled");
     expect(JSON.parse(readFileSync(codexDump, "utf8")).calls.findLast((call: any) => call.method === "turn/start").params)

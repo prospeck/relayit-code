@@ -115,7 +115,7 @@ posixOnly("Live call e2e", () => {
           },
           // every turn asks permission to run a command
           asks: { driver: "grokAgent", environment: { FAKE_ACP_MODE: "permission" }, config: { cli: FAKE_ACP, fullAuto: false } },
-          questions: { driver: "grokAgent", environment: { FAKE_ACP_MODE: "question" }, config: { cli: FAKE_ACP, fullAuto: false } },
+          questions: { driver: "grokAgent", environment: { FAKE_ACP_MODE: "fake:question" }, config: { cli: FAKE_ACP, fullAuto: false } },
         },
       }),
     );

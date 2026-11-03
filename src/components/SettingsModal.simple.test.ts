@@ -118,7 +118,7 @@ describe("Settings in Simple mode", () => {
     const html = render();
     expect(pages(html)).toEqual(["general", "ai", "computer", "billing"]);
     expect(SIMPLE_PAGES.map((page) => page.id)).toEqual(["general", "botAccess", "ai", "computer", "billing"]);
-    expect(html).toMatch(/General<\/span>[\s\S]*AI<\/span>[\s\S]*Computer<\/span>[\s\S]*Usage &amp; billing<\/span>/);
+    expect(html).toMatch(/General<\/span>[\s\S]*AI<\/span>[\s\S]*Computer<\/span>[\s\S]*Usage<\/span>/);
     expect(html).not.toContain("data-settings-group=");
     expect(pages(html)).not.toContain("updates");
     expect(html).not.toContain("data-settings-section=");

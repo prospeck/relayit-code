@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DATA_DIR, instanceConfigs, loadConfig, PROVIDER_CREDENTIAL_ENV, WORKSPACE_CREDENTIAL_ENV, type AppConfig } from "./config.ts";
+import { hydrateConfigCredentials } from "./config-credentials.ts";
 import { acquireDataDirLease } from "./data-dir-lease.ts";
 import { SetupCancelled, type SetupIo } from "./cli-prompts.ts";
 import { isSetupComplete, readCliStartup, runSetup, saveCliStartup } from "./cli-setup.ts";
@@ -350,13 +351,16 @@ describe("API onboarding", () => {
     const id = saved.defaultModelSelection.instanceId;
     expect(id).toMatch(/^api-[\da-f]{8}$/);
     expect(saved.defaultModelSelection).toEqual({ instanceId: id, model: "fixture-selected" });
-    expect(saved.instances.oldApi).toEqual(existing.instances.oldApi);
-    expect(saved.instances[id]).toMatchObject({ driver: "openai-compat", config: { url: "https://api.openai.com/v1", key: "new-fixture-secret", model: "fixture-selected" } });
-    expect(saved).toMatchObject({ openaiCompat: existing.openaiCompat, xai: existing.xai, profile: existing.profile, futureSetting: existing.futureSetting });
+    // keys live in the credential store: the file holds only references, and they resolve to the same values
+    expect(readFileSync(configPath, "utf8")).not.toMatch(/old-secret|new-fixture-secret/);
+    const resolved = hydrateConfigCredentials(DATA_DIR, saved) as any;
+    expect(resolved.instances.oldApi).toEqual(existing.instances.oldApi);
+    expect(resolved.instances[id]).toMatchObject({ driver: "openai-compat", config: { url: "https://api.openai.com/v1", key: "new-fixture-secret", model: "fixture-selected" } });
+    expect(resolved).toMatchObject({ openaiCompat: existing.openaiCompat, xai: existing.xai, profile: existing.profile, futureSetting: existing.futureSetting });
     expect(readFileSync(join(DATA_DIR, "bots.json"), "utf8")).toBe(sentinel);
     expect(readFileSync(join(DATA_DIR, "messages-existing-thread.json"), "utf8")).toBe(transcript);
     expect(ui.lines.join("\n")).toMatch(/billed separately/);
-    expect(ui.lines.join("\n")).toMatch(/plaintext/);
+    expect(ui.lines.join("\n")).toMatch(/encrypted/);
     expect(ui.lines.join("\n")).not.toContain("new-fixture-secret");
     if (process.platform !== "win32") expect(statSync(configPath).mode & 0o777).toBe(0o600);
     ui.assertConsumed();

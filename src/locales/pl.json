@@ -1585,7 +1585,6 @@
   "composer.mention.allOne": "Jedyny bot tutaj",
   "composer.mention.allMany": "Wszystkie boty: {count}",
   "composer.mention.devs": "Programiści",
-  "composer.mention.devsDesc": "Zgłoś błąd do RelayIt",
   "devs.report.received": "Zgłoszenie błędu wysłane · Otrzymaliśmy je, sprawdzamy",
   "devs.report.fixedSoon": "Zgłoszenie błędu · Naprawione, trafi w aktualizacji",
   "devs.report.fixedComing": "Zgłoszenie błędu · Naprawione w {version}, trafi w następnej aktualizacji",

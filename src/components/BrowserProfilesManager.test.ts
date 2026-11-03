@@ -89,34 +89,34 @@ describe("browser profile manager", () => {
     expect(html).toContain("Signed-in sites");
   });
 
-  it("on My Cloud, My Chrome names the lent computer and says when it is offline", () => {
+  it("on a server, My Chrome names the lent computer and says when it is offline", () => {
     fixture.engine = { myChrome: true, myChromeOn: { name: "Studio Mac", device: "Mac", online: false } };
     fixture.profiles = [{ id: "work", name: "Work", browser: "chrome" }];
     const html = renderToStaticMarkup(createElement(BrowserProfilesManager, { bot: { ...bot, browserProfile: "work" } }));
-    expect(html).toContain("the Chrome on Studio Mac, your Mac");
+    expect(html).toContain("This uses Chrome on Studio Mac, your Mac.");
     expect(html).toContain("Studio Mac is offline right now.");
     expect(html).not.toMatch(/<option value="chrome" disabled/);
   });
 
-  it("on My Cloud with nothing lent, it says how to lend Chrome", () => {
+  it("on a server with nothing lent, it says how to lend Chrome", () => {
     fixture.engine = { myChrome: false, myChromeLendable: true };
     fixture.profiles = [{ id: "work", name: "Work", browser: "chrome" }];
     const html = renderToStaticMarkup(createElement(BrowserProfilesManager));
-    expect(html).toContain("it lends its Chrome by itself");
+    expect(html).toContain("open RelayIt on your Mac or PC and connect it to this server");
     expect(html).toContain("bots on a My Chrome profile can&#x27;t browse");
     expect(html).toContain("switching a profile to Built-in works too");
     expect(html).not.toContain("there is no Chrome of yours to use");
   });
 
-  it("on My Cloud with nothing lent and every profile Built-in, it never says a profile can't browse", () => {
+  it("on a server with nothing lent and every profile Built-in, it never says a profile can't browse", () => {
     fixture.engine = { myChrome: false, myChromeLendable: true };
     fixture.profiles = [{ id: "work", name: "Work" }];
     const html = renderToStaticMarkup(createElement(BrowserProfilesManager));
-    expect(html).toContain("it lends its Chrome by itself");
+    expect(html).toContain("open RelayIt on your Mac or PC and connect it to this server");
     expect(html).not.toContain("this profile&#x27;s bots");
   });
 
-  it("on My Cloud with nothing lent, a My Chrome profile shows the My Chrome note and how to lend it, never a sign-ins list", () => {
+  it("on a server with nothing lent, a My Chrome profile shows the My Chrome note and how to lend it, never a sign-ins list", () => {
     fixture.engine = { myChrome: false, myChromeLendable: true };
     fixture.profiles = [{ id: "work", name: "Work", browser: "chrome" }];
     const html = renderToStaticMarkup(createElement(BrowserProfilesManager));
@@ -124,7 +124,7 @@ describe("browser profile manager", () => {
     expect(html).not.toContain("Signed-in sites");
     const botPanel = renderToStaticMarkup(createElement(BrowserProfilesManager, { bot })).split("<details")[0]!;
     expect(botPanel).toContain("act inside your real Chrome");
-    expect(botPanel).toContain("it lends its Chrome by itself");
+    expect(botPanel).toContain("open RelayIt on your Mac or PC and connect it to this server");
     expect(botPanel).not.toContain("Signed-in sites");
   });
 

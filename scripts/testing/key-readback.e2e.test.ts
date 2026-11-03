@@ -100,7 +100,7 @@ afterAll(async () => {
 
 const saveds = KEY_CATALOG.filter((entry) => entry.target || EXTRA_PATCH[entry.id]);
 
-it("saves every kind of credential, reads it back and shows it masked to its last four, then removes it", async () => {
+it("saves every kind of credential, reads back only that it is saved and shows it masked, then removes it", async () => {
   setLocale("en");
   expect(saveds.map((entry) => entry.id)).toEqual([
     "openai", "anthropic", "xai", "openrouter", "mistral", "cerebras", "groq", "greenference", "meta", "deepseek", "opencodeGo", "openaiCompat",
@@ -110,17 +110,18 @@ it("saves every kind of credential, reads it back and shows it masked to its las
     for (const entry of saveds) {
       if (storage && !entry.target?.slot) continue;
       const key = `${PREFIX[entry.id] ?? "fx-"}${entry.id}-${randomBytes(6).toString("hex")}`;
-      const last4 = key.slice(-4);
       const patch = (value: string) => entry.target ? entry.target.patch(value, true) : EXTRA_PATCH[entry.id]!(value);
       const saved = await call("PUT", `/api/config${storage}`, patch(key));
       expect(saved.status, `${entry.id}${storage}: ${JSON.stringify(saved.body)}`).toBe(200);
 
       const config = (await call("GET", "/api/config")).body;
-      expect(savedState(entry, config as never), `${entry.id}${storage}`).toEqual({ configured: true, last4 });
+      // credentials are write-only: the server says a key is saved, never any part of it
+      expect(savedState(entry, config as never), `${entry.id}${storage}`).toEqual({ configured: true });
+      expect(JSON.stringify(config), entry.id).not.toContain("last4");
       expect(JSON.stringify(config), entry.id).not.toContain(key);
       view.config = config;
       const html = renderToStaticMarkup(createElement(KeyCatalogRow, { entry }));
-      expect(html, entry.id).toContain(`••••••••${last4}`);
+      expect(html, entry.id).toContain("••••••••");
       expect(html, entry.id).toMatch(/>(Connected|Saved)</);
       expect(html, entry.id).not.toContain(key);
 

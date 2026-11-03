@@ -36,26 +36,18 @@ describe("decider config", () => {
     expect(childEnv).toEqual({ PATH: "/usr/bin" });
   });
 
-  it("on Cloud Pro, a key in the environment is the person's own and wins over the included decisions", async () => {
-    const relay = "https://cloud.example.test/api/cloud/services/decider";
-    vi.stubEnv("OMB_CLOUD_DECIDER_URL", relay);
-    vi.stubEnv("OMB_CLOUD_DECIDER_TOKEN", "omb_decide_included");
-    try {
-      const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ answers: { answer: { type: "noul", noul: 0.9 } } })));
-      const decider = createDecider({ config: loadConfig, fetch: fetchImpl });
-      expect(describeDecider(loadConfig())).toMatchObject({ configured: true, included: true, enabled: true });
-      await decider.testKey();
-      // the desktop hands the saved key over as env: now it is the one in use
-      process.env.OMB_JEV_API_KEY = KEY;
-      saveConfig({ decider: { enabled: true } });
-      expect(describeDecider(loadConfig())).toEqual({ provider: "jev", configured: true, enabled: true, jobs: { roomRouting: true } });
-      await decider.testKey();
-      const calls = fetchImpl.mock.calls.map(([url, init]) => [String(url), (init!.headers as Record<string, string>).authorization]);
-      expect(calls).toEqual([[`${relay}/v1/systemone`, "Bearer omb_decide_included"], ["https://api.typesafe.ai/v1/systemone", `Bearer ${KEY}`]]);
-      expect(readFileSync(join(DATA_DIR, "config.json"), "utf8")).not.toContain("omb_decide_included");
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("a key in the environment is the person's own: it is the one a decision is sent with", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ answers: { answer: { type: "noul", noul: 0.9 } } })));
+    const decider = createDecider({ config: loadConfig, fetch: fetchImpl });
+    expect(describeDecider(loadConfig())).toMatchObject({ configured: false, enabled: false });
+    // the desktop hands the saved key over as env: now it is the one in use
+    process.env.OMB_JEV_API_KEY = KEY;
+    saveConfig({ decider: { enabled: true } });
+    expect(describeDecider(loadConfig())).toEqual({ provider: "jev", configured: true, enabled: true, jobs: { roomRouting: true } });
+    await decider.testKey();
+    const calls = fetchImpl.mock.calls.map(([url, init]) => [String(url), (init!.headers as Record<string, string>).authorization]);
+    expect(calls).toEqual([["https://api.typesafe.ai/v1/systemone", `Bearer ${KEY}`]]);
+    expect(readFileSync(join(DATA_DIR, "config.json"), "utf8")).not.toContain(KEY);
   });
 
   it("the env key wins over the file, and a save keeps the env in step", () => {
@@ -73,8 +65,11 @@ describe("decider config", () => {
     const planned = deciderSavePatch({ key: KEY }, loadConfig().decider);
     if (!planned.ok) throw new Error(planned.error);
     saveConfig({ decider: planned.patch });
-    const disk = JSON.parse(readFileSync(join(DATA_DIR, "config.json"), "utf8"));
-    expect(disk.decider).toEqual({ key: KEY, enabled: true, jobs: { roomRouting: true } });
+    const file = readFileSync(join(DATA_DIR, "config.json"), "utf8");
+    // the secret lives in the credential store: the file holds only a reference to it
+    expect(file).not.toContain(KEY);
+    expect(JSON.parse(file).decider).toEqual({ key: expect.stringMatching(/^omb-credential:/), enabled: true, jobs: { roomRouting: true } });
+    expect(loadConfig().decider?.key).toBe(KEY);
     expect(describeDecider(loadConfig())).toEqual({ provider: "jev", configured: true, enabled: true, jobs: { roomRouting: true } });
   });
 
@@ -95,10 +90,12 @@ describe("decider config", () => {
     const planned = deciderSavePatch({ provider: "openrouter", openrouterModel: "openai/gpt-4o-mini", openrouterKey: OR_KEY }, loadConfig().decider);
     if (!planned.ok) throw new Error(planned.error);
     saveConfig({ decider: planned.patch });
-    const disk = JSON.parse(readFileSync(join(DATA_DIR, "config.json"), "utf8"));
-    expect(disk.decider).toEqual({
-      provider: "openrouter", openrouterModel: "openai/gpt-4o-mini", openrouterApi: "chat", openrouterKey: OR_KEY, enabled: true, jobs: { roomRouting: true },
+    const file = readFileSync(join(DATA_DIR, "config.json"), "utf8");
+    expect(file).not.toContain(OR_KEY);
+    expect(JSON.parse(file).decider).toEqual({
+      provider: "openrouter", openrouterModel: "openai/gpt-4o-mini", openrouterApi: "chat", openrouterKey: expect.stringMatching(/^omb-credential:/), enabled: true, jobs: { roomRouting: true },
     });
+    expect(loadConfig().decider?.openrouterKey).toBe(OR_KEY);
     expect(describeDecider(loadConfig())).toEqual({
       provider: "openrouter", model: "openai/gpt-4o-mini", api: "chat", configured: true, keySource: "own", enabled: true, jobs: { roomRouting: true },
     });

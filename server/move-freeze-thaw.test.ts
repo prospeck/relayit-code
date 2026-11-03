@@ -74,7 +74,8 @@ it("lifted while another computer is home now, every automation is switched off 
     expect(copy.routines.listRuns()).toEqual([]);
     expect(copy.calls.list().map((call) => call.nextRunAt)).toEqual([null]);
     expect(copy.webhooks.list().map((webhook) => webhook.enabled)).toEqual([false]);
-    expect(copy.appEvents.switched).toEqual([["e1", { enabled: false }]]);
+    // app-event watches are not available here, so there is nothing of that kind to switch off
+    expect(copy.appEvents.switched).toEqual([]);
     // Each stays where the person can switch it on by hand.
     expect(copy.routines.update(copy.ids.morning, { enabled: true })?.enabled).toBe(true);
     expect(copy.calls.update(copy.ids.call, {}).nextRunAt).not.toBeNull();

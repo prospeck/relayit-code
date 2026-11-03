@@ -152,16 +152,32 @@ it("keeps activity, shared memory and policy changes admin-only", async () => {
   expect((await api("PATCH", `/api/bots/${b.id}`, { fallback: [{ instanceId: "claude", model: " " }] })).status).toBe(400);
 });
 
-it("sends in Full without a card, and still refuses an app outside the bot's scope", async () => {
+it("in Full a send, and code that could send, still ask first; a read runs without a card; an app outside the bot's scope is still refused", async () => {
   const b = fullBot;
   const fleet = await api("GET", "/api/bots");
   expect(fleet.body.bots.find((row: any) => row.id === b.id).approvalMode).toBe("full");
   const token = await mint(b.id, b.threadId);
   const before = relayed.length;
-  expect((await relay(token, "GMAIL_SEND_EMAIL", { to: "first@fixture.test" })).body.result.isError).not.toBe(true);
-  expect((await relay(token, "COMPOSIO_REMOTE_WORKBENCH", { code_to_execute: "print(1)" })).body.result.isError).not.toBe(true);
-  expect(relayed).toHaveLength(before + 2);
+  // a read sends nothing: it runs at once, with no card
+  expect((await relay(token, "GMAIL_FETCH_EMAILS", {})).body.result.isError).not.toBe(true);
+  expect(relayed).toHaveLength(before + 1);
   expect((await cards(b.threadId)).some((row: any) => row.card?.outboundRequest)).toBe(false);
+  // sends and money always ask, even on Full access: held until the person answers, and not relayed before
+  const held = relay(token, "GMAIL_SEND_EMAIL", { to: "first@fixture.test" });
+  const card = await pending(b.threadId);
+  expect(card.card.outboundRequest).toMatchObject({ tool: "GMAIL_SEND_EMAIL", app: "Gmail" });
+  expect(relayed).toHaveLength(before + 1);
+  await api("POST", `/api/threads/${b.threadId}/respond`, { requestId: card.card.requestId, behavior: "allow" });
+  expect((await held).body.result.isError).not.toBe(true);
+  expect(relayed).toHaveLength(before + 2);
+  // code run in the workbench could send anything, so it asks too
+  const code = relay(token, "COMPOSIO_REMOTE_WORKBENCH", { code_to_execute: "print(1)" });
+  const codeCard = await pending(b.threadId);
+  expect(codeCard.card.outboundRequest).toBeDefined();
+  expect(relayed).toHaveLength(before + 2);
+  await api("POST", `/api/threads/${b.threadId}/respond`, { requestId: codeCard.card.requestId, behavior: "deny" });
+  expect((await code).body.result.isError).toBe(true);
+  expect(relayed).toHaveLength(before + 2);
   await api("PATCH", `/api/bots/${b.id}`, { connectorScopes: { apps: { gmail: "read" } } });
   expect((await relay(token, "GMAIL_SEND_EMAIL")).body.result.isError).toBe(true);
   expect(relayed).toHaveLength(before + 2);

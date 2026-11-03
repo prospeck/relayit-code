@@ -70,6 +70,9 @@ async function seal(
 }
 
 describe("PhoneSecretBridge", () => {
+  // The envelope is Swift's CryptoKit HPKE.Sender (P256_SHA256_AES_GCM_256) sealing "swift-to-node-secret" for the key
+  // below, with info "RelayIt phone credential v1" and the AAD phoneSecretAAD builds for this request. The product name is
+  // part of that protocol, so it was sealed again when the name changed.
   it("opens an envelope produced by Apple's CryptoKit HPKE implementation", async () => {
     let bridge!: PhoneSecretBridge;
     const send = vi.fn((message: { requestId: string; value: string }) => {
@@ -104,8 +107,8 @@ describe("PhoneSecretBridge", () => {
       messageId: "message-1",
       target: "ttsKey",
       requestKey: "credential-request-1",
-      encapsulatedKey: "BDhy_5hMSvVIy3zGSmBwBECAedYBAwwFLvbWoXCGTJyLRH1cItoQXo9NBcEG0cTQV_VwaEf5judXcsJlh2jfW7Q",
-      ciphertext: "CjM0CnBT8NYd_BHAXJRKFrbYrSw6OgMIlJLAKs8VUPSSCsa2",
+      encapsulatedKey: "BCQpcQi9NIr_G902iUP-DoIy5q8hm-NRnYwUyWK-1Bt0rX8wf4jAjK15RV6jKxevS8nUQu6LVBGKKztQlpqYAEQ",
+      ciphertext: "wEwd2fKi2mQ56iTR8ZwGKZ32VDQhUYdMLlvs8X42n2T1JFnQ",
     })).resolves.toBeUndefined();
     expect(send).toHaveBeenCalledTimes(1);
   });
@@ -274,7 +277,7 @@ describe("phoneSecretAAD", () => {
   it("refuses an AI provider key from a phone, which only the computer's own app saves where Settings does", () => {
     const context = { deviceId: "paired-device-1", target: "anthropicApiKey", requestKey: "credential-request-1" };
     expect(() => assertPhoneSecretRequestMatches(context, "paired-device-1", { target: "anthropicApiKey", requestKey: "credential-request-1" }))
-      .toThrow("Paste this key in RelayIt on your computer, or in My Cloud: a phone cannot save it yet.");
+      .toThrow("Paste this key in RelayIt on your computer, or in the server: a phone cannot save it yet.");
     for (const target of ["composioApiKey", "customSecret"]) {
       expect(() => assertPhoneSecretRequestMatches({ ...context, target }, "paired-device-1", { target, requestKey: "credential-request-1" })).not.toThrow();
     }
@@ -284,7 +287,7 @@ describe("phoneSecretAAD", () => {
   it("refuses a 1Password token from a phone, saying where to paste it", () => {
     const context = { ...baseContext("AAAAAAAAAAAAAAAAAAAAAA"), target: "onePasswordToken" };
     expect(() => assertPhoneSecretRequestMatches(context, "paired-device-1", { target: "onePasswordToken", requestKey: "credential-request-1" }))
-      .toThrow(expect.objectContaining({ status: 409, message: expect.stringMatching(/^Paste the 1Password token in RelayIt on your computer, or in My Cloud/u) }));
+      .toThrow(expect.objectContaining({ status: 409, message: expect.stringMatching(/^Paste the 1Password token in RelayIt on your computer, or in the server/u) }));
   });
 
   it("gives an exact encrypted retry one stable desktop operation id", async () => {

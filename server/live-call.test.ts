@@ -55,14 +55,14 @@ describe("createLiveSession", () => {
     expect(String(init?.body)).not.toContain("sk-live-secret");
   });
 
-  it("tells the voice where it runs: the user's own computer, or their My Cloud", async () => {
+  it("tells the voice where it runs: the user's own computer, or their own server", async () => {
     const fetchImpl = okFetch();
     await createLiveSession({ key: "k", sdp: OFFER, bot: BOT, history: [], cloudHome: true, fetchImpl });
     await createLiveSession({ key: "k", sdp: OFFER, bot: BOT, history: [], cloudHome: false, fetchImpl });
     const [cloud, computer] = fetchImpl.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).session.instructions as string);
-    expect(cloud).toContain("runs on the user's My Cloud, their always-on RelayIt in the cloud, not on their own computer.");
+    expect(cloud).toContain("runs on the user's own server, separate from their personal computer.");
     expect(computer).toContain("runs in RelayIt on the user's own computer.");
-    expect(computer).not.toContain("My Cloud");
+    expect(computer).not.toContain("own server");
   });
 
   it("falls back to the default voice and omits empty history", async () => {
@@ -146,17 +146,16 @@ describe("live startup context", () => {
     expect(text).toContain("Never answer it yourself.");
   });
 
-  it("on a Cloud, says the voice runs on the user's My Cloud, not their own computer", () => {
+  it("on a server, says the voice runs on the user's own server, not their own computer", () => {
     const text = liveInstructions({ name: "Rigel", title: "QA" }, { cloudHome: true });
     expect(text.split("\n")[0]).toBe(`You are Rigel, QA, an AI agent that runs on ${CLOUD_HOME_PLACE}.`);
-    expect(text.split("\n")[0]).toBe("You are Rigel, QA, an AI agent that runs on the user's My Cloud, their always-on RelayIt in the cloud, not on their own computer.");
     expect(text).not.toContain("OMB");
     expect(liveInstructions({ name: "Rigel" }, { cloudHome: false }).split("\n")[0]).toBe("You are Rigel, an AI agent that runs in RelayIt on the user's own computer.");
   });
 
   it("says the bot changes things where it runs", () => {
     const backend = (cloudHome: boolean) => liveInstructions({ name: "Rigel" }, { cloudHome }).split("\n").find((line) => line.startsWith("- Rigel:"));
-    expect(backend(true)).toContain("It researches, writes, changes things on My Cloud, and answers questions");
+    expect(backend(true)).toContain("It researches, writes, changes things on the server, and answers questions");
     expect(backend(false)).toContain("It researches, writes, changes things on the computer, and answers questions");
     expect(liveInstructions({ name: "Rigel" }, { cloudHome: true })).not.toMatch(/\bthe computer\b/);
   });

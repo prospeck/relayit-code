@@ -72,8 +72,10 @@ it("saving and replacing a workspace key reaches an existing bot's next request 
     await api("PUT", "/api/config", { openaiCompat: { key: "fixture-replacement-key" } });
     await send("fixture reply 2");
     expect(received).toEqual(["Bearer fixture-first-key", "Bearer fixture-replacement-key"]);
-    const disk = JSON.parse(readFileSync(join(fixture.info.dataDir, "config.json"), "utf8"));
-    expect(disk.openaiCompat.key).toBe("fixture-replacement-key");
+    // the key lives in the credential store: the file holds only a reference to it
+    const onDisk = readFileSync(join(fixture.info.dataDir, "config.json"), "utf8");
+    expect(onDisk).not.toMatch(/fixture-first-key|fixture-replacement-key/);
+    expect(JSON.parse(onDisk).openaiCompat.key).toMatch(/^omb-credential:/);
     const cleared = await api("PUT", "/api/config", { openaiCompat: { key: "" } });
     expect(cleared.openaiCompat.configured).toBe(false);
     const { instances } = await api("GET", "/api/instances");
@@ -160,8 +162,8 @@ it("switching the workspace endpoint moves discovery and existing chats without 
     expect(received.filter((request) => request.provider === "first").map((request) => request.key))
       .not.toContain("Bearer fixture-second-key");
     expect(instances.find((instance: { instanceId: string }) => instance.instanceId === "openaiCompat").models.options)
-      .toEqual([{ id: "fixture-shared-model", label: "fixture-shared-model", custom: true },
-        { id: "fixture-second-model", label: "fixture-second-model", custom: true }]);
+      .toEqual([{ id: "fixture-shared-model", label: "fixture-shared-model", custom: true, contextWindow: 8192 },
+        { id: "fixture-second-model", label: "fixture-second-model", custom: true, contextWindow: 8192 }]);
     await send(bot, "second provider reply");
     expect(received).toContainEqual({ provider: "second", path: "/v1/chat/completions", key: "Bearer fixture-second-key" });
 
@@ -171,7 +173,8 @@ it("switching the workspace endpoint moves discovery and existing chats without 
     await send(privateBot, "first provider reply");
     expect(received).toContainEqual({ provider: "first", path: "/v1/chat/completions", key: "Bearer fixture-private-key" });
     const disk = JSON.parse(readFileSync(join(fixture.info.dataDir, "config.json"), "utf8"));
-    expect(disk.instances.privateApi).toEqual(privateConnection);
+    // the private key is kept by the credential store; the file holds a reference and the rest of the connection as it was
+    expect(disk.instances.privateApi).toEqual({ ...privateConnection, config: { ...privateConnection.config, key: expect.stringMatching(/^omb-credential:/) } });
     expect(received.filter((request) => request.provider === "first").map((request) => request.key))
       .not.toContain("Bearer fixture-second-key");
   } finally {

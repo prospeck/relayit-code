@@ -99,6 +99,8 @@ beforeAll(async () => {
 
   upstream = createServer(async (req, res) => {
     res.setHeader("content-type", "application/json");
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { req.resume(); res.statusCode = 404; res.end("{}"); return; }
     if (req.url === "/v1/models") return res.end(JSON.stringify({ data: [{ id: "fixture-model" }] }));
     let raw = "";
     for await (const chunk of req) raw += chunk;
@@ -162,7 +164,7 @@ beforeAll(async () => {
     if (child.exitCode !== null) throw new Error(stderr);
     try { return (await fetch(base + "/api/health")).ok; } catch { return false; }
   }, Boolean);
-  await api("PATCH", "/api/config", { openaiCompat: { key: "fixture-key", url: `http://127.0.0.1:${upstreamPort}/v1`, model: "fixture-model" } });
+    await api("PATCH", "/api/config", { openaiCompat: { key: "fixture-key", url: `http://127.0.0.1:${upstreamPort}/v1`, model: "fixture-model" } });
   // Chief first makes the seeded bot its team's Chief, which answers a teammate's failed run with a Team incidents turn
   // of its own on Claude: its dump would stand in for the turn under test. Stepped down, each dump is the test's own.
   const seeded = (await api("GET", "/api/bots?messages=0")).bots.find((bot: any) => bot.chiefOfStaff);

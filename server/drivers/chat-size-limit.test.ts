@@ -103,6 +103,8 @@ describe("an OpenAI-compatible provider that refuses large requests", () => {
   async function provider(refuse: (bytes: number) => { status: number; body: string } | null) {
     const requests: Array<{ bytes: number; messages: Array<{ role: string; content: unknown }> }> = [];
     const server = createServer(async (req, res) => {
+      // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one.
+      if (req.url?.startsWith("/api/")) { res.statusCode = 404; res.end(); return; }
       if (req.url === "/v1/models") {
         res.setHeader("content-type", "application/json");
         res.end(JSON.stringify({ data: [{ id: "fixture/flash", name: "Fixture Flash" }] }));

@@ -18,8 +18,8 @@ import { flushDecisionLog, readDecisions } from "../decision-log.ts";
 import { bindSafetyFloor } from "../safety-floor-gate.ts";
 import { removeTempDir } from "../testing/cleanup.ts";
 import { recordEvents } from "../testing/events.ts";
+import { CerebrasDriver } from "./cerebras.ts";
 import { createChatToolApproval } from "./chat-tool-approval.ts";
-import { OpenAICompatDriver } from "./openai-compat.ts";
 
 const WIPE = "rm -rf /";
 /** The server's platform, given wherever the floor is expected to act, so
@@ -89,10 +89,12 @@ async function fixture(commands: string[]) {
   if (!address || typeof address === "string") throw new Error("fixture did not bind TCP");
   const helper = join(directory, "mcp.mjs");
   writeFileSync(helper, MCP_SCRIPT);
-  const instance = await OpenAICompatDriver.create({
+  // A hosted driver pointed at the fixture: a loopback OpenAI-compatible URL deliberately turns on the local-model
+  // guards (openai-chat-local-model.test.ts), which end a turn after a refusal and would hide what the floor does.
+  const instance = await CerebrasDriver.create({
     instanceId: randomUUID(), displayName: "Safety floor fixture", enabled: true,
-    config: { url: `http://127.0.0.1:${address.port}/v1`, apiKeyEnv: "FIXTURE_CHAT_KEY" },
-    environment: { FIXTURE_CHAT_KEY: "fixture-credential-5b1d7c0e" },
+    config: CerebrasDriver.decodeConfig({ url: `http://127.0.0.1:${address.port}/v1` }),
+    environment: { CEREBRAS_API_KEY: "fixture-credential-5b1d7c0e" },
   });
   const recorder = recordEvents(instance.adapter);
   const threadId = randomUUID();

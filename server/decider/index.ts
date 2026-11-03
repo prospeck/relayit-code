@@ -39,8 +39,7 @@ export function deciderApi(cfg: AppConfig): OpenRouterApi {
   return cfg.decider.openrouterApi === "decisions" ? "decisions" : "chat";
 }
 
-/** In order: the person's own Jev key, their own Workers AI key (Clef), Cloud's included relay (only for seams it
- * accepts), the OpenRouter LLM fallback, nothing. */
+/** In order: the person's own Jev key, their own Workers AI key (Clef), the OpenRouter LLM fallback, nothing. */
 export function deciderAccount(cfg: AppConfig, _seam?: DeciderSeam): HelperAccount | null {
   const jev = jevAccount(cfg);
   const candidates = [jev, workersAiAccount(cfg), openrouterAccount(cfg)];
@@ -49,10 +48,6 @@ export function deciderAccount(cfg: AppConfig, _seam?: DeciderSeam): HelperAccou
 
 export function deciderConfigured(cfg: AppConfig): boolean {
   return Boolean(deciderAccount(cfg));
-}
-
-export function deciderIncludedHere(): boolean {
-  return false;
 }
 
 export function deciderEnabled(cfg: AppConfig): boolean {
@@ -92,8 +87,6 @@ export function describeDecider(cfg: AppConfig) {
 
 /** A key a decision falls back on when the person has none of their own. */
 export interface DeciderKeyFallback {
-  /** Cloud's included decisions. */
-
   /** The OpenRouter key under Settings → API keys. */
   shared?: boolean;
 }
@@ -310,8 +303,6 @@ export function createDecider(deps: DeciderDeps): Decider {
       const refused = gate(cfg, seam);
       if (refused) return { ok: false, reason: refused };
       const account = deciderAccount(cfg, seam)!;
-      // Through the included token, only the exact requests the relay takes.
-
       return await call(seam, account, { ...openrouterRequest(cfg, account), state, questions }, options);
     } catch {
       return { ok: false, reason: "malformed" };

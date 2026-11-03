@@ -687,7 +687,7 @@ describe("Chatterbox (local server)", () => {
   });
 });
 
-describe("included voice", () => {
+describe("no included voice", () => {
   const INCLUDED = "omb_voice_included-relay-token";
   const relayed = () => seen.filter((request) => request.url.startsWith("/relay/"));
   const direct = () => seen.filter((request) => !request.url.startsWith("/relay/"));
@@ -701,30 +701,15 @@ describe("included voice", () => {
     vi.stubEnv("OMB_CLOUD_VOICE_TOKEN", INCLUDED);
   };
 
-  it("with no own key, lists voices and speaks with the included token, only through the relay", async () => {
+  it("ignores a leftover included-voice token: with no own key there is no voice, and nothing is sent to any relay", async () => {
     include();
-    const { listVoices, speak, voiceConfigured } = await voice();
+    const { speak, voiceConfigured, describeVoice } = await voice();
     const settings = cfg({ voice: "v-1" });
-    expect(voiceConfigured(settings)).toBe(true);
-    expect((await listVoices(settings)).map((v) => v.id)).toEqual(["v-1"]);
-    expect((await speak(settings, "hello")).mime).toBe("audio/mpeg");
-    expect(relayed().map((request) => request.url.split("?")[0])).toEqual(["/relay/v1/voices", "/relay/v1/text-to-speech/v-1/stream"]);
-    expect(direct()).toEqual([]);
-    expect(seen.every((request) => request.headers["xi-api-key"] === INCLUDED)).toBe(true);
-  });
-
-  it("an own key saved in Settings wins and goes only to ElevenLabs; removing it falls back", async () => {
-    include();
-    const { speak } = await voice();
-    const settings = cfg({ key: "sk-own", voice: "v-1" });
-    await speak(settings, "hello");
-    expect(relayed()).toEqual([]);
-    expect(direct().map((request) => request.headers["xi-api-key"])).toEqual(["sk-own"]);
-    seen.length = 0;
-    settings.tts!.key = "";
-    await speak(settings, "hello");
-    expect(direct()).toEqual([]);
-    expect(relayed().map((request) => request.headers["xi-api-key"])).toEqual([INCLUDED]);
+    expect(voiceConfigured(settings)).toBe(false);
+    expect(describeVoice(settings)).toEqual({ configured: false, ready: false, voice: "v-1", provider: "elevenlabs", baseUrl: "", model: "" });
+    expect(JSON.stringify(describeVoice(settings))).not.toContain(INCLUDED);
+    expect(() => speak(settings, "hello")).toThrow("Add an ElevenLabs key in Settings on the computer to turn on voice.");
+    expect(seen).toEqual([]);
   });
 
   it("an own key from the environment (OMB_TTS_KEY) wins and goes only to ElevenLabs", async () => {
@@ -742,18 +727,5 @@ describe("included voice", () => {
     const { verifyKey } = await voice();
     expect(await verifyKey("elevenlabs", "sk-new")).toEqual({ ok: true });
     expect(seen.map((request) => [request.url, request.headers["xi-api-key"]])).toEqual([["/v1/voices", "sk-new"]]);
-  });
-
-  it("tells Settings the voice is included, and never the token", async () => {
-    include();
-    const { describeVoice } = await voice();
-    const described = describeVoice(cfg({ voice: "v-1" }));
-    expect(described).toEqual({ configured: true, ready: true, voice: "v-1", provider: "elevenlabs", baseUrl: "", model: "", included: true });
-    expect(JSON.stringify(described)).not.toContain(INCLUDED);
-    expect(describeVoice(cfg({ key: "sk-own", voice: "v-1" }))).not.toHaveProperty("included");
-    expect(describeVoice(cfg({ provider: "fish", voice: "v-1" }))).toMatchObject({ configured: false });
-    expect(describeVoice(cfg({ provider: "fish", voice: "v-1" }))).not.toHaveProperty("included");
-    vi.stubEnv("OMB_CLOUD_VOICE_TOKEN", undefined);
-    expect(describeVoice(cfg({ voice: "v-1" }))).toMatchObject({ configured: false, ready: false });
   });
 });

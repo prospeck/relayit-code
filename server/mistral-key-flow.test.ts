@@ -74,8 +74,10 @@ it("Mistral keys persist, rotate, clear and reach real HTTP turns without leakin
     await api("PUT", "/api/config", { mistral: { key: "fixture-replacement-key" } });
     await send("fixture reply 2");
     expect(received).toEqual(["Bearer fixture-first-key", "Bearer fixture-replacement-key"]);
-    const disk = JSON.parse(readFileSync(join(fixture.info.dataDir, "config.json"), "utf8"));
-    expect(disk.mistral.key).toBe("fixture-replacement-key");
+    // the key lives in the credential store: the file holds only a reference to it
+    const onDisk = readFileSync(join(fixture.info.dataDir, "config.json"), "utf8");
+    expect(onDisk).not.toMatch(/fixture-first-key|fixture-replacement-key/);
+    expect(JSON.parse(onDisk).mistral.key).toMatch(/^omb-credential:/);
     const cleared = await api("PUT", "/api/config", { mistral: { key: "" } });
     expect(cleared.mistral.configured).toBe(false);
     const { instances } = await api("GET", "/api/instances");

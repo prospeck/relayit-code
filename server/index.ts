@@ -34,7 +34,7 @@ import { parseSkillManageReferences } from "./skill-request-card.ts";
 import { BROWSER_UPLOAD_TOOL } from "./browser-runtime.ts";
 import { BrowserUploadRefusal, uploadableFiles } from "./browser-upload.ts";
 import { READ_AND_DRAFT_REFUSAL, recordsAnswer } from "./read-and-draft.ts";
-import { parseTriggerRequest, triggerTarget } from "./trigger-tools.ts";
+import { listTriggers, parseTriggerRequest, triggerTarget } from "./trigger-tools.ts";
 import { WebhookRequestError } from "./webhook-requests.ts";
 import { createAgentCard } from "./chat-widgets.ts";
 import { TEAM_MEMORY_KINDS, type TeamMemoryKind } from "./team-memory.ts";
@@ -12253,7 +12253,7 @@ ROUTES.push(createBrowserViewerRoutes({
   restartRefusal: (session) => browserRestartRefusal(browserRuntime.interrupted(session), store.bots.filter((candidate) => candidate.busy
     && browserSessionsOf(candidate.id, candidate.browserProfile).includes(session)).map((candidate) => ({ waitingOnBrowser: computerControl.snapshot(candidate.id).help?.place === "browser" }))),
 }));
-const internalToolRoutes = createInternalToolRoutes({ engineLimits: { instances: () => registry.instances(), configs: () => instanceConfigs(cfg), status: (instanceId) => registry.knownSnapshot(instanceId), load: (accounts) => loadPlanUsage({ accounts }), audienceOf: (threadId) => teamHost.audienceOf(threadId), guestDriven: cloudGuestDriven, dataDir: DATA_DIR }, helpers: { decider, extractor }, notifications: { bot: (id) => store.bot(id), team: sharedMembership, broadcast }, xResearch: {credential: () => researchCredential(cfg.treg?.key), botEnabled: (botId) => store.bot(botId)?.xResearch !== false} }); const waitRoutes = createWaitRoutes({ waits: botWaits, cloudHome: false, sleeps: (false) }); ROUTES.push(createXConnectorRoutes({ credential: () => researchCredential(cfg.treg?.key) }));
+const internalToolRoutes = createInternalToolRoutes({ engineLimits: { instances: () => registry.instances(), configs: () => instanceConfigs(cfg), status: (instanceId) => registry.knownSnapshot(instanceId), load: (accounts) => loadPlanUsage({ accounts }), audienceOf: (threadId) => teamHost.audienceOf(threadId), guestDriven: cloudGuestDriven, dataDir: DATA_DIR }, helpers: { decider, extractor }, notifications: { bot: (id) => store.bot(id), team: sharedMembership, broadcast }, xResearch: {credential: () => researchCredential(cfg.treg?.key), botEnabled: (botId) => store.bot(botId)?.xResearch !== false} }); const waitRoutes = createWaitRoutes({ waits: botWaits }); ROUTES.push(createXConnectorRoutes({ credential: () => researchCredential(cfg.treg?.key) }));
 
 // Live calls: the client holds the WebRTC audio; the key never leaves the harness, which creates the session.
 function liveBotFor(botId: string): LiveBot {
@@ -13126,6 +13126,25 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       }
 
 
+      // trigger_info list: the bot's own routines and webhooks, or another bot's in its section; with includeAddress, a webhook's address.
+      if (method === "GET" && path === "/api/internal/triggers") {
+        const from = internalSender;
+        const fromThreadId = internalCapability.threadId;
+        if (!connectorThread(from.id, fromThreadId)) return json(res, 403, { error: "source conversation does not belong to sender" });
+        const target = triggerTarget(from, url.searchParams.get("forBotId") ?? undefined, (id) => store.bot(id));
+        if ("error" in target) return json(res, target.status, { error: target.error });
+        const ownerId = target.forBot?.botId ?? from.id;
+        const listing = listTriggers({
+          botId: ownerId, triggerId: url.searchParams.get("triggerId") ?? undefined, routines: routines!.listRoutines(),
+          webhooks: webhooks.list(), runs: routines!.listRuns(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", now: Date.now(),
+        });
+        const shown = listing.trigger;
+        if (url.searchParams.get("includeAddress") !== "1" || !shown) return json(res, 200, listing);
+        if (shown.kind !== "webhook") return json(res, 200, { ...listing, trigger: { ...shown, addressRefused: "Only an automation another app sends to (a webhook) has an address." } });
+        const hookOwner = store.bot(ownerId);
+        const address = hookOwner ? addressFor({ from, owner: hookOwner, guestDriven: cloudGuestDriven(fromThreadId), outsideDriven: outsideDrivenThread(fromThreadId) }, webhooks, shown.id, webhookIngressStatus().baseUrl) : {};
+        return json(res, 200, { ...listing, trigger: { ...shown, ...address } });
+      }
       if (method === "POST" && path === "/api/internal/trigger-requests") {
         const from = internalSender;
         const fromThreadId = internalCapability.threadId;

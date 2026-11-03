@@ -231,7 +231,6 @@ export function verificationServerEnvironment(parentEnv: NodeJS.ProcessEnv, data
   if (parentEnv.OMB_TEST_DESKTOP_OWNER_TOKEN) {
     childEnv.OMB_TEST_DESKTOP_OWNER_TOKEN = parentEnv.OMB_TEST_DESKTOP_OWNER_TOKEN;
     childEnv.OMB_DESKTOP_PARENT = "1";
-    if (parentEnv.OMB_TEST_DESKTOP_PAGES_ACCESS) childEnv.OMB_TEST_DESKTOP_PAGES_ACCESS = parentEnv.OMB_TEST_DESKTOP_PAGES_ACCESS;
   }
   // The driver record the app hands its own server: without it, no server may use this computer.
   if (parentEnv.OMB_TEST_DESKTOP_CUA_CONNECTION) childEnv.OMB_TEST_DESKTOP_CUA_CONNECTION = parentEnv.OMB_TEST_DESKTOP_CUA_CONNECTION;

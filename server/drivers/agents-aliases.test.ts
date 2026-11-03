@@ -19,7 +19,6 @@ const LISTED = new Set(availableTools(catalogProfileFromEnv(EVERYTHING)).map((to
 /** One call per alias, as an earlier session or a saved skill writes it. */
 const CALLS: Record<string, Json> = {
   list_triggers: { trigger_id: "t-1", include_address: true },
-  list_trigger_events: { app: "Gmail", search: "new message" },
   create_trigger: { when: "webhook", name: "Leads", instructions: "Draft a reply.", webhook_event_types: ["lead"] },
   manage_trigger: { trigger_id: "t-1", action: "update", changes: { name: "Morning news", continuity: true } },
   create_room: { name: "Launch", member_bot_ids: ["bot-a"], bulletin: "Ship it." },
@@ -100,14 +99,14 @@ describe("the agents action tools", () => {
   const READ = 0, CHANGE = 1, DELETE = 2;
   /** Each member as a tool of its own: its most far-reaching call. Moving members between rooms deletes nothing. */
   const MEMBER_REACH: Record<string, number> = {
-    list_triggers: READ, list_trigger_events: READ, create_trigger: CHANGE, manage_trigger: DELETE,
+    list_triggers: READ, create_trigger: CHANGE, manage_trigger: DELETE,
     manage_room: CHANGE, create_room: CHANGE, session_search: READ, session_read: READ,
     show_widget: CHANGE, update_widget: CHANGE, show_html: CHANGE, update_html: CHANGE,
     x_search: READ, x_user_posts: READ, x_post: READ, x_profile: READ,
   };
   /** Every call each action tool makes, by its action or by the id that picks it. */
   const CALLS_OF: Record<string, Record<string, number>> = {
-    trigger_info: { list: READ, events: READ },
+    trigger_info: { list: READ },
     trigger: { create: CHANGE, update: CHANGE, pause: CHANGE, resume: CHANGE, run_now: CHANGE },
     delete_trigger: { delete: DELETE },
     manage_room: { create: CHANGE, add_members: CHANGE, remove_members: CHANGE, set_members: CHANGE, rename: CHANGE, set_bulletin: CHANGE },
@@ -183,7 +182,7 @@ describe("a tool selection over the agents action tools", () => {
     const noTriggers = { deny: ["mcp:agents:trigger"] };
     expect(allowsTool(noTriggers, tool("trigger"))).toBe(false);
     for (const name of ["create_trigger", "manage_trigger"]) expect(allowsTool(noTriggers, tool(name), {}), name).toBe(false);
-    expect(allowsTool({ allow: ["mcp:agents:trigger_info"] }, tool("list_trigger_events"), {})).toBe(true);
+    expect(allowsTool({ allow: ["mcp:agents:trigger_info"] }, tool("list_triggers"), {})).toBe(true);
     expect(allowsTool({ allow: ["mcp:agents:*"] }, tool("trigger"), { action: "create" })).toBe(true);
     expect(allowsTool({ allow: ["mcp:agents:trigger"] }, tool("trigger_info"))).toBe(false);
   });

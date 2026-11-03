@@ -54,6 +54,8 @@ it.each(["openaiCompat", "groq", "meta"] as const)("%s runs structured MCP calls
   const requests: ChatRequest[] = [];
   let scenario = "allow";
   const upstream = createServer(async (req, res) => {
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { req.resume(); res.statusCode = 404; res.end(); return; }
     if (req.headers.authorization !== "Bearer synthetic-fixture-key") {
       res.writeHead(401, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: { message: "Invalid API key" } }));
@@ -127,7 +129,9 @@ it.each(["openaiCompat", "groq", "meta"] as const)("%s runs structured MCP calls
     writeFileSync(mcpScript, MCP_FIXTURE);
     // A server is started once to check it starts for the bots that use it; the starter bot uses none of these.
     for (const starter of (await api("GET", "/api/bots")).bots) await api("PATCH", `/api/bots/${starter.id}`, { mcpServers: [] });
-    for (const mode of ["allow", "deny", "cancel", "text", "ordinary", "selected", "scope-empty", ...(instanceId === "openaiCompat" ? ["announced"] : []), "tools-off"]) {
+    // (The announced-action nudge is not run here: on this loopback engine, which the server holds to the local-model guards,
+    // an announcement is redirected instead of nudged; the nudge is covered by drivers/openai-chat-announcement.test.ts.)
+    for (const mode of ["allow", "deny", "cancel", "text", "ordinary", "selected", "scope-empty", "tools-off"]) {
       scenario = mode;
       const artifact = join(fixture.info.dataDir, `${mode}-artifact.txt`);
       const startupMarker = join(fixture.info.dataDir, `${mode}-mcp-started.txt`);

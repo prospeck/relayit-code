@@ -1,4 +1,4 @@
-// One stub plays the Admin's Boat relay and records every request, so each journey can say which calls a person's action cost.
+// One stub plays Boat (boat.dev, on the person's own key) and records every request, so each journey can say which calls a person's action cost.
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
@@ -15,7 +15,7 @@ import { withoutTurnClock } from "./testing/turn-clock-text.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const FAKE_CLAUDE = join(ROOT, "server/testing/fake-claude-cli.ts");
-const INCLUDED = `box_omb_${randomUUID()}`;
+const OWN_KEY = `boat_${randomUUID()}`;
 // A one-pixel JPEG: what the relay hands back as a screen frame.
 const FRAME = Buffer.from("/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 
@@ -66,7 +66,7 @@ describe("a cloud computer starts only when the bot uses it", () => {
   const starts = (botId: string) => events.frames
     .filter(frame => frame.kind === "computer" && frame.botId === botId)
     .map(({ state, place }) => ({ state, place }));
-  const creates = () => requests.filter(request => request.method === "POST" && request.path === "/boxes").length;
+  const creates = () => requests.filter(request => request.method === "POST" && request.path === "/sandboxes").length;
   const resumes = () => requests.filter(request => request.method === "POST" && request.path.endsWith("/resume")).length;
   const task = async (botId: string) =>
     (await apiOk("GET", "/api/bots?messages=40")).bots.find((bot: any) => bot.id === botId);
@@ -132,37 +132,37 @@ describe("a cloud computer starts only when the bot uses it", () => {
           res.end(JSON.stringify(payload));
         };
         // Every request is counted, a stray own-key one included.
-        const path = url.pathname.replace(/^\/relay\/api\/box\/v1/, "");
+        const path = url.pathname.replace(/^\/boat\/api\/v1/, "");
         requests.push({ method: req.method ?? "GET", path });
-        if (req.headers.authorization !== `Bearer ${INCLUDED}` || !url.pathname.startsWith("/relay/api/box/v1")) {
+        if (req.headers.authorization !== `Bearer ${OWN_KEY}` || !url.pathname.startsWith("/boat/api/v1")) {
           return send(401, { ok: false, code: "unauthorized", message: "Unauthorized" });
         }
         const body = raw ? JSON.parse(raw) : {};
-        if (path === "/boxes" && req.method === "GET") return send(200, { ok: true, boxes: rows, pageInfo: { nextCursor: null } });
-        if (path === "/boxes" && req.method === "POST") {
+        if (path === "/sandboxes" && req.method === "GET") return send(200, { ok: true, sandboxes: rows, pageInfo: { nextCursor: null } });
+        if (path === "/sandboxes" && req.method === "POST") {
           if (refuse.creates) return send(402, { ok: false, code: "hours_used", message: "This month's 50 cloud computer hours are used up." });
           const row = { id: boxId(rows.length), state: "provisioning" };
           rows.push(row);
-          return send(201, { ok: true, box: row });
+          return send(201, { ok: true, sandbox: row });
         }
-        const [, id = "", verb = ""] = /^\/boxes\/([^/]+)(?:\/(.+))?$/.exec(path) ?? [];
+        const [, id = "", verb = ""] = /^\/sandboxes\/([^/]+)(?:\/(.+))?$/.exec(path) ?? [];
         const row = rows.find(candidate => candidate.id === id);
         if (!row) return send(404, { ok: false, code: "not_found", message: "Not found" });
         if (!verb && req.method === "PATCH") {
           row.name = body.name;
-          return send(200, { ok: true, box: row });
+          return send(200, { ok: true, sandbox: row });
         }
         if (!verb && req.method === "GET") {
           // A new computer is ready by the next look; a waking one takes longer than the gate's short wait, as a real wake can.
           const seen = { ...row };
           if (row.state === "provisioning") row.state = "ready";
           if (row.state === "resuming" && --wakeLooks.left <= 0) row.state = "ready";
-          return send(200, { ok: true, box: seen });
+          return send(200, { ok: true, sandbox: seen });
         }
         if (verb === "resume" && req.method === "POST") {
           row.state = "resuming";
           wakeLooks.left = 3;
-          return send(200, { ok: true, box: row });
+          return send(200, { ok: true, sandbox: row });
         }
         if (verb === "desktop" && req.method === "POST") return send(200, { desktopUrl: `https://desktop.invalid/${row.id}` });
         if (verb === "commands" && req.method === "POST") return send(200, { exitCode: 0, stdout: "captured", stderr: "" });
@@ -181,7 +181,7 @@ describe("a cloud computer starts only when the bot uses it", () => {
     dumpFile = join(home, "dump.json");
     finishFile = join(home, "finish");
     mkdirSync(data, { recursive: true });
-    writeFileSync(join(data, "config.json"), JSON.stringify({ instances: {
+    writeFileSync(join(data, "config.json"), JSON.stringify({ box: { token: OWN_KEY }, instances: {
       claude: {
         driver: "claudeAgent", config: { cli: FAKE_CLAUDE },
         environment: { FAKE_CLAUDE_MODE: "slow", FAKE_CLAUDE_DUMP: dumpFile, FAKE_CLAUDE_SLOW_FINISH_GATE: finishFile },
@@ -207,9 +207,7 @@ describe("a cloud computer starts only when the bot uses it", () => {
         HOME: home, USERPROFILE: home, OMB_DATA_DIR: data, TEMP: home, TMP: home, TMPDIR: home,
         OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1),
         // An own key would go here; nothing may use it.
-        OMB_BOAT_API: `${relayBase}/own-key-must-not-be-used`,
-        OMB_CLOUD_BOAT_URL: `${relayBase}/relay/api/box/v1`,
-        OMB_CLOUD_BOAT_TOKEN: INCLUDED,
+        OMB_BOAT_API: `${relayBase}/boat/api/v1`,
       },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -377,8 +375,8 @@ describe("a cloud computer starts only when the bot uses it", () => {
       const rows = await errorRows(group.threadId);
       expect(rows).toHaveLength(1);
       expect(rows[0].from).toMatchObject({ botId: bot.id, name: "Roomie" });
-      expect(rows[0].tool.name).toBe("error: This month's cloud desktop hours are used up. See your plan on the Plan page.");
-      expect(rows[0].tool.place).toEqual({ state: "cc-no-hours", params: { bot: "Roomie" }, source: "room" });
+      expect(rows[0].tool.name).toBe("error: Your Boat account couldn't start Roomie's cloud desktop: This month's 50 cloud computer hours are used up.");
+      expect(rows[0].tool.place).toMatchObject({ state: "cc-provider", params: { bot: "Roomie" }, source: "room" });
       await apiOk("DELETE", `/api/groups/${group.id}`);
       await apiOk("DELETE", `/api/bots/${bot.id}`);
     } finally {
@@ -405,8 +403,8 @@ describe("a cloud computer starts only when the bot uses it", () => {
       expect(rows).toHaveLength(1);
       expect(finished.status).toBe("failed");
       expect(`error: ${finished.error}`).toBe(rows[0].tool.name);
-      expect(finished.error).toBe("This month's cloud desktop hours are used up. See your plan on the Plan page.");
-      expect(rows[0].tool.place).toEqual({ state: "cc-no-hours", params: { bot: "Runner" }, source: "routine" });
+      expect(finished.error).toBe("Your Boat account couldn't start Runner's cloud desktop: This month's 50 cloud computer hours are used up. Change where this routine runs.");
+      expect(rows[0].tool.place).toMatchObject({ state: "cc-provider", params: { bot: "Runner" }, source: "routine" });
       await until(() => task(bot.id), current => current?.busy === false && current.tasks.every((entry: any) => !entry.busy));
       await apiOk("DELETE", `/api/routines/${routine.id}`);
       await apiOk("DELETE", `/api/bots/${bot.id}`);

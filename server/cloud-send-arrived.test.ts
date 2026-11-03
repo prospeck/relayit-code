@@ -106,7 +106,6 @@ describe("POST /api/cloud-send/automations-off", () => {
       routines: () => ({ listRoutines: () => of("routine").map(({ id: routine, value }) => ({ id: routine, enabled: value })), update: turnOff("routine") }),
       calls: () => ({ list: () => of("call").map(({ id: call, value }) => ({ id: call, nextRunAt: value ? 1 : null })), switchOff: (call: string) => { on.set(`call:${call}`, false); return true; } }),
       webhooks: () => ({ list: () => of("webhook").map(({ id: hook, value }) => ({ id: hook, enabled: value })), update: turnOff("webhook") }),
-      appEvents: () => ({ list: () => of("app-event").map(({ id: trigger, value }) => ({ id: trigger, enabled: value })), update: turnOff("app-event") }),
       waits: () => null,
     } as unknown as MoveAutomations;
     return { on, deps };
@@ -119,11 +118,12 @@ describe("POST /api/cloud-send/automations-off", () => {
     return { handled, ...answered! };
   };
 
-  it("stops exactly the automations a computer brought, of every kind, and says which were on; the rest of My Cloud goes on", async () => {
+  it("stops exactly the automations a computer brought, of every kind it supports, and says which were on; the rest of the server goes on", async () => {
     const { on, deps } = automations();
     expect(await ask(deps, { v: 1, keys: ["routine:a1", "call:a2", "webhook:a3", "app-event:a4", "routine:a5", "routine:gone"] }))
-      .toEqual({ handled: true, status: 200, body: { v: 1, off: ["routine:a1", "call:a2", "webhook:a3", "app-event:a4"] } });
-    expect(Object.fromEntries(on)).toEqual({ "routine:a1": false, "routine:b1": true, "call:a2": false, "webhook:a3": false, "app-event:a4": false, "routine:c1": true, "routine:a5": false });
+      .toEqual({ handled: true, status: 200, body: { v: 1, off: ["routine:a1", "call:a2", "webhook:a3"] } });
+    // app-event watches are not available here, so one that is named is left alone and not reported
+    expect(Object.fromEntries(on)).toEqual({ "routine:a1": false, "routine:b1": true, "call:a2": false, "webhook:a3": false, "app-event:a4": true, "routine:c1": true, "routine:a5": false });
     expect((await ask(deps, { v: 1, keys: ["routine:a1"] })).body, "asked again after a crash: nothing else changes").toEqual({ v: 1, off: [] });
   });
 

@@ -1663,7 +1663,6 @@
   "composer.mention.allOne": "ここにいる唯一のボット",
   "composer.mention.allMany": "全 {count} 体のボット",
   "composer.mention.devs": "開発者",
-  "composer.mention.devsDesc": "RelayIt に不具合を報告",
   "devs.report.received": "不具合を報告しました · 受け付けました。確認しています",
   "devs.report.fixedSoon": "不具合の報告 · 修正済み。今後のアップデートで届きます",
   "devs.report.fixedComing": "不具合の報告 · {version} で修正済み。次のアップデートで届きます",

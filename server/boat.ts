@@ -138,10 +138,12 @@ function snapshotBoatConfig(cfg: AppConfig): AppConfig {
 /** Requests use the person's own Boat token. */
 function boatFetch(cfg: AppConfig, path: string, opts: RequestInit = {}) {
   const account = boatAccount(cfg);
-  return fetch(`${account?.api ?? boatProviderApi()}${path}`, {
+  // No key, no request: nothing is sent to Boat, and never a "Bearer undefined".
+  if (!account) throw new Error("Boat is not configured — add its API key in Settings → API keys");
+  return fetch(`${account.api}${path}`, {
     ...opts,
     headers: {
-      authorization: `Bearer ${account?.token}`,
+      authorization: `Bearer ${account.token}`,
       "content-type": "application/json",
       ...opts.headers,
     },

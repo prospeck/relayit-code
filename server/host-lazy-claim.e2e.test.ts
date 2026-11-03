@@ -298,8 +298,9 @@ describe("lazy host claim and pin on use (issue #1650)", () => {
   itAutoHost("asks once before the first screen call even at Just do it, in plain words naming the app and the site", async () => {
     await start();
     const { bot } = await apiOk("POST", "/api/bots", { name: "Host Asking Bot" });
-    // The default approval level is "Just do it": nothing else in this turn asks.
-    expect(bot.approvalMode ?? "full").toBe("full");
+    // A new bot starts on Ask; this journey is about the first screen call at "Just do it", where nothing else in the turn asks.
+    expect(bot.approvalMode ?? "ask").toBe("ask");
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { approvalMode: "full" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     resetTurn();
     await apiOk("POST", `/api/bots/${bot.id}/messages`, { text: "Look at my calendar slowly.", threadId: task.threadId });

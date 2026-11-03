@@ -307,7 +307,7 @@ describe("find_tool", () => {
   it("reads a tool's other name, asked for exactly, as the tool it belongs to", async () => {
     const bridge = bridgeFor(FULL_CHIEF);
     expect((await found(bridge, "create_trigger")).matches[0]!.name).toBe("trigger");
-    expect((await found(bridge, "list_trigger_events")).matches[0]!.name).toBe("trigger_info");
+    expect((await found(bridge, "list_triggers")).matches[0]!.name).toBe("trigger_info");
     expect((await found(bridge, "update_widget")).matches[0]!.name).toBe("show_widget");
   });
 

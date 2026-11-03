@@ -18,6 +18,8 @@ it("keeps the selected API model for direct, group and scheduled Boat turns and 
   };
   const upstream = createServer(async (req, res) => {
     const path = new URL(req.url ?? "/", "http://fixture").pathname;
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (path.startsWith("/api/")) { req.resume(); res.statusCode = 404; res.end(); return; }
     let raw = ""; for await (const part of req) raw += part;
     const body = raw ? JSON.parse(raw) : {};
     res.setHeader("content-type", "application/json");

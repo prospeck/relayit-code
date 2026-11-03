@@ -2882,18 +2882,6 @@ describe("harness HTTP API", () => {
     }
   });
 
-  it("lets only a Chief read the team library from its turn", async () => {
-    const helper = (await api("POST", "/api/bots")).body.bot;
-    try {
-      const token = await mintTestCapability(BASE, helper.id, helper.threadId);
-      const response = await fetch(`${BASE}/api/internal/team-library`, { headers: { authorization: `Bearer ${token}` } });
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "Only an active Chief may plan team setup" });
-    } finally {
-      await api("DELETE", `/api/bots/${helper.id}`);
-    }
-  });
-
   it("rejects null and array task, channel, and bot mutation bodies", async () => {
     const bot = (await api("POST", "/api/bots")).body.bot;
     const room = (await api("POST", "/api/groups", { name: "Object bodies", memberIds: [bot.id] })).body.group;
@@ -6546,7 +6534,11 @@ describe("harness HTTP API", () => {
       expect(listed.body.onePassword).toEqual({ connected: false });
 
       const transcript = JSON.stringify((await api("GET", `/api/threads/${bot.threadId}/messages`)).body);
-      const sealed = readFileSync(join(home, ".relayit", "logins.json.enc"));
+      // The secrets live encrypted in the credential store: no file in the data directory holds one in clear (the chat database
+      // is left out: the fake bot's raw reply is kept there, and every read of it is masked, as the assertions below check).
+      const dataFiles = (dir: string): Buffer[] => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? dataFiles(join(dir, entry.name))
+        : entry.isFile() && !/^messages\.db/.test(entry.name) ? [readFileSync(join(dir, entry.name))] : []);
+      const sealed = Buffer.concat(dataFiles(join(home, ".relayit")));
       for (const secret of [password, twoFactorKey]) {
         for (const answer of answers) expect(answer).not.toContain(secret);
         expect(transcript).not.toContain(secret);
@@ -6746,6 +6738,7 @@ describe("harness HTTP API", () => {
             messages.on(event, callback);
             queueMicrotask(() => callback({ data: identity }));
           },
+          removeListener(event, callback) { messages.removeListener(event, callback); },
           postMessage(message) {
             if (message?.type !== "relayit:phone-secret-save") return;
             writeFileSync(join(gate, message.requestId + ".started"), message.target);
@@ -7635,12 +7628,12 @@ describe("harness HTTP API", () => {
     try {
       for (const title of ["New thread one", "New thread two"]) {
         const task = (await api("POST", `/api/bots/${bot.id}/tasks`, { title })).body.task;
-        expect(task.approvalMode).toBe("full");
+        expect(task.approvalMode).toBe("ask"); // a new thread starts on the bot's default, Ask
         opened.push(task.threadId);
       }
       const panel = await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "auto" });
       expect(panel.status).toBe(200);
-      expect(levels(panel.body.bot)).toEqual(["auto", "full", "full"]);
+      expect(levels(panel.body.bot)).toEqual(["auto", "ask", "ask"]);
 
       expect((await api("PATCH", `/api/bots/${bot.id}`, { applyToAllThreads: true })).status).toBe(400);
       expect((await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "auto", applyToAllThreads: "yes" })).status).toBe(400);
@@ -7665,7 +7658,7 @@ describe("harness HTTP API", () => {
     const bot = (await api("POST", "/api/bots")).body.bot;
     try {
       const opened = (await api("POST", `/api/bots/${bot.id}/tasks`, { title: "New thread" })).body.task;
-      expect(opened.approvalMode).toBe("full");
+      expect(opened.approvalMode).toBe("ask");
       expect((await api("PATCH", `/api/bots/${bot.id}`, { computer: "local", approvalMode: "auto", acknowledgeLocalAuto: true })).status).toBe(200);
       const blind = await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "auto", applyToAllThreads: true });
       expect(blind.status).toBe(400);
@@ -8228,7 +8221,7 @@ describe("harness HTTP API", () => {
 
       const rotated = await api("PUT", "/api/config", { box: { token: " box_route_rotated " } });
       expect(rotated.status).toBe(200);
-      expect(rotated.body.box).toEqual({ configured: true, last4: "ated" });
+      expect(rotated.body.box).toEqual({ configured: true });
       expect(JSON.stringify(rotated.body)).not.toContain("box_route_rotated");
 
       expect((await api("POST", "/api/computers/boxes/bx_23456789/delete", { confirmName: name })).status).toBe(202);
@@ -8265,7 +8258,7 @@ describe("harness HTTP API", () => {
       managedBoatRejectedTokens.delete("Bearer box_route_rotated");
       const rotated = await api("PUT", "/api/config", { box: { token: "box_route_rotated" } });
       expect(rotated.status).toBe(200);
-      expect(rotated.body.box).toEqual({ configured: true, last4: "ated" });
+      expect(rotated.body.box).toEqual({ configured: true });
       if (provisioned) {
         const journal = readFileSync(join(home, ".relayit", "box-create-requests.json"), "utf8");
         expect(journal).toContain(managedBoatCreateId);
@@ -8513,7 +8506,9 @@ describe("harness HTTP API", () => {
     const enabled = await api("PATCH", "/api/mcp/servers/fixture", { enabled: true });
     expect(enabled.body.servers[0].enabled).toBe(true);
     const disk = JSON.parse(readFileSync(join(home, ".relayit", "config.json"), "utf8"));
-    expect(disk.mcpServers.fixture.env).toEqual({ FIXTURE_TOKEN: secret, NEXT: "fresh" });
+    // env values are kept by the credential store: the file holds references, never the values
+    expect(disk.mcpServers.fixture.env).toEqual({ FIXTURE_TOKEN: expect.stringMatching(/^omb-credential:/), NEXT: expect.stringMatching(/^omb-credential:/) });
+    expect(JSON.stringify(disk)).not.toContain(secret);
 
     const reserved = await api("POST", "/api/mcp/servers", { name: "computer", command: "evil" });
     expect(reserved.status).toBe(400);
@@ -8545,13 +8540,15 @@ describe("harness HTTP API", () => {
       expect(JSON.stringify(filedBody)).not.toContain(secret);
       const disk = JSON.parse(readFileSync(configFile, "utf8"));
       expect(disk.mcpServers.botnotes).toEqual({
-        command: "npx", args: ["-y", "notes-mcp"], env: { NOTES_TOKEN: secret }, enabled: false,
+        command: "npx", args: ["-y", "notes-mcp"], env: { NOTES_TOKEN: expect.stringMatching(/^omb-credential:/) }, enabled: false,
       });
+      expect(JSON.stringify(disk)).not.toContain(secret);
 
       const switched = await fileServer({ name: "botother", command: "npx", enabled: true });
       expect(switched.status).toBe(201);
       expect(JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botother).toMatchObject({ command: "npx", enabled: false });
-      expect(JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botnotes.env.NOTES_TOKEN).toBe(secret);
+      expect(JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botnotes.env.NOTES_TOKEN).toMatch(/^omb-credential:/);
+      expect(readFileSync(configFile, "utf8")).not.toContain(secret);
 
       const again = await fileServer({ name: "botnotes", command: "other-command" });
       expect(again.status).toBe(409);
@@ -8572,9 +8569,10 @@ describe("harness HTTP API", () => {
       expect(remoteText).not.toContain(oauthSecret);
       const savedRemote = JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botdocs;
       expect(savedRemote).toEqual({
-        type: "sse", url: "https://docs.example/mcp", headers: { Authorization: headerSecret },
-        oauth: { clientId: "corp-app", clientSecret: oauthSecret }, enabled: false,
+        type: "sse", url: "https://docs.example/mcp", headers: { Authorization: expect.stringMatching(/^omb-credential:/) },
+        oauth: { clientId: "corp-app", clientSecret: expect.stringMatching(/^omb-credential:/) }, enabled: false,
       });
+      expect(readFileSync(configFile, "utf8")).not.toMatch(new RegExp(`${headerSecret}|${oauthSecret}`));
 
       const listed = await api("GET", "/api/mcp/servers");
       expect(listed.body.servers).toEqual(expect.arrayContaining([
@@ -8617,7 +8615,8 @@ describe("harness HTTP API", () => {
       expect(updated.body.servers[0]).toMatchObject({ type: "sse", headerKeys: ["Authorization", "X-Org"], enabled: true, apps: true });
       expect(JSON.stringify(updated.body)).not.toContain(secret);
       const disk = JSON.parse(readFileSync(join(home, ".relayit", "config.json"), "utf8"));
-      expect(disk.mcpServers.docs).toEqual({ type: "sse", url: fake.url, headers: { Authorization: secret, "X-Org": "acme" }, enabled: true });
+      expect(disk.mcpServers.docs).toEqual({ type: "sse", url: fake.url, headers: { Authorization: expect.stringMatching(/^omb-credential:/), "X-Org": expect.stringMatching(/^omb-credential:/) }, enabled: true });
+      expect(JSON.stringify(disk)).not.toContain(secret);
 
       const bad = await api("POST", "/api/mcp/servers", { name: "nowhere", url: "docs.example/mcp" });
       expect(bad.status).toBe(400);
@@ -10231,6 +10230,7 @@ describe("harness HTTP API", () => {
       Object.defineProperty(process, "parentPort", {
         value: {
           on(event, callback) { messages.on(event, callback); },
+          removeListener(event, callback) { messages.removeListener(event, callback); },
           postMessage(message) {
             if (message?.requestId && /browser-(?:bot|profile)-deleted/.test(message.type ?? "")) {
               queueMicrotask(() => messages.emit("message", { data: {
@@ -11907,7 +11907,7 @@ describe("harness HTTP API", () => {
     });
     expect(saved.status).toBe(200);
     expect(saved.body.composio).toEqual({ configured: true, mode: "self-hosted" });
-    expect(saved.body.opencodeGo).toEqual({ configured: true, last4: "rnal", providerKeys: [] });
+    expect(saved.body.opencodeGo).toEqual({ configured: true, providerKeys: [] });
     expect(saved.body.profile).toEqual({ name: "External Store", email: "", aboutMe: "" });
     expect(JSON.stringify(saved.body)).not.toContain("ak_good");
 
@@ -12514,11 +12514,11 @@ describe("harness HTTP API", () => {
   it("stores OpenCode Go credentials as a configured-only status", async () => {
     const put = await api("PUT", "/api/config", { opencodeGo: { apiKey: "opencode-secret" } });
     expect(put.status).toBe(200);
-    expect(put.body.opencodeGo).toEqual({ configured: true, last4: "cret", providerKeys: [] });
+    expect(put.body.opencodeGo).toEqual({ configured: true, providerKeys: [] });
     expect(JSON.stringify(put.body)).not.toContain("opencode-secret");
 
     const after = await api("GET", "/api/config");
-    expect(after.body.opencodeGo).toEqual({ configured: true, last4: "cret", providerKeys: [] });
+    expect(after.body.opencodeGo).toEqual({ configured: true, providerKeys: [] });
     expect(JSON.stringify(after.body)).not.toContain("opencode-secret");
   });
 
@@ -13463,7 +13463,7 @@ describe("bot memory API", () => {
         id: "persona",
         label: "Identity",
         text: "You are Kiwi, a personal bot in RelayIt. Role: Tracker. About: Files bugs.",
-        bytes: 78,
+        bytes: 74,
       });
       expect(before.body.sections.map((s: { id: string }) => s.id)).not.toContain("soul");
       expect(before.body.sections.map((s: { id: string }) => s.id)).toContain("memory");
@@ -13506,10 +13506,12 @@ describe("bot memory API", () => {
       expect(fresh.status).toBe(200);
       expect(fresh.body.who.name).toBe("Kiwi");
       expect(fresh.body.wont).toEqual([
+        "Command approvals use Ask mode; saved permissions and provider rules still apply.",
         "Cannot initiate contact with other bots.",
         "Has no connected apps.",
         "Can't use a computer.",
         "Won't act on a schedule.",
+        "Profile proposal cards require your approval.",
       ]);
       expect(fresh.body.recent).toEqual([]);
 
