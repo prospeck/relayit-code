@@ -100,6 +100,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     const listeners = [];
     Object.defineProperty(process, "parentPort", { value: {
       on(event, listener) { if (event === "message") listeners.push(listener); },
+      removeListener(event, listener) { const at = listeners.indexOf(listener); if (event === "message" && at >= 0) listeners.splice(at, 1); },
       postMessage(message) { process.send?.(message); },
     } });
     process.on("message", (data) => { for (const listener of listeners) listener({ data }); });

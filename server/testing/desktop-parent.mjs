@@ -39,6 +39,10 @@ if (token || cuaFile) {
         if (pages) queueMicrotask(() => listener({ data: { type: "relayit:included-pages", access: JSON.parse(pages) } }));
         if (cuaFile) queueMicrotask(() => listener({ data: cuaGrant() }));
       },
+      removeListener(event, listener) {
+        const at = listeners.indexOf(listener);
+        if (event === "message" && at >= 0) listeners.splice(at, 1);
+      },
       postMessage() {},
     },
   });

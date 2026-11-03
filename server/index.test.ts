@@ -6746,6 +6746,7 @@ describe("harness HTTP API", () => {
             messages.on(event, callback);
             queueMicrotask(() => callback({ data: identity }));
           },
+          removeListener(event, callback) { messages.removeListener(event, callback); },
           postMessage(message) {
             if (message?.type !== "relayit:phone-secret-save") return;
             writeFileSync(join(gate, message.requestId + ".started"), message.target);
@@ -10231,6 +10232,7 @@ describe("harness HTTP API", () => {
       Object.defineProperty(process, "parentPort", {
         value: {
           on(event, callback) { messages.on(event, callback); },
+          removeListener(event, callback) { messages.removeListener(event, callback); },
           postMessage(message) {
             if (message?.requestId && /browser-(?:bot|profile)-deleted/.test(message.type ?? "")) {
               queueMicrotask(() => messages.emit("message", { data: {
