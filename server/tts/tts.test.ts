@@ -708,7 +708,7 @@ describe("no included voice", () => {
     expect(voiceConfigured(settings)).toBe(false);
     expect(describeVoice(settings)).toEqual({ configured: false, ready: false, voice: "v-1", provider: "elevenlabs", baseUrl: "", model: "" });
     expect(JSON.stringify(describeVoice(settings))).not.toContain(INCLUDED);
-    await expect(speak(settings, "hello")).rejects.toThrow("Add an ElevenLabs key in Settings on the computer to turn on voice.");
+    expect(() => speak(settings, "hello")).toThrow("Add an ElevenLabs key in Settings on the computer to turn on voice.");
     expect(seen).toEqual([]);
   });
 

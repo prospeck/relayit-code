@@ -22,6 +22,8 @@ const lastUser = (request: ChatRequest) => {
 it("says in words that a turn nobody stopped was cut off, and retries the room request a client abort stopped", async () => {
   const requests: ChatRequest[] = [];
   const upstream = createServer(async (req, res) => {
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { res.statusCode = 404; res.end(); return; }
     if (req.url === "/v1/models") {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ data: [{ id: "fixture-model" }] }));

@@ -99,6 +99,8 @@ beforeAll(async () => {
 
   upstream = createServer(async (req, res) => {
     res.setHeader("content-type", "application/json");
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { req.resume(); res.statusCode = 404; res.end("{}"); return; }
     if (req.url === "/v1/models") return res.end(JSON.stringify({ data: [{ id: "fixture-model" }] }));
     let raw = "";
     for await (const chunk of req) raw += chunk;

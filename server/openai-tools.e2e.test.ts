@@ -54,6 +54,8 @@ it.each(["openaiCompat", "groq", "meta"] as const)("%s runs structured MCP calls
   const requests: ChatRequest[] = [];
   let scenario = "allow";
   const upstream = createServer(async (req, res) => {
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { req.resume(); res.statusCode = 404; res.end(); return; }
     if (req.headers.authorization !== "Bearer synthetic-fixture-key") {
       res.writeHead(401, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: { message: "Invalid API key" } }));
