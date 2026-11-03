@@ -194,12 +194,10 @@ export function PricesCard() {
 
 export function UsageBudgetCards({ budget }: { budget: BudgetState | null }) {
   const { state } = useStore();
-  const budgets = entitledTo(state.config, "budgets");
   const billing = entitledTo(state.config, "billing");
-  if (!budgets && !billing) return null;
   return (
     <>
-      {budgets && <BudgetCard budget={budget} />}
+      <BudgetCard budget={budget} />
       {billing && <PricesCard />}
     </>
   );

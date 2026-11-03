@@ -349,7 +349,7 @@ const appConfigSchema = z.object({
   openai: z.object({ key: optionalText }).optional(),
   /** OpenRouter key, for the `openrouter` instance only. */
   openrouter: z.object({ key: optionalText }).optional(),
-  /** Workspace monthly spend limit; enforced only with the `budgets` entitlement. */
+  /** Monthly spend limit. */
   budgets: z
     .object({
       monthlyUsd: z.number().min(0).max(1_000_000).optional(),

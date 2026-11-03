@@ -24,6 +24,8 @@ export const API_KEY_FLEET: InstanceConfigMap = {
 
 // Google retired Gemini CLI for the free/Pro/Ultra tiers on 2026-06-18; enterprise licences restore it with
 // `{"instances": {"gemini": {"driver": "geminiAgent"}}}`.
+// Antigravity signs in with a personal Google account outside its own app, so it stays out unless asked for:
+// `{"instances": {"antigravity": {"driver": "antigravityAgent"}}}`.
 export const DEFAULT_FLEET: InstanceConfigMap = {
   grok: { driver: "grokAgent" },
   kimi: { driver: "kimiAgent" },
@@ -33,7 +35,6 @@ export const DEFAULT_FLEET: InstanceConfigMap = {
   claude: { driver: "claudeAgent" },
   codex: { driver: "codex" },
   chatgpt: { driver: "codex", displayName: "ChatGPT plan", config: { authMode: "chatgpt-plan" } },
-  antigravity: { driver: "antigravityAgent" },
   opencodeGo: { driver: "opencodeGo" },
   openaiCompat: { driver: "openai-compat" },
   mistral: { driver: "mistral" },
