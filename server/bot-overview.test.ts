@@ -63,8 +63,10 @@ describe("buildBotOverview", () => {
     expect(overview.does).toEqual([]);
   });
 
-  it("describes a fresh bot at the default level, Full access", () => {
-    expect(buildBotOverview(baseFacts()).wont).toEqual(WONT_ORDER.slice(1, -1));
+  it("describes a fresh bot at the default level, Ask: every wont line and nothing it does on its own", () => {
+    const overview = buildBotOverview(baseFacts());
+    expect(overview.wont).toEqual(WONT_ORDER);
+    expect(overview.does).toEqual([]);
   });
 
   it("drops the first wont line when autoApprove is on", () => {
@@ -248,11 +250,11 @@ describe("buildBotOverview", () => {
     expect(overview.wont).not.toContain("Won't contact other bots without asking.");
   });
 
-  it("says a Cloud home cannot use this computer or a Local VM, and changes nothing elsewhere", () => {
+  it("says a server home cannot use this computer or a Local VM, and changes nothing elsewhere", () => {
     const reach = (computer: OverviewFacts["bot"]["computer"], cloudHome?: boolean) =>
       buildBotOverview(baseFacts({ bot: { ...baseFacts().bot, computer }, ...(cloudHome === undefined ? {} : { cloudHome }) })).reaches[0];
-    expect(reach("local", true)).toBe("Computer preference: this computer, which isn't available on My Cloud.");
-    expect(reach("vm", true)).toBe("Computer preference: Local VM, which isn't available on My Cloud.");
+    expect(reach("local", true)).toBe("Computer preference: this computer, which isn't available on the server.");
+    expect(reach("vm", true)).toBe("Computer preference: Local VM, which isn't available on the server.");
     expect(reach("cloud", true)).toBe("Computer preference: cloud computer.");
     expect(reach("browser", true)).toBe("Computer preference: browser only.");
     expect(reach(undefined, true)).toBe("Computer preference: Auto; availability is checked when a task starts.");
