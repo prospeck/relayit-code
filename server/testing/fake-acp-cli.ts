@@ -67,7 +67,9 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { spawn } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 
-const mode = process.env.FAKE_ACP_MODE ?? "happy";
+// A saved instance's env value that is a plain word of 8+ characters is held as a credential and blanked wherever it
+// appears (server/config-credentials.ts), so a test may write the mode as "fake:question" to keep "question" readable.
+const mode = (process.env.FAKE_ACP_MODE ?? "happy").replace(/^fake:/, "");
 
 // Follow the spawning server down; on Windows ppid does not change after parent exit.
 {

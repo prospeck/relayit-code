@@ -91,8 +91,11 @@ describe("this computer, only for the desktop app's own server", () => {
       .map((path) => relative(ROOT, path).split(sep).join("/"));
     expect(uses("desktopComputer.receive(")).toEqual(["server/index.ts"]);
     const index = readFileSync(join(ROOT, "server/index.ts"), "utf8");
-    const listener = index.slice(index.indexOf("utilityParentPort?.on(\"message\""), index.indexOf("const quickFallback"));
+    // the one listener of the parent port (server/credential-store.ts) hands every message to the handler below
+    const listener = index.slice(index.indexOf("listenDesktopPrivateMessages((event)"), index.indexOf("const quickFallback"));
     expect(listener).toContain("desktopComputer.receive(message)");
+    expect(index.split("listenDesktopPrivateMessages((").length - 1).toBe(1);
+    expect(uses("parentPort?.on(\"message\"")).toEqual(["server/credential-store.ts"]);
     expect(index.split("desktopComputer.receive(").length - 1).toBe(1);
     expect(uses("readCuaConnection(")).toEqual(["server/local-computer.ts"]);
     expect(uses("cua-connection.json")).toEqual(["server/local-computer.ts"]);

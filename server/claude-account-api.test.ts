@@ -164,7 +164,9 @@ describe("Claude account HTTP API", () => {
     expect(JSON.stringify(listing.body)).not.toMatch(/fixture-base-secret|fixture-must-not-leak|BASE_ONLY_SENTINEL/);
     expect(saved().instances[first.id]).toMatchObject({ driver: "claudeAgent", config: { cli, configDir: first.dir } });
     expect(saved().instances[first.id]).not.toHaveProperty("environment");
-    expect(saved().instances.claude.environment).toEqual({ ANTHROPIC_AUTH_TOKEN: "fixture-base-secret", BASE_ONLY_SENTINEL: "base-only" });
+    // the base account's values are untouched, and live in the credential store: the file holds only references
+    expect(saved().instances.claude.environment).toEqual({ ANTHROPIC_AUTH_TOKEN: expect.stringMatching(/^omb-credential:/), BASE_ONLY_SENTINEL: expect.stringMatching(/^omb-credential:/) });
+    expect(readFileSync(join(dataDir, "config.json"), "utf8")).not.toMatch(/fixture-base-secret|base-only/);
     const renamed = await api("PATCH", `/api/instances/${first.id}`, { displayName: "Renamed work" });
     expect(renamed.status).toBe(200);
     expect(renamed.body.instances.find((row: any) => row.instanceId === first.id).displayName).toBe("Renamed work");

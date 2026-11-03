@@ -110,7 +110,7 @@ posixOnly("authorization decisions are logged", () => {
           },
           grokq: {
             driver: "grokAgent",
-            environment: { FAKE_ACP_MODE: "question" },
+            environment: { FAKE_ACP_MODE: "fake:question" },
             config: { cli: FAKE_CLI, fullAuto: false },
           },
         },

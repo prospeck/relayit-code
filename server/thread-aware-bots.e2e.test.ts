@@ -197,7 +197,7 @@ beforeAll(async () => {
       curious: {
         driver: "grokAgent",
         displayName: "Curious fixture",
-        environment: { FAKE_ACP_MODE: "question" },
+        environment: { FAKE_ACP_MODE: "fake:question" },
         config: { cli: FAKE_ACP, fullAuto: true },
       },
     },

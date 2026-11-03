@@ -123,7 +123,7 @@ beforeAll(async () => {
       curious: {
         driver: "grokAgent",
         displayName: "Curious fixture",
-        environment: { FAKE_ACP_MODE: "question" },
+        environment: { FAKE_ACP_MODE: "fake:question" },
         config: { cli: FAKE_ACP, fullAuto: true },
       },
       // consults the first teammate list_bots shows through the real agents proxy, and its resume says it saw the result
