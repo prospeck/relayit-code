@@ -4,7 +4,6 @@ import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AppConfig } from "./config.ts";
 
 const INCLUDED = "box_omb_included-relay-token";
 const LIMIT = "Your Pro plan's 200 cloud computer hours for September are used up. They reset on 1 October.";

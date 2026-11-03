@@ -353,7 +353,7 @@ describe("API onboarding", () => {
     expect(saved.defaultModelSelection).toEqual({ instanceId: id, model: "fixture-selected" });
     // keys live in the credential store: the file holds only references, and they resolve to the same values
     expect(readFileSync(configPath, "utf8")).not.toMatch(/old-secret|new-fixture-secret/);
-    const resolved = hydrateConfigCredentials(DATA_DIR, saved);
+    const resolved = hydrateConfigCredentials(DATA_DIR, saved) as any;
     expect(resolved.instances.oldApi).toEqual(existing.instances.oldApi);
     expect(resolved.instances[id]).toMatchObject({ driver: "openai-compat", config: { url: "https://api.openai.com/v1", key: "new-fixture-secret", model: "fixture-selected" } });
     expect(resolved).toMatchObject({ openaiCompat: existing.openaiCompat, xai: existing.xai, profile: existing.profile, futureSetting: existing.futureSetting });
