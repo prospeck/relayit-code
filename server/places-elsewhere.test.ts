@@ -33,12 +33,14 @@ describe("where the person's other bots live", () => {
     expect(here.explain("Nobody"), "told, and nowhere: no such bot, as before").toBeNull();
   });
 
-  it("on their computer: a bot on their server or My Cloud lives there, and the way is that place's one tap", () => {
+  it("on their computer: a bot on any other place of theirs lives there, and the way is that place's one tap", () => {
     const here = createPlacesElsewhere({ dataDir: dataDir() });
     here.write({ v: 1, self: { name: "this computer", kind: "computer" }, places: [GARAGE, CLOUD] });
     expect((here.explain("Ledger") as { where: string }).where).toBe("Ledger lives on Garage server, not here. Bots work together only within one place, so it can't be reached from here. "
       + "Tell the person plainly. Offer to bring their bots together on Garage server: in the app, right-click Garage server's circle at the window's left edge and choose \"Make Garage server my home\".");
-    expect((here.explain("Chief") as { where: string }).where).toContain("Offer to bring their bots together on My Cloud: in the app, choose \"Bring them together\", or turn off \"Keep this computer's bots on this computer\" in Settings → RelayIt Cloud.");
+    // every place has the same one tap: the old Cloud-only route (a "Bring them together" button, a Settings switch) is gone
+    expect((here.explain("Chief") as { where: string }).where).toBe("Chief lives on My Cloud, not here. Bots work together only within one place, so it can't be reached from here. "
+      + "Tell the person plainly. Offer to bring their bots together on My Cloud: in the app, right-click My Cloud's circle at the window's left edge and choose \"Make My Cloud my home\".");
   });
 
   it("an @mention of a bot that lives elsewhere: told to the bot answering it, and said once to the person in a room; never for a bot named like one here", () => {
