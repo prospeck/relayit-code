@@ -80,7 +80,13 @@ it("a bot adds an OAuth server and asks the person to sign in; they sign in on t
 
   let resumed: any;
   await expect.poll(() => { resumed = dump(); return JSON.stringify(resumed?.prompt ?? "").includes("the person signed in to postiz"); }, { timeout: 20_000 }).toBe(true);
-  expect(resumed.mcpConfig.mcpServers.postiz, "the resumed turn has the server, signed in").toMatchObject({ url: serverUrl, headers: { Authorization: `Bearer ${provider.issued[0]}` } });
+  // At Full access the engine runs the server's tools without asking, so it is mounted behind the gate that refuses sends and
+  // money; the server itself, signed in, is what the gate runs.
+  const mounted = resumed.mcpConfig.mcpServers.postiz;
+  expect(mounted, "the resumed turn has the server behind the gate").toMatchObject({ env: { OMB_GATE_NAME: "postiz", OMB_GATE_REFUSE_OUTBOUND: "1" } });
+  expect(mounted.args[0]).toMatch(/mcp-gate\.[cm]?[jt]s$/);
+  const upstream = JSON.parse(mounted.env.OMB_GATE_UPSTREAM);
+  expect(JSON.parse(upstream.env.OMB_REMOTE_MCP_SERVER), "signed in").toMatchObject({ url: serverUrl, headers: { Authorization: `Bearer ${provider.issued[0]}` } });
   await expect.poll(async () => (await messages()).find((message) => message.id === shown.id)?.connector, { timeout: 20_000 })
     .toMatchObject({ status: "connected", resumed: true });
   const transcript = JSON.stringify(await messages());
