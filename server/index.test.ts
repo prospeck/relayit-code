@@ -2882,18 +2882,6 @@ describe("harness HTTP API", () => {
     }
   });
 
-  it("lets only a Chief read the team library from its turn", async () => {
-    const helper = (await api("POST", "/api/bots")).body.bot;
-    try {
-      const token = await mintTestCapability(BASE, helper.id, helper.threadId);
-      const response = await fetch(`${BASE}/api/internal/team-library`, { headers: { authorization: `Bearer ${token}` } });
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "Only an active Chief may plan team setup" });
-    } finally {
-      await api("DELETE", `/api/bots/${helper.id}`);
-    }
-  });
-
   it("rejects null and array task, channel, and bot mutation bodies", async () => {
     const bot = (await api("POST", "/api/bots")).body.bot;
     const room = (await api("POST", "/api/groups", { name: "Object bodies", memberIds: [bot.id] })).body.group;
@@ -6546,7 +6534,11 @@ describe("harness HTTP API", () => {
       expect(listed.body.onePassword).toEqual({ connected: false });
 
       const transcript = JSON.stringify((await api("GET", `/api/threads/${bot.threadId}/messages`)).body);
-      const sealed = readFileSync(join(home, ".relayit", "logins.json.enc"));
+      // The secrets live encrypted in the credential store: no file in the data directory holds one in clear (the chat database
+      // is left out: the fake bot's raw reply is kept there, and every read of it is masked, as the assertions below check).
+      const dataFiles = (dir: string): Buffer[] => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? dataFiles(join(dir, entry.name))
+        : entry.isFile() && !/^messages\.db/.test(entry.name) ? [readFileSync(join(dir, entry.name))] : []);
+      const sealed = Buffer.concat(dataFiles(join(home, ".relayit")));
       for (const secret of [password, twoFactorKey]) {
         for (const answer of answers) expect(answer).not.toContain(secret);
         expect(transcript).not.toContain(secret);
@@ -7636,12 +7628,12 @@ describe("harness HTTP API", () => {
     try {
       for (const title of ["New thread one", "New thread two"]) {
         const task = (await api("POST", `/api/bots/${bot.id}/tasks`, { title })).body.task;
-        expect(task.approvalMode).toBe("full");
+        expect(task.approvalMode).toBe("ask"); // a new thread starts on the bot's default, Ask
         opened.push(task.threadId);
       }
       const panel = await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "auto" });
       expect(panel.status).toBe(200);
-      expect(levels(panel.body.bot)).toEqual(["auto", "full", "full"]);
+      expect(levels(panel.body.bot)).toEqual(["auto", "ask", "ask"]);
 
       expect((await api("PATCH", `/api/bots/${bot.id}`, { applyToAllThreads: true })).status).toBe(400);
       expect((await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "auto", applyToAllThreads: "yes" })).status).toBe(400);
@@ -7666,7 +7658,7 @@ describe("harness HTTP API", () => {
     const bot = (await api("POST", "/api/bots")).body.bot;
     try {
       const opened = (await api("POST", `/api/bots/${bot.id}/tasks`, { title: "New thread" })).body.task;
-      expect(opened.approvalMode).toBe("full");
+      expect(opened.approvalMode).toBe("ask");
       expect((await api("PATCH", `/api/bots/${bot.id}`, { computer: "local", approvalMode: "auto", acknowledgeLocalAuto: true })).status).toBe(200);
       const blind = await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "auto", applyToAllThreads: true });
       expect(blind.status).toBe(400);

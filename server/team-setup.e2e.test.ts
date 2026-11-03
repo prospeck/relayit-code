@@ -109,7 +109,7 @@ it("Clive sets up multi-provider teams at Ask with no card, keeps existing threa
     token = await start("Does the team need anyone else?");
     const picked = await api("POST", "/api/internal/create-bot", { name: "Scout", role: "Research scout", instructions: "Find and check sources.", suggestion: true }, 201, token);
     expect(picked).toMatchObject({ state: "applied", applied: true, name: "Scout" });
-    expect((await state()).find((bot: any) => bot.name === "Scout")).toMatchObject({ approvalMode: "full" });
+    expect((await state()).find((bot: any) => bot.name === "Scout")).toMatchObject({ approvalMode: "ask" });
     await finish();
     expect(await decisionReplies(picked.requestId)).toBe(0);
     expect(await api("POST", `/api/threads/${chief.threadId}/undo`, { requestId: picked.requestId })).toEqual({ ok: true, undone: true });
