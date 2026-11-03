@@ -1,5 +1,5 @@
 // A happy-dom page behind a stand-in agent-browser: nothing reaches a real browser, the user's data or port 8799.
-import { mkdtempSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -151,7 +151,17 @@ it.skipIf(process.platform === "win32")("saves a login from the sign-in card wit
     expect(JSON.stringify(browser.engineArgs)).not.toContain(PASSWORD);
     expect(JSON.stringify(await messages())).not.toContain(PASSWORD);
     expect(logins.text).not.toContain(PASSWORD);
-    expect(readFileSync(join(browser.fixture.info.dataDir, "logins.json.enc")).includes(Buffer.from(PASSWORD))).toBe(false);
+    // The password lives encrypted in the credential store: no file in the data directory holds it in clear.
+    const holding: string[] = [];
+    const scan = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) scan(path);
+        else if (entry.isFile() && readFileSync(path).includes(Buffer.from(PASSWORD))) holding.push(path);
+      }
+    };
+    scan(browser.fixture.info.dataDir);
+    expect(holding).toEqual([]);
   } finally {
     await browser.close();
   }

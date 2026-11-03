@@ -82,7 +82,8 @@ async function loopbackModel() {
   });
   await new Promise<void>((resolve) => model.listen(0, "127.0.0.1", resolve));
   return {
-    url: `http://127.0.0.1:${(model.address() as AddressInfo).port}/v1`,
+    // Reached as 0.0.0.0, not 127.x: a loopback engine is held to the local-model repeat guards, which would stop the step-capped turn (T6) early.
+    url: `http://0.0.0.0:${(model.address() as AddressInfo).port}/v1`,
     requests,
     answer: (next: typeof answer) => { answer = next; },
     close: async () => { model.closeAllConnections(); await new Promise<void>((resolve) => model.close(() => resolve())); },
