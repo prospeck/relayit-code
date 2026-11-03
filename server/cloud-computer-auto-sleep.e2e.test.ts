@@ -1,4 +1,4 @@
-// A cloud computer turns itself off after use. One stub plays the Admin's Boat relay and records every call, and the
+// A cloud computer turns itself off after use. One stub plays Boat (boat.dev, on the person's own key) and records every call, and the
 // server's idle window is cut from ten minutes to IDLE_MS, so each journey can say exactly when a computer went to sleep.
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -13,7 +13,7 @@ import { freePortBlock } from "./testing/ports.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const FAKE_CLAUDE = join(ROOT, "server/testing/fake-claude-cli.ts");
-const INCLUDED = `box_omb_${randomUUID()}`;
+const OWN_KEY = `boat_${randomUUID()}`;
 const IDLE_MS = 1_500;
 const FRAME = Buffer.from("/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 // A logged, always-failing docker stands in for a VPS; the fixture is a POSIX shell script.
@@ -58,8 +58,8 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
     }
   }
   const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  const stopsOf = (id: string) => calls.filter(call => call.method === "POST" && call.path === `/boxes/${id}/stop`);
-  const resumesOf = (id: string) => calls.filter(call => call.method === "POST" && call.path === `/boxes/${id}/resume`);
+  const stopsOf = (id: string) => calls.filter(call => call.method === "POST" && call.path === `/sandboxes/${id}/stop`);
+  const resumesOf = (id: string) => calls.filter(call => call.method === "POST" && call.path === `/sandboxes/${id}/resume`);
   const rowOf = (name: string | undefined) => rows.find(row => row.name === name)!;
   const task = async (botId: string) => (await apiOk("GET", "/api/bots?messages=0")).bots.find((bot: any) => bot.id === botId);
   const idle = (botId: string) => until(() => task(botId), bot => bot?.busy === false);
@@ -83,9 +83,7 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
         PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
         HOME: home, USERPROFILE: home, OMB_DATA_DIR: data, TEMP: home, TMP: home, TMPDIR: home,
         OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1),
-        OMB_BOAT_API: `${relayBase}/own-key-must-not-be-used`,
-        OMB_CLOUD_BOAT_URL: `${relayBase}/relay/api/box/v1`,
-        OMB_CLOUD_BOAT_TOKEN: INCLUDED,
+        OMB_BOAT_API: `${relayBase}/boat/api/v1`,
         OMB_CLOUD_COMPUTER_IDLE_MS: String(IDLE_MS),
         ...(process.platform === "win32" ? {} : { OMB_EXTRA_PATH: join(home, "bin"), FAKE_DOCKER_LOG: dockerLog }),
       },
@@ -109,37 +107,37 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
           res.writeHead(status, { "content-type": "application/json" });
           res.end(JSON.stringify(payload));
         };
-        const path = url.pathname.replace(/^\/relay\/api\/box\/v1/, "");
+        const path = url.pathname.replace(/^\/boat\/api\/v1/, "");
         calls.push({ method: req.method ?? "GET", path, at: Date.now() });
-        if (req.headers.authorization !== `Bearer ${INCLUDED}` || !url.pathname.startsWith("/relay/api/box/v1")) {
+        if (req.headers.authorization !== `Bearer ${OWN_KEY}` || !url.pathname.startsWith("/boat/api/v1")) {
           return send(401, { ok: false, code: "unauthorized", message: "Unauthorized" });
         }
         const body = raw ? JSON.parse(raw) : {};
-        if (path === "/boxes" && req.method === "GET") return send(200, { ok: true, boxes: rows, pageInfo: { nextCursor: null } });
-        if (path === "/boxes" && req.method === "POST") {
+        if (path === "/sandboxes" && req.method === "GET") return send(200, { ok: true, sandboxes: rows, pageInfo: { nextCursor: null } });
+        if (path === "/sandboxes" && req.method === "POST") {
           const row = { id: boxId(rows.length), state: "provisioning" };
           rows.push(row);
-          return send(201, { ok: true, box: row });
+          return send(201, { ok: true, sandbox: row });
         }
-        const [, id = "", verb = ""] = /^\/boxes\/([^/]+)(?:\/(.+))?$/.exec(path) ?? [];
+        const [, id = "", verb = ""] = /^\/sandboxes\/([^/]+)(?:\/(.+))?$/.exec(path) ?? [];
         const row = rows.find(candidate => candidate.id === id);
         if (!row) return send(404, { ok: false, code: "not_found", message: "Not found" });
         if (!verb && req.method === "PATCH") {
           row.name = body.name;
-          return send(200, { ok: true, box: row });
+          return send(200, { ok: true, sandbox: row });
         }
         if (!verb && req.method === "GET") {
           const seen = { ...row };
           if (row.state === "provisioning" || row.state === "resuming") row.state = "ready";
-          return send(200, { ok: true, box: seen });
+          return send(200, { ok: true, sandbox: seen });
         }
         if (verb === "resume" && req.method === "POST") {
           row.state = "resuming";
-          return send(200, { ok: true, box: row });
+          return send(200, { ok: true, sandbox: row });
         }
         if (verb === "stop" && req.method === "POST") {
           row.state = "archived";
-          return send(200, { ok: true, box: row });
+          return send(200, { ok: true, sandbox: row });
         }
         if (verb === "desktop" && req.method === "POST") return send(200, { desktopUrl: `https://desktop.invalid/${row.id}` });
         if (verb === "commands" && req.method === "POST") return send(200, { exitCode: 0, stdout: "captured", stderr: "" });
@@ -161,7 +159,7 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
     mkdirSync(join(home, "bin"), { recursive: true });
     writeFileSync(join(home, "bin", "docker"), FAKE_DOCKER);
     chmodSync(join(home, "bin", "docker"), 0o755);
-    writeFileSync(join(data, "config.json"), JSON.stringify({ instances: {
+    writeFileSync(join(data, "config.json"), JSON.stringify({ box: { token: OWN_KEY }, instances: {
       // Every turn first takes one screenshot through the cloud computer's tools, as a model's first computer call does.
       uses: { driver: "claudeAgent", config: { cli: FAKE_CLAUDE }, environment: { FAKE_CLAUDE_USES_CLOUD_COMPUTER: "1" } },
       // Works until the gate file exists, touching no computer.
@@ -196,7 +194,7 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
     expect(stop!.at - turnEnded).toBeGreaterThanOrEqual(IDLE_MS - 500);
     expect(rows[0]!.state).toBe("archived");
     // Chrome is asked to exit before the stop, so its profile is saved.
-    const quiesce = calls.findLastIndex(call => call.path === `/boxes/${workerBox}/commands` && call.at <= stop!.at);
+    const quiesce = calls.findLastIndex(call => call.path === `/sandboxes/${workerBox}/commands` && call.at <= stop!.at);
     expect(quiesce).toBeGreaterThan(-1);
 
     await send(worker.id, "Look again");
@@ -213,7 +211,7 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
     rmSync(usesGate, { force: true });
     const asked = calls.length;
     await send(worker.id, "Check the desktop, then keep working");
-    await until(() => calls.slice(asked).some(call => call.path === `/boxes/${workerBox}/artifacts`), Boolean);
+    await until(() => calls.slice(asked).some(call => call.path === `/sandboxes/${workerBox}/artifacts`), Boolean);
     await pause(IDLE_MS * 0.8);
     writeFileSync(usesGate, "finish");
     await idle(worker.id);

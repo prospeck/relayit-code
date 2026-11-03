@@ -1,4 +1,4 @@
-// The real server, the fake Claude CLI and a stub of the Admin's Boat relay, with the call wait and the start budget
+// The real server, the fake Claude CLI and a stub of Boat (boat.dev, on the person's own key), with the call wait and the start budget
 // shortened; disposable home, no network.
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -13,7 +13,7 @@ import { freePortBlock } from "./testing/ports.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const FAKE_CLAUDE = join(ROOT, "server/testing/fake-claude-cli.ts");
-const INCLUDED = `box_omb_${randomUUID()}`;
+const OWN_KEY = `boat_${randomUUID()}`;
 const FRAME = Buffer.from("/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 /** One computer call waits this long on a start; the whole start, this long. */
 const CALL_WAIT_MS = 1_500;
@@ -54,7 +54,7 @@ describe("a slow cloud computer start", () => {
       await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
-  const creates = () => requests.filter(request => request === "POST /boxes").length;
+  const creates = () => requests.filter(request => request === "POST /sandboxes").length;
   const task = async (botId: string) => (await api("GET", "/api/bots?messages=40")).bots.find((bot: any) => bot.id === botId);
   const failedRows = async (botId: string) => (await task(botId))?.messages.filter((message: any) => message.tool?.name?.startsWith("error:")) ?? [];
   const startTurn = async (botId: string, text: string, threadId?: string) => {
@@ -93,27 +93,27 @@ describe("a slow cloud computer start", () => {
           res.writeHead(status, { "content-type": "application/json" });
           res.end(JSON.stringify(payload));
         };
-        const path = url.pathname.replace(/^\/relay\/api\/box\/v1/, "");
+        const path = url.pathname.replace(/^\/boat\/api\/v1/, "");
         requests.push(`${req.method} ${path}`);
-        if (req.headers.authorization !== `Bearer ${INCLUDED}`) return send(401, { ok: false, code: "unauthorized" });
-        if (path === "/boxes" && req.method === "GET" && hold.dropLists > 0) { hold.dropLists--; return void req.socket.destroy(); }
-        if (path === "/boxes" && req.method === "GET") return send(200, { ok: true, boxes: rows, pageInfo: { nextCursor: null } });
-        if (path === "/boxes" && req.method === "POST") {
+        if (req.headers.authorization !== `Bearer ${OWN_KEY}`) return send(401, { ok: false, code: "unauthorized" });
+        if (path === "/sandboxes" && req.method === "GET" && hold.dropLists > 0) { hold.dropLists--; return void req.socket.destroy(); }
+        if (path === "/sandboxes" && req.method === "GET") return send(200, { ok: true, sandboxes: rows, pageInfo: { nextCursor: null } });
+        if (path === "/sandboxes" && req.method === "POST") {
           const row = { id: `bx_${"23456789abcdefgh"[rows.length]}3456789`, state: "provisioning" };
           rows.push(row);
-          return send(201, { ok: true, box: row });
+          return send(201, { ok: true, sandbox: row });
         }
-        const [, id = "", verb = ""] = /^\/boxes\/([^/]+)(?:\/(.+))?$/.exec(path) ?? [];
+        const [, id = "", verb = ""] = /^\/sandboxes\/([^/]+)(?:\/(.+))?$/.exec(path) ?? [];
         const row = rows.find(candidate => candidate.id === id);
         if (!row) return send(404, { ok: false, code: "not_found" });
         if (!verb && req.method === "PATCH") {
           row.name = (raw ? JSON.parse(raw) : {}).name;
-          return send(200, { ok: true, box: row });
+          return send(200, { ok: true, sandbox: row });
         }
         if (!verb && req.method === "GET") {
           const seen = { ...row };
           if (row.state === "provisioning" && !hold.provisioning) row.state = "ready";
-          return send(200, { ok: true, box: seen });
+          return send(200, { ok: true, sandbox: seen });
         }
         if (verb === "desktop" && req.method === "POST") {
           // Accepted, never answered: a relay that stalls.
@@ -136,7 +136,7 @@ describe("a slow cloud computer start", () => {
     dumpFile = join(home, "dump.json");
     finishFile = join(home, "finish");
     mkdirSync(data, { recursive: true });
-    writeFileSync(join(data, "config.json"), JSON.stringify({ instances: {
+    writeFileSync(join(data, "config.json"), JSON.stringify({ box: { token: OWN_KEY }, instances: {
       claude: {
         driver: "claudeAgent", config: { cli: FAKE_CLAUDE },
         environment: { FAKE_CLAUDE_MODE: "slow", FAKE_CLAUDE_DUMP: dumpFile, FAKE_CLAUDE_SLOW_FINISH_GATE: finishFile },
@@ -150,9 +150,7 @@ describe("a slow cloud computer start", () => {
         PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
         HOME: home, USERPROFILE: home, OMB_DATA_DIR: data, TEMP: home, TMP: home, TMPDIR: home,
         OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1),
-        OMB_BOAT_API: `${relayBase}/own-key-must-not-be-used`,
-        OMB_CLOUD_BOAT_URL: `${relayBase}/relay/api/box/v1`,
-        OMB_CLOUD_BOAT_TOKEN: INCLUDED,
+        OMB_BOAT_API: `${relayBase}/boat/api/v1`,
         OMB_COMPUTER_CALL_WAIT_MS: String(CALL_WAIT_MS),
         OMB_CLOUD_COMPUTER_START_BUDGET_MS: String(START_BUDGET_MS),
       },
