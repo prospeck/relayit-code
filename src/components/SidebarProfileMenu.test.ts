@@ -185,21 +185,12 @@ describe("Simple mode's account menu", () => {
     expect(here.openMenu).toHaveBeenCalledTimes(2);
   });
 
-  it("names My Cloud and opens its settings when it is the window's only place, and offers nothing without either", () => {
-    const onCloudSettings = vi.fn();
-    const home = placeMenuItems(place({ switchable: false, cloudHome: true, onLine: "always on" }), { owner: "ada@example.test", onCloudSettings });
-    expect(home.map((item) => [item.label, item.subtitle])).toEqual([["My Cloud", "always on · ada@example.test’s Cloud"]]);
-    home[0]!.onSelect();
-    expect(onCloudSettings).toHaveBeenCalledOnce();
-    expect(placeMenuItems(place({ bridge: undefined, switchable: false }), { owner: null, onCloudSettings })).toEqual([]);
+  it("offers no entry for a server that is the window's only place: there is no hosted My Cloud to name or open", () => {
+    const only = placeMenuItems(place({ switchable: false, cloudHome: true, onLine: "always on" }), { owner: "ada@example.test", onCloudSettings: noop });
+    expect(only).toEqual([]);
+    expect(placeMenuItems(place({ switchable: false, cloudHome: true, onLine: "" }), { owner: null, name: "Acme Labs", onCloudSettings: noop })).toEqual([]);
+    expect(placeMenuItems(place({ bridge: undefined, switchable: false }), { owner: null, onCloudSettings: noop })).toEqual([]);
   });
-
-  it("names a team's Cloud by the team", () => {
-    const team = placeMenuItems(place({ switchable: false, cloudHome: true, onLine: "" }), { owner: null, name: "Acme Labs", onCloudSettings: noop });
-    expect(team.map((item) => item.label)).toEqual(["Acme Labs"]);
-  });
-
-
 });
 
 describe("the usage meta", () => {

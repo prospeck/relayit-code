@@ -359,7 +359,7 @@
   "rail.removeServerAsk": "Remove “{name}” from your list? This app signs out of it there; nothing on it changes.",
   "rail.removeYes": "Remove",
   "rail.removeNo": "Cancel",
-  "rail.removeRefused": "It can't be removed right now: it is running again, or still has a plan.",
+  "rail.removeRefused": "It can't be removed right now: it is running again.",
   "rail.removeFailed": "It wasn't removed. Check your connection and try again.",
   "placeLook.title": "Color",
   "placeLook.sub": "{name} shows in this color at the top of the sidebar and on its circle at the window's left edge.",

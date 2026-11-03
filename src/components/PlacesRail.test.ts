@@ -327,12 +327,12 @@ it("a Cloud of the person's own that ended says so on its circle, and its menu o
   await act(async () => { host.querySelector("[data-rail-menu]")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
   const menu = await menuOf("old");
   await click(menu!.querySelector("[data-rail-remove-ask]"));
-  expect(menu!.querySelector("[data-rail-remove] [role='alertdialog'] p")?.textContent).toBe("Remove “Old Cloud” from your list? You can buy a new Cloud any time.");
+  expect(menu!.querySelector("[data-rail-remove] [role='alertdialog'] p")?.textContent).toBe("Remove “Old Cloud” from your list?");
   expect(remove).not.toHaveBeenCalled();
   await click(menu!.querySelector("[data-rail-remove-confirm]"));
   await settle();
   expect(remove).toHaveBeenCalledWith("old");
-  expect(host.querySelector("[data-rail-menu] [role='alert']")?.textContent, "the Admin's no, said plainly").toBe("It can't be removed right now: it is running again, or still has a plan.");
+  expect(host.querySelector("[data-rail-menu] [role='alert']")?.textContent, "the Admin's no, said plainly").toBe("It can't be removed right now: it is running again.");
   remove.mockResolvedValueOnce({ outcome: "removed" });
   await click(host.querySelector("[data-rail-menu] [data-rail-remove-ask]"));
   await click(host.querySelector("[data-rail-menu] [data-rail-remove-confirm]"));
