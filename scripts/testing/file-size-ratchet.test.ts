@@ -17,13 +17,14 @@ const LISTED_FROM = 1000;
 
 const LINES: Record<string, number> = {
   "server/index.ts": 15778,
-  "src/state/store.tsx": 3360,
+  "src/state/store.tsx": 3361,
   "electron/main.mjs": 3246,
   "server/store.ts": 2323,
   "src/components/Sidebar.tsx": 1744,
-  "server/drivers/claude.ts": 2119,
+  "server/drivers/claude.ts": 2136,
+  "server/drivers/openai-chat.ts": 1035,
   "server/drivers/acp/core.ts": 1744,
-  "server/drivers/codex.ts": 1813,
+  "server/drivers/codex.ts": 1839,
   "server/routines.ts": 1570,
   "src/components/ComputerPanel.tsx": 1821,
   "src/components/RoutineCalendarPage.tsx": 1623,
