@@ -39,6 +39,8 @@ it("a bridged turn on the chat-completions runtime carries on after use_tool nam
   // The model: a wrong guess, then a search, then its answer.
   const requests: ChatRequest[] = [];
   const provider = createServer(async (request, response) => {
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version); this fixture is not one.
+    if (request.url?.startsWith("/api/")) { response.statusCode = 404; response.end(); return; }
     if (request.url === "/v1/models") {
       response.setHeader("content-type", "application/json");
       response.end('{"data":[]}');
