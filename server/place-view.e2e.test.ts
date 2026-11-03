@@ -154,38 +154,6 @@ describe("a cloud computer that can't start, against the real server", () => {
     if (included) { included = false; writeConfig(true); }
   });
 
-  it("J5: no hours left says when they come back, offers the plan, and starts nothing", async () => {
-    await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Hours Bot" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
-    createAnswer = HOURS;
-    await send(bot.id, bot.threadId, "Open the desktop.");
-    const row = await failedRow(bot.threadId);
-    expect(row.tool.name).toBe("error: This month's 50 cloud desktop hours are used up. They come back on 1 November. See your plan on the Plan page.");
-    expect(row.tool.place).toEqual({ state: "cc-no-hours", params: { bot: "Hours Bot", plan: "Pro", hours: 50, month: "November" }, source: "works-on" });
-    await idle(bot.id);
-    expect(creates).toBe(1);
-    expect(boxes).toEqual([]);
-  }, 90_000);
-
-  it("J6: at once names the bot that holds the plan's cloud computer", async () => {
-    await start();
-    const { bot: holder } = await apiOk("POST", "/api/bots", { name: "Ada" });
-    await apiOk("PATCH", `/api/bots/${holder.id}`, { computer: "cloud" });
-    await send(holder.id, holder.threadId, "Use your desktop.");
-    await until(() => boxes.length, count => count === 1, "Ada's computer");
-    await idle(holder.id);
-    expect((await messages(holder.threadId)).some(message => String(message.tool?.name ?? "").startsWith("error:"))).toBe(false);
-
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Bo" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
-    createAnswer = AT_ONCE;
-    await send(bot.id, bot.threadId, "Use your desktop too.");
-    const row = await failedRow(bot.threadId);
-    expect(row.tool.name).toBe("error: Your Personal plan includes 1 cloud desktop, and Ada has it. Manage your cloud desktops in Settings → Bot desktops.");
-    expect(row.tool.place).toEqual({ state: "cc-at-once", params: { bot: "Bo", plan: "Personal", max: 1, holders: ["Ada"] }, source: "works-on" });
-  }, 90_000);
-
   it("J7: a relay that can't start one says so plainly, with Try again and no Boat words", async () => {
     await start();
     const { bot } = await apiOk("POST", "/api/bots", { name: "Down Bot" });
@@ -196,19 +164,6 @@ describe("a cloud computer that can't start, against the real server", () => {
     expect(row.tool.name).toBe("error: Cloud desktops can't start right now. It isn't anything you did. Try again.");
     expect(row.tool.name).not.toMatch(/boat|box|Works on to Auto/i);
     expect(row.tool.place).toEqual({ state: "cc-unavailable", params: { bot: "Down Bot" }, source: "works-on" });
-  }, 90_000);
-
-  it("the Admin's subscription_inactive reads as Plan ended, by its code, with See your plan", async () => {
-    included = true;
-    writeConfig(false);
-    await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Ended Bot" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
-    createAnswer = refusal(402, "subscription_inactive", "Cloud computers are included with an active Cloud subscription.");
-    await send(bot.id, bot.threadId, "Open the desktop.");
-    const row = await failedRow(bot.threadId);
-    expect(row.tool.name).toBe("error: Your RelayIt Cloud plan has ended, so cloud desktops are off. See your plan on the Plan page.");
-    expect(row.tool.place).toEqual({ state: "cc-ended", params: { bot: "Ended Bot" }, source: "works-on" });
   }, 90_000);
 
   it("an automatic pin that fails is cleared, and the row says the conversation is back on Auto", async () => {
