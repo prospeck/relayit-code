@@ -29,6 +29,8 @@ async function onSignInCard(run: (f: {
   const dump = () => { try { return JSON.parse(readFileSync(fixture.fixtureDumpPath, "utf8")); } catch { return null; } };
   try {
     const iris = (await api("POST", "/api/bots", { name: "Iris" }, 201)).bot;
+    // A new bot starts on Ask and adds a server switched off for the person to turn on (mcp-cards.e2e); this journey adds it at Full access.
+    await api("PATCH", `/api/bots/${iris.id}`, { approvalMode: "full" });
     const messages = async () => (await api("GET", `/api/threads/${iris.threadId}/messages`)).messages as any[];
     await api("POST", `/api/bots/${iris.id}/messages`, { threadId: iris.threadId, text: "Connect Postiz", sendId: "mcp-sign-in-e2e-send-0001" }, 202);
     let first: any;

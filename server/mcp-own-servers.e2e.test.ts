@@ -41,6 +41,8 @@ it("a bot's server from a conversation folder is kept in its own folder, and a s
   try {
     const iris = (await api("POST", "/api/bots", { name: "Iris" }, 201)).bot;
     const paul = (await api("POST", "/api/bots", { name: "Paul" }, 201)).bot;
+    // New bots start on Ask and add a server switched off for the person to turn on (mcp-cards.e2e); these two add and use theirs at Full access.
+    for (const bot of [iris, paul]) await api("PATCH", `/api/bots/${bot.id}`, { approvalMode: "full" });
     const first = await turnOf(iris);
     const token: string = first.mounts.agents.env.OMB_COMMS_TOKEN;
 

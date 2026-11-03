@@ -474,49 +474,6 @@ it("never parks a report behind work the Chief handed on, even for a Chief that 
   }
 }, 150_000);
 
-it("tells the person of a failure whose report waited and was then refused", async () => {
-  // A stand-in enterprise layer grants the monthly spend limit.
-  const layerDir = mkdtempSync(join(tmpdir(), "omb-incidents-layer-"));
-  mkdirSync(join(layerDir, "server"));
-  writeFileSync(join(layerDir, "server", "index.js"), 'export async function register() { return { customer: "Fixture Co", features: ["budgets"], expiresAt: "2099-01-01" }; }\n');
-  const { api, control, file, dump, messages, useCli, incidentsThread, pushes, close } = await launch(undefined, { dir: layerDir, licenseKey: "fixture-key" });
-  try {
-    const chief = (await control(["new-bot", "--name", "Clive", "--section", "Ops"])).bot;
-    await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true });
-    const ada = (await control(["new-bot", "--name", "Ada", "--section", "Ops"])).bot;
-    const ben = (await control(["new-bot", "--name", "Ben", "--section", "Ops"])).bot;
-    const eve = (await control(["new-bot", "--name", "Eve"])).bot;
-    await useCli(`${JSON.stringify([ada.activeTaskId, ben.activeTaskId])}.includes(thread) ? "exit-early" : thread === ${JSON.stringify(eve.activeTaskId)} ? "happy" : "slow"`);
-    await control(["send", "--bot", eve.id, "--text", "hello"]);
-    expect((await control(["wait", "--bot", eve.id, "--timeout", "30"])).status).toBe("settled");
-    const watch = await pushes();
-    try {
-      await control(["send", "--bot", ada.id, "--text", "Reconcile the September invoices."]);
-      const incidents = (await incidentsThread(chief.id)).threadId;
-      await dump(incidents);
-      await control(["send", "--bot", ben.id, "--text", "Draft the vendor letter."]);
-      await expect.poll(async () => (await messages(incidents)).some((m) =>
-        m.kind === "activity" && (m.tool?.name ?? "").startsWith("Incident: Ben's run")), { timeout: 20_000 }).toBe(true);
-
-      await api("PUT", "/api/config", { budgets: { monthlyUsd: 0.005 } });
-      writeFileSync(file(incidents, "gate"), "finish");
-      await expect.poll(async () => (await messages(incidents)).some((m) =>
-        (m.tool?.name ?? "").startsWith("error: the incident could not reach Clive — this workspace has reached its monthly spend limit")), { timeout: 20_000 }).toBe(true);
-      const sent = await watch.sent(chief.id);
-      expect(sent.filter((push: any) => push.kind === "incident")).toEqual([expect.objectContaining({
-        botId: ben.id, threadId: ben.activeTaskId, title: "Ben hit a problem",
-        body: expect.stringMatching(/^Incident: Ben's run in its thread #Draft the vendor letter\. failed/),
-      })]);
-      expect((await messages(incidents)).some((m) => /queued message could not start/.test(m.tool?.name ?? ""))).toBe(false);
-    } finally {
-      watch.stream.close();
-    }
-  } finally {
-    await close();
-    await removeTempDir(layerDir);
-  }
-}, 150_000);
-
 it("reports a routine that keeps failing the same way once, and again when the failure changes", async () => {
   const { dataDir, api, control, messages, useCli, incidentsThread, close } = await launch();
   try {

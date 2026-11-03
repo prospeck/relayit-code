@@ -25,6 +25,8 @@ const terminal = (status: string | undefined) => status === "completed" || statu
 type ModelAnswer = { say: string } | { call: true } | { hold: Promise<void>; after: ModelAnswer };
 type ModelRequest = { lastUser: string; toolsSinceUser: number };
 
+// The fixture engine is reached as http://0.0.0.0:<port>: a loopback address (127.x) is held to the local-model guards, which
+// stop a model that repeats itself after a few rounds, long before the step cap these jobs are here to reach.
 async function chiefJob(test: (f: any) => Promise<void>) {
   // The approval deadline and the stall window elapse only on marker files, never on their own.
   const parentEnv = { ...process.env, OMB_TEST_APPROVAL_CLOCK: "1", OMB_TEST_STALL_CLOCK: "1" };
@@ -92,7 +94,7 @@ async function chiefJob(test: (f: any) => Promise<void>) {
     const mira = await bot("Mira", "Engineering");
     const eli = await bot("Eli", "Engineering");
     expect((await api("PATCH", `/api/bots/${clive.id}`, { chiefOfStaff: true, managedSections: ["Engineering"], acknowledgePeerScope: true })).status).toBe(200);
-    const compat = { key: "synthetic-fixture-key", url: `http://127.0.0.1:${(model.address() as AddressInfo).port}/v1`, model: "loop-model" };
+    const compat = { key: "synthetic-fixture-key", url: `http://0.0.0.0:${(model.address() as AddressInfo).port}/v1`, model: "loop-model" };
     expect((await api("PATCH", "/api/config", { openaiCompat: compat })).status).toBe(200);
     await cli("set-model", "--bot", eli.id, "--instance", "openaiCompat", "--model", "loop-model");
     const planPath = join(dataDir, "room-plan.json");
