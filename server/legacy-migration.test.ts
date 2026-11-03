@@ -1,6 +1,7 @@
-// Anything touching the new dir before ensureDirs() runs would make the ~/.relayit rename a no-op: this pins the order.
+// A server's first boot in a data dir that already holds files keeps them and gives the dir an environment id. RelayIt
+// has no migration from another product's dir: it never reads or adopts any other app's data.
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -57,10 +58,9 @@ afterAll(async () => {
   await removeTempDir(home);
 });
 
-describe("legacy data dir", () => {
-  it("is renamed to the new name on first boot, with its contents and a fresh environment id", () => {
+describe("an existing data dir", () => {
+  it("keeps its contents on first boot and gets a fresh environment id", () => {
     const fresh = join(home, ".relayit");
-    expect(existsSync(join(home, ".relayit"))).toBe(false);
     expect(readFileSync(join(fresh, "keep-me.txt"), "utf8")).toBe("carried over");
     expect(readFileSync(join(fresh, "environment-id"), "utf8").trim()).toMatch(/^[0-9a-f-]{36}$/);
   });
