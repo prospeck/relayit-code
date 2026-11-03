@@ -19,8 +19,7 @@ import { PAGE_HEIGHT } from "./PageTools";
 const payload = (more: Partial<AppPayload> = {}): AppPayload => ({
   v: 1, source: "html", title: "Pricing", doc: "d0", rev: 0, bytes: 900, border: true, network: { connect: [], resources: [] }, ...more,
 });
-const row = (app: AppPayload, publishedPage?: PublishedPageCard): Message => ({ id: "a1", role: "bot", kind: "app", at: 1, text: "[App] Pricing", app,
-  ...(publishedPage ? { publishedPage } : {}) });
+const row = (app: AppPayload): Message => ({ id: "a1", role: "bot", kind: "app", at: 1, text: "[App] Pricing", app });
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const fetchMock = vi.fn<(path: string, init?: RequestInit) => Promise<Response>>();

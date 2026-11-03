@@ -19,11 +19,6 @@ it("renders nothing outside the desktop app", () => {
   expect(renderToStaticMarkup(createElement(DesktopWorkspaceSwitcher))).toBe("");
 });
 
-const visibleText = (html: string) => html.replace(/<span class="sr-only">.*?<\/span>/g, "").replace(/<!-- -->/g, "").replace(/<[^>]+>/g, "");
-
-
-
-
 it("is the Show me how tip's anchor, and opens the menu as reached from the tip only while the tip is up", async () => {
   vi.stubGlobal("window", { ogb: { workspaces: { state: () => new Promise(() => {}), menu: () => Promise.resolve() } } });
   for (const props of [{}, { inline: true }, { compact: true }]) expect(renderToStaticMarkup(createElement(DesktopWorkspaceSwitcher, props))).toContain('data-tour="server-switcher"');
