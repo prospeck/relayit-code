@@ -8506,7 +8506,9 @@ describe("harness HTTP API", () => {
     const enabled = await api("PATCH", "/api/mcp/servers/fixture", { enabled: true });
     expect(enabled.body.servers[0].enabled).toBe(true);
     const disk = JSON.parse(readFileSync(join(home, ".relayit", "config.json"), "utf8"));
-    expect(disk.mcpServers.fixture.env).toEqual({ FIXTURE_TOKEN: secret, NEXT: "fresh" });
+    // env values are kept by the credential store: the file holds references, never the values
+    expect(disk.mcpServers.fixture.env).toEqual({ FIXTURE_TOKEN: expect.stringMatching(/^omb-credential:/), NEXT: expect.stringMatching(/^omb-credential:/) });
+    expect(JSON.stringify(disk)).not.toContain(secret);
 
     const reserved = await api("POST", "/api/mcp/servers", { name: "computer", command: "evil" });
     expect(reserved.status).toBe(400);
@@ -8544,7 +8546,8 @@ describe("harness HTTP API", () => {
       const switched = await fileServer({ name: "botother", command: "npx", enabled: true });
       expect(switched.status).toBe(201);
       expect(JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botother).toMatchObject({ command: "npx", enabled: false });
-      expect(JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botnotes.env.NOTES_TOKEN).toBe(secret);
+      expect(JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botnotes.env.NOTES_TOKEN).toMatch(/^omb-credential:/);
+      expect(readFileSync(configFile, "utf8")).not.toContain(secret);
 
       const again = await fileServer({ name: "botnotes", command: "other-command" });
       expect(again.status).toBe(409);
@@ -13457,7 +13460,7 @@ describe("bot memory API", () => {
         id: "persona",
         label: "Identity",
         text: "You are Kiwi, a personal bot in RelayIt. Role: Tracker. About: Files bugs.",
-        bytes: 78,
+        bytes: 74,
       });
       expect(before.body.sections.map((s: { id: string }) => s.id)).not.toContain("soul");
       expect(before.body.sections.map((s: { id: string }) => s.id)).toContain("memory");
@@ -13500,10 +13503,12 @@ describe("bot memory API", () => {
       expect(fresh.status).toBe(200);
       expect(fresh.body.who.name).toBe("Kiwi");
       expect(fresh.body.wont).toEqual([
+        "Command approvals use Ask mode; saved permissions and provider rules still apply.",
         "Cannot initiate contact with other bots.",
         "Has no connected apps.",
         "Can't use a computer.",
         "Won't act on a schedule.",
+        "Profile proposal cards require your approval.",
       ]);
       expect(fresh.body.recent).toEqual([]);
 
