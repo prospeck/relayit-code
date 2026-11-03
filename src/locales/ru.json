@@ -1649,7 +1649,6 @@
   "composer.mention.allOne": "Единственный бот здесь",
   "composer.mention.allMany": "Все {count} ботов",
   "composer.mention.devs": "Разработчики",
-  "composer.mention.devsDesc": "Сообщить RelayIt об ошибке",
   "devs.report.received": "Сообщение об ошибке отправлено · Получили, разбираемся",
   "devs.report.fixedSoon": "Сообщение об ошибке · Исправлено, придёт с обновлением",
   "devs.report.fixedComing": "Сообщение об ошибке · Исправлено в {version}, придёт со следующим обновлением",

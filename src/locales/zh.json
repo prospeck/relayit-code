@@ -1860,7 +1860,6 @@
   "composer.mention.allOne": "这里唯一的机器人",
   "composer.mention.allMany": "全部 {count} 个机器人",
   "composer.mention.devs": "开发者",
-  "composer.mention.devsDesc": "向 RelayIt 报告错误",
   "devs.report.received": "已发送错误报告 · 已收到，我们正在查看",
   "devs.report.fixedSoon": "错误报告 · 已修复，将随更新提供",
   "devs.report.fixedComing": "错误报告 · 已在 {version} 中修复，将随下次更新提供",

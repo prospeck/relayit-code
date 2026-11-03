@@ -752,7 +752,6 @@
   "composer.mention.agent": "Agent",
   "composer.mention.person": "Person",
   "composer.mention.devs": "Entwickler",
-  "composer.mention.devsDesc": "Einen Fehler an RelayIt melden",
   "devs.report.received": "Fehlerbericht gesendet · Erhalten, wir sehen es uns an",
   "devs.report.fixedSoon": "Fehlerbericht · Behoben, kommt mit einem Update",
   "devs.report.fixedComing": "Fehlerbericht · Behoben in {version}, kommt mit deinem nächsten Update",

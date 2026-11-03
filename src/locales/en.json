@@ -1875,7 +1875,6 @@
   "composer.mention.allOne": "The only bot here",
   "composer.mention.allMany": "All {count} bots",
   "composer.mention.devs": "Developers",
-  "composer.mention.devsDesc": "Report a bug to RelayIt",
   "devs.report.received": "Bug report sent · Got it, we're looking",
   "devs.report.fixedSoon": "Bug report · Fixed, coming in an update",
   "devs.report.fixedComing": "Bug report · Fixed in {version}, coming in your next update",

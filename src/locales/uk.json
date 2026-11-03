@@ -818,7 +818,6 @@
   "composer.mention.person": "Людина",
   "composer.mention.channel": "Груповий чат",
   "composer.mention.devs": "Розробники",
-  "composer.mention.devsDesc": "Повідомити RelayIt про помилку",
   "devs.report.received": "Повідомлення про помилку надіслано · Отримали, розбираємося",
   "devs.report.fixedSoon": "Повідомлення про помилку · Виправлено, прийде з оновленням",
   "devs.report.fixedComing": "Повідомлення про помилку · Виправлено у {version}, прийде з наступним оновленням",
