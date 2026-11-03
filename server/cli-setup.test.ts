@@ -360,7 +360,7 @@ describe("API onboarding", () => {
     expect(readFileSync(join(DATA_DIR, "bots.json"), "utf8")).toBe(sentinel);
     expect(readFileSync(join(DATA_DIR, "messages-existing-thread.json"), "utf8")).toBe(transcript);
     expect(ui.lines.join("\n")).toMatch(/billed separately/);
-    expect(ui.lines.join("\n")).toMatch(/plaintext/);
+    expect(ui.lines.join("\n")).toMatch(/encrypted/);
     expect(ui.lines.join("\n")).not.toContain("new-fixture-secret");
     if (process.platform !== "win32") expect(statSync(configPath).mode & 0o777).toBe(0o600);
     ui.assertConsumed();

@@ -50,7 +50,7 @@ describe("what a server remembers about computers lent to it", () => {
     });
     expect(awayNotice([{ ...record, stoppedAt: at }], new Set()).say).toBe("Their PC ASH-PC no longer shares itself with this server: RelayIt on it is paused, or disconnected from this server. Ask them to choose Resume from RelayIt's icon in the taskbar on that PC, or pair it with this server again.");
     expect(awayNotice([{ ...record, platform: "darwin", stoppedAt: at }], new Set()).say).toContain("choose Resume from RelayIt's icon in the menu bar on that Mac");
-    expect(awayNotice([{ ...record, platform: "darwin" }], new Set()).say).toMatch(/^Their Mac ASH-PC is shared with the Cloud/u);
+    expect(awayNotice([{ ...record, platform: "darwin" }], new Set()).say).toMatch(/^Their Mac ASH-PC is shared with this server/u);
     expect(awayNotice([record], new Set([record.id]))).toEqual({});
     for (const sentence of [awayNotice([record], new Set()).say!, awayNotice([{ ...record, stoppedAt: at }], new Set()).say!]) expect(sentence).not.toMatch(/this Mac|OMB Cloud|RelayIt Cloud|My Cloud/u);
   });

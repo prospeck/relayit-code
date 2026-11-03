@@ -173,7 +173,8 @@ it("switching the workspace endpoint moves discovery and existing chats without 
     await send(privateBot, "first provider reply");
     expect(received).toContainEqual({ provider: "first", path: "/v1/chat/completions", key: "Bearer fixture-private-key" });
     const disk = JSON.parse(readFileSync(join(fixture.info.dataDir, "config.json"), "utf8"));
-    expect(disk.instances.privateApi).toEqual(privateConnection);
+    // the private key is kept by the credential store; the file holds a reference and the rest of the connection as it was
+    expect(disk.instances.privateApi).toEqual({ ...privateConnection, config: { ...privateConnection.config, key: expect.stringMatching(/^omb-credential:/) } });
     expect(received.filter((request) => request.provider === "first").map((request) => request.key))
       .not.toContain("Bearer fixture-second-key");
   } finally {

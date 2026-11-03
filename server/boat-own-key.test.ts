@@ -162,11 +162,11 @@ describe("Boat computers on the person's own key", () => {
     expect(lists()).toHaveLength(2);
     dropLists = 2;
     await expect(boat.findBoat(own, "unlisted-bot")).rejects.toMatchObject({
-      message: "Could not reach boat.dev to list cloud computers — check your connection and refresh", status: 503, transient: true,
+      message: "Could not reach Boat to list cloud computers — check your connection and refresh", status: 503, transient: true,
     });
     expect(lists()).toHaveLength(4);
     dropLists = 2;
-    expect((await boat.listManagedBoats(own, [])).problem).toBe("Could not reach boat.dev to list cloud computers — check your connection and refresh");
+    expect((await boat.listManagedBoats(own, [])).problem).toBe("Could not reach Boat to list cloud computers — check your connection and refresh");
     rejectCredentials = true;
     await expect(boat.findBoat(own, "unlisted-bot")).rejects.toMatchObject({ transient: false });
   });

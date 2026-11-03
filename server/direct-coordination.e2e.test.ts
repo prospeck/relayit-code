@@ -976,6 +976,8 @@ it("gives a teammate each request once, never also as a bare assistant line", ()
 async function onLoopbackEngine(f: any, answer: (res: ServerResponse) => void): Promise<() => Promise<void>> {
   const llm = createServer(async (req, res) => {
     for await (const _ of req) {}
+    // A loopback OpenAI-compatible URL is probed for Ollama (/api/version): this engine is not one, and the probe is no chat call.
+    if (req.url?.startsWith("/api/")) { res.statusCode = 404; res.end(); return; }
     if (req.url?.endsWith("/models")) { res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ data: [{ id: "loop-model" }] })); return; }
     answer(res);
   });
