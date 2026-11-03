@@ -17,8 +17,8 @@ const waits = {
 
 const readBody = vi.fn(async (): Promise<unknown> => undefined);
 
-async function call(method: string, path: string, body?: unknown, overrides: Partial<Parameters<ReturnType<typeof createWaitRoutes>>[0]> = {}, cloudHome = false, sleeps = cloudHome) {
-  const route = createWaitRoutes({ waits, home: () => HOME, cloudHome, sleeps });
+async function call(method: string, path: string, body?: unknown, overrides: Partial<Parameters<ReturnType<typeof createWaitRoutes>>[0]> = {}) {
+  const route = createWaitRoutes({ waits, home: () => HOME });
   const json = vi.fn();
   const outcome = await route({
     method, path, res: {} as never, json, botId: "bot-1", threadId: "thread-1", readBody: async () => { readBody(); return body; },
@@ -46,19 +46,10 @@ describe("the waits route", () => {
     expect(payload.text).toContain("you will then do what you wrote in follow_up");
     expect(payload.text).toContain("plain checks, no AI, until 1970-01-01T00:00:00.000Z");
   });
-  it("says on a Cloud home that a sleeping My Cloud wakes to check every 30 minutes, and that the follow-up reports in its own results chat", async () => {
-    const here = (await call("POST", "/api/internal/waits", { ...FILE_WAIT, follow_up: "Deploy it." })).payload.text!;
-    expect(here).toContain("lands in this chat, and you will then do what you wrote in follow_up. Tell the person");
-    expect(here).not.toContain("My Cloud");
-    const cloud = (await call("POST", "/api/internal/waits", { ...FILE_WAIT, follow_up: "Deploy it." }, {}, true)).payload.text!;
-    expect(cloud).toContain("lands in this chat, and you will then do what you wrote in follow_up in a run that reports in its own results chat, not this one.");
-    expect(cloud).toContain(" While My Cloud sleeps it wakes to check every 30 minutes, so the message can come up to 30 minutes late: tell the person that too. Tell the person in one sentence;");
-    expect((await call("POST", "/api/internal/waits", FILE_WAIT, {}, true)).payload.text).toContain("lands in this chat. While My Cloud sleeps it wakes to check every 30 minutes");
-  });
-  it("never says a Team Cloud sleeps: its plan never does", async () => {
-    const team = (await call("POST", "/api/internal/waits", { ...FILE_WAIT, follow_up: "Deploy it." }, {}, true, false)).payload.text!;
-    expect(team).toContain("in a run that reports in its own results chat, not this one.");
-    expect(team).not.toContain("sleeps");
+  it("says where a follow-up lands, and nothing about a hosted Cloud sleeping or reporting elsewhere", async () => {
+    const text = (await call("POST", "/api/internal/waits", { ...FILE_WAIT, follow_up: "Deploy it." })).payload.text!;
+    expect(text).toContain("lands in this chat, and you will then do what you wrote in follow_up. Tell the person");
+    expect(text).not.toMatch(/My Cloud|sleeps|results chat/);
   });
   it("answers 200 for a condition already true and the manager's status for a refusal, and appends a note", async () => {
     waits.create.mockResolvedValueOnce({ state: "already", text: "It exists already." } as never);
