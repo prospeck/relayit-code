@@ -375,8 +375,8 @@ describe("a cloud computer starts only when the bot uses it", () => {
       const rows = await errorRows(group.threadId);
       expect(rows).toHaveLength(1);
       expect(rows[0].from).toMatchObject({ botId: bot.id, name: "Roomie" });
-      expect(rows[0].tool.name).toBe("error: This month's cloud desktop hours are used up. See your plan on the Plan page.");
-      expect(rows[0].tool.place).toEqual({ state: "cc-no-hours", params: { bot: "Roomie" }, source: "room" });
+      expect(rows[0].tool.name).toBe("error: Your Boat account couldn't start Roomie's cloud desktop: This month's 50 cloud computer hours are used up.");
+      expect(rows[0].tool.place).toMatchObject({ state: "cc-provider", params: { bot: "Roomie" }, source: "room" });
       await apiOk("DELETE", `/api/groups/${group.id}`);
       await apiOk("DELETE", `/api/bots/${bot.id}`);
     } finally {
@@ -403,8 +403,8 @@ describe("a cloud computer starts only when the bot uses it", () => {
       expect(rows).toHaveLength(1);
       expect(finished.status).toBe("failed");
       expect(`error: ${finished.error}`).toBe(rows[0].tool.name);
-      expect(finished.error).toBe("This month's cloud desktop hours are used up. See your plan on the Plan page.");
-      expect(rows[0].tool.place).toEqual({ state: "cc-no-hours", params: { bot: "Runner" }, source: "routine" });
+      expect(finished.error).toBe("Your Boat account couldn't start Runner's cloud desktop: This month's 50 cloud computer hours are used up. Change where this routine runs.");
+      expect(rows[0].tool.place).toMatchObject({ state: "cc-provider", params: { bot: "Runner" }, source: "routine" });
       await until(() => task(bot.id), current => current?.busy === false && current.tasks.every((entry: any) => !entry.busy));
       await apiOk("DELETE", `/api/routines/${routine.id}`);
       await apiOk("DELETE", `/api/bots/${bot.id}`);
