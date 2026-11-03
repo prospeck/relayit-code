@@ -56,6 +56,8 @@ beforeAll(async () => {
   }
   for (const name of ["Full Chief", "Auto Chief"]) expect((await api("PATCH", `/api/bots/${(await bot(name)).id}`, { chiefOfStaff: true })).status).toBe(200);
   for (const name of ["Auto Chief", "Auto Mate"]) expect((await api("PATCH", `/api/bots/${(await bot(name)).id}`, { approvalMode: "auto" })).status).toBe(200);
+  // New bots start on Ask, so the Full ones are set to Full access.
+  for (const name of ["Full Chief", "Full Mate"]) expect((await api("PATCH", `/api/bots/${(await bot(name)).id}`, { approvalMode: "full" })).status).toBe(200);
   await waitForExit(fixture.child, { signal: "SIGTERM" });
   const log = openSync(fixture.info.logPath, "a", 0o600);
   child = spawn(process.execPath, ["--experimental-strip-types", fileURLToPath(new URL("./index.ts", import.meta.url))], {
@@ -77,7 +79,10 @@ afterAll(async () => {
   await fixture?.close();
 });
 
-it("creates new bots at Full access by default, and keeps the narrower level a person picked", async () => {
+it("creates new bots on Ask by default, and keeps the level a person picked", async () => {
+  const fresh = await api("POST", "/api/bots", { name: "Fresh bot" });
+  expect(fresh.status).toBe(201);
+  expect((await bot("Fresh bot")).approvalMode).toBe("ask");
   expect((await bot("Full Chief")).approvalMode).toBe("full");
   expect((await bot("Full Mate")).approvalMode).toBe("full");
   expect((await bot("Auto Chief")).approvalMode).toBe("auto");
@@ -135,8 +140,8 @@ describe.each([["Full", "full"], ["Auto", "auto"]] as const)("a bot at %s", (pre
       instructions: "Check every result before it ships." }, token);
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     expect(created.body).toMatchObject({ state: "applied", applied: true, name: `${prefix} Checker` });
-    // A bot the Chief creates starts at the default level, Full access, whatever the Chief's own level.
-    expect((await bot(`${prefix} Checker`)).approvalMode).toBe("full");
+    // A bot the Chief creates starts at the default level, Ask, whatever the Chief's own level.
+    expect((await bot(`${prefix} Checker`)).approvalMode).toBe("ask");
     const card = await notice(chief.threadId, created.body.requestId);
     expect(card.teamSetupRequest.undo.created).toEqual([created.body.id]);
     await decided(created.body.requestId, level);
