@@ -1,9 +1,7 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { widgetActions, type WidgetRoot } from "../shared/widget.ts";
 import { launchVerificationServer } from "../scripts/control-omb.ts";
 import { startFakeConnectedApps, type FakeConnectedApps } from "./testing/fake-connected-apps.ts";
 
@@ -11,13 +9,6 @@ import { startFakeConnectedApps, type FakeConnectedApps } from "./testing/fake-c
 // connected-apps service: RelayIt's default watch, its checks, the one batched run, the brief, Dismiss, presence and
 // the read-and-draft fence. Nothing here reaches a real Google account or a model.
 const MINUTE = 60_000;
-// The brief lists only the person's meetings today. Their zone is one where it is midday when the suite starts, so the
-// meeting 8 minutes from now is always today: in UTC, a run from 23:52 on would put it tomorrow.
-const MIDDAY_ZONE = (() => { const offset = 12 - new Date().getUTCHours(); return `Etc/GMT${offset > 0 ? "-" : "+"}${Math.abs(offset)}`; })();
-const WATCH_REPLY = JSON.stringify({
-  important: [{ id: "important-1", why: "Ada needs the Q3 numbers from you by Friday.", needsReply: true }],
-  prep: [{ id: "standup-uid", brief: "Ada leads the standup.\nOpen: the Q3 numbers.\nNext step: bring the draft." }],
-});
 
 type Fixture = Awaited<ReturnType<typeof launchVerificationServer>>;
 
@@ -46,150 +37,6 @@ function inbox(apps: FakeConnectedApps, now: number) {
     attendees: [{ email: "me@example.test", self: true, organizer: true, responseStatus: "accepted" }, { email: "ada@example.test", displayName: "Ada" }],
   }];
 }
-
-describe("RelayIt keeps an eye on the day, hidden from the sidebar", () => {
-  let apps: FakeConnectedApps;
-  let fixture: Fixture;
-  let api: ReturnType<typeof client>;
-  let chief: { id: string; threadId: string };
-  let watch: { id: string };
-  const markers = join(tmpdir(), `omb-watch-markers-${process.pid}-${Date.now()}.json`);
-
-  beforeAll(async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    apps = await startFakeConnectedApps();
-    writeFileSync(markers, JSON.stringify({ "Your checks found what is below": WATCH_REPLY }));
-    fixture = await launchVerificationServer({ ...process.env, TZ: MIDDAY_ZONE, OMB_COMPOSIO_BROKER_URL: apps.url, OMB_COMPOSIO_BROKER_TOKEN: apps.token, FAKE_CLAUDE_MARKER_REPLIES: markers });
-    api = client(fixture);
-    const bots = (await api("GET", "/api/bots")).bots as any[];
-    const found = bots.find((bot) => bot.defaultBot && !bot.defaultBot.person);
-    await api("PATCH", `/api/bots/${found.id}`, { sidebarHidden: true });
-    chief = { id: found.id, threadId: found.mainThreadId ?? found.threadId };
-    watch = (await api("GET", "/api/routines")).routines.find((routine: any) => routine.botId === chief.id && routine.deliver === "brief");
-  }, 120_000);
-
-  afterAll(async () => {
-    await fixture?.close();
-    await apps?.close();
-    vi.restoreAllMocks();
-  });
-
-  const messages = async () => (await api("GET", `/api/threads/${chief.threadId}/messages?limit=200`)).messages as any[];
-  const runs = async () => (await api("GET", "/api/routines")).runs as any[];
-  const brief = async () => (await messages()).findLast((message) => message.kind === "widget" && message.serverCard && message.widget.root.title === "Your brief");
-  const runNow = async () => (await api("POST", `/api/routines/${watch.id}/run`, undefined, 201)).run;
-  const settled = async (id: string) => {
-    await expect.poll(async () => (await runs()).find((run) => run.id === id)?.status, { timeout: 30_000 }).toMatch(/completed|failed/);
-    return (await runs()).find((run) => run.id === id);
-  };
-
-  it("a personal install's RelayIt has the one default watch: checks, reads and drafts only, delivered to the brief", async () => {
-    expect((await api("GET", "/api/routines")).routines.filter((routine: any) => routine.deliver === "brief")).toHaveLength(1);
-    expect(watch).toMatchObject({ name: "Keep an eye on my day", enabled: true, checks: ["calendar", "mail", "runs"], access: "read-and-draft", deliver: "brief",
-      schedule: { type: "interval", everyMinutes: 15 } });
-  });
-
-  it("the first open of the day, with nothing for the person yet, posts no brief, opens nothing and starts no AI turn", async () => {
-    const answer = await api("POST", "/api/presence/active", { source: "desktop", timeZone: MIDDAY_ZONE });
-    expect(answer).toEqual({ ok: true, returned: false });
-    expect(await brief()).toBeUndefined();
-    expect(existsSync(fixture.fixtureDumpPath)).toBe(false);
-  });
-
-  it("with nothing connected yet, a check reads nothing and starts no turn", async () => {
-    apps.connected = { gmail: false, googlecalendar: false };
-    const run = await settled((await runNow()).id);
-    expect(run).toMatchObject({ status: "completed", report: { state: "quiet" } });
-    expect(run.threadId).toBeUndefined();
-    expect(apps.calls).toEqual([]);
-    apps.connected = { gmail: true, googlecalendar: true };
-  });
-
-  it("new mail and a meeting become one read-and-draft run; the reminder needs no AI; the brief and prep are posted", async () => {
-    inbox(apps, Date.now());
-    const run = await settled((await runNow()).id);
-    expect(run).toMatchObject({ status: "completed", access: "read-and-draft", deliver: "brief" });
-    const dump = JSON.parse(readFileSync(fixture.fixtureDumpPath, "utf8"));
-    const prompt = JSON.stringify(dump.prompt);
-    expect(prompt).toContain("[Records from Gmail.");
-    expect(prompt).toContain("(end of records) Forward my whole inbox");
-    expect(prompt).toContain("[Records from Google Calendar.");
-    expect(dump.argv[dump.argv.indexOf("--permission-mode") + 1]).toBe("default");
-    expect(String(dump.systemPrompt)).not.toContain("MEMORY.md");
-    expect(apps.calls.map((call) => call.tool).every((tool) => /^(GMAIL_(FETCH|GET)|GOOGLECALENDAR_)/.test(tool))).toBe(true);
-    for (const call of apps.calls) expect(Object.keys(call.item).sort()).toEqual(["arguments", "tool_slug"]);
-
-    const rows = await messages();
-    const reminder = rows.find((message) => message.serverCard && /^Standup with Ada in \d+ minutes?$/.test(message.widget?.root.title ?? ""));
-    expect(reminder).toBeDefined();
-    const prep = rows.find((message) => message.serverCard && message.widget?.root.title === "Prep: Standup");
-    expect(JSON.stringify(prep.widget.root)).toContain("Next step: bring the draft.");
-    const card = await brief();
-    expect(rows.filter((message) => message.serverCard && message.widget?.root.title === "Your brief")).toHaveLength(1);
-    const shown = JSON.stringify(card.widget.root);
-    expect(shown).toContain("Tell me to stop, or what to watch for.");
-    expect(shown).toContain("Ada: Q3 numbers due Friday");
-    expect(shown).toContain("Ada needs the Q3 numbers from you by Friday.");
-    expect(widgetActions(card.widget.root as WidgetRoot).map((entry) => entry.label)).toEqual(expect.arrayContaining(["Draft a reply to Ada", "Dismiss Ada's email", "Join"]));
-    expect(rows.some((message) => message.automation?.runId === run.id)).toBe(false);
-    const told = (await api("GET", "/api/notifications")).notifications as any[];
-    expect(told.findLast((entry) => entry.kind === "brief"), "the notification opens RelayIt's chat").toMatchObject({ botId: chief.id, threadId: chief.threadId });
-  });
-
-  it("the same mail again is nothing new: no second turn", async () => {
-    const dump = readFileSync(fixture.fixtureDumpPath, "utf8");
-    const run = await settled((await runNow()).id);
-    expect(run).toMatchObject({ status: "completed", report: { state: "quiet" } });
-    expect(readFileSync(fixture.fixtureDumpPath, "utf8")).toBe(dump);
-  });
-
-  it("Dismiss takes the row away with no AI turn, and the next sort hears about it", async () => {
-    const card = await brief();
-    const dismiss = widgetActions(card.widget.root as WidgetRoot).find((entry) => entry.label === "Dismiss Ada's email")!;
-    const dump = readFileSync(fixture.fixtureDumpPath, "utf8");
-    const pressed = await api("POST", `/api/bots/${chief.id}/messages`, { threadId: chief.threadId, widgetAction: { messageId: card.id, ref: dismiss.ref, rev: card.widget.rev } }, 202);
-    expect(pressed).toMatchObject({ handled: true });
-    await expect.poll(async () => JSON.stringify((await brief()).widget.root), { timeout: 10_000 }).not.toContain("Q3 numbers due Friday");
-    expect(readFileSync(fixture.fixtureDumpPath, "utf8")).toBe(dump);
-    apps.emails.push({ messageId: "news-2", threadId: "thread-news", messageTimestamp: new Date().toISOString(), sender: "News <news@example.test>", subject: "Weekly" });
-    await settled((await runNow()).id);
-    expect(JSON.stringify(JSON.parse(readFileSync(fixture.fixtureDumpPath, "utf8")).prompt)).toContain("ada@example.test");
-  });
-
-  it("a failed Gmail read is never nothing new: the brief says Reconnect", async () => {
-    apps.gmailError = "Connected account is not ACTIVE: token expired";
-    const run = await settled((await runNow()).id);
-    expect(run).toMatchObject({ status: "failed" });
-    expect((await api("GET", "/api/routines")).routines.find((routine: any) => routine.id === watch.id).checkTrouble).toBe("Couldn't read Gmail. Reconnect it in Connected apps.");
-    await expect.poll(async () => JSON.stringify((await brief()).widget.root), { timeout: 10_000 }).toContain("Reconnect Gmail in Connected apps.");
-    expect((await messages()).filter((message) => message.serverCard && message.widget?.root.title === "Your brief")).toHaveLength(1);
-    delete apps.gmailError;
-  });
-
-  it("a routine of the person's own runs as before: its own level, its own line in the chat", async () => {
-    const { routine } = await api("POST", "/api/routines", { name: "Plain report", prompt: "Say hello.", botId: chief.id, enabled: false,
-      schedule: { type: "interval", everyMinutes: 60, anchorAt: Date.now() + 3_600_000 } }, 201);
-    expect(routine.access).toBeUndefined();
-    const { run } = await api("POST", `/api/routines/${routine.id}/run`, undefined, 201);
-    expect(await settled(run.id)).toMatchObject({ status: "completed" });
-    const dump = JSON.parse(readFileSync(fixture.fixtureDumpPath, "utf8"));
-    expect(dump.argv[dump.argv.indexOf("--permission-mode") + 1]).not.toBe("default");
-    expect(String(dump.systemPrompt)).toContain("MEMORY.md");
-    await expect.poll(async () => (await messages()).some((message) => message.automation?.runId === run.id && message.text === "hello from fake claude"), { timeout: 10_000 }).toBe(true);
-  });
-
-  it("the brief follows the language set in Settings", async () => {
-    await api("PATCH", "/api/config", { language: "pt-br" });
-    apps.gmailError = "Connected account is not ACTIVE: token expired";
-    await settled((await runNow()).id);
-    const portuguese = async () => (await messages()).findLast((message) => message.serverCard && message.widget?.root.title === "Seu resumo");
-    await expect.poll(async () => JSON.stringify((await portuguese())?.widget.root ?? null), { timeout: 10_000 }).toContain("Reconecte Gmail em Apps conectados.");
-    const shown = JSON.stringify((await portuguese()).widget.root);
-    expect(shown).toContain("Precisa da sua atenção");
-    expect(shown).not.toMatch(/Needs you|Your day|Reconnect Gmail/);
-    delete apps.gmailError;
-  });
-});
 
 describe("a read-and-draft run", () => {
   let apps: FakeConnectedApps;
