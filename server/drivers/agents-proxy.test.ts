@@ -641,7 +641,6 @@ describe("agents-proxy MCP surface", () => {
       "post_to_room",
       "create_bot",
       "list_team_setup",
-      "list_team_library",
       "propose_team_setup",
       "propose_bot_deletion",
       "manage_room",
@@ -772,7 +771,7 @@ describe("agents-proxy MCP surface", () => {
     expect(create.inputSchema.required).toEqual(["action"]);
     expect(create.inputSchema.properties.action.enum).toEqual(["create", "update", "pause", "resume", "run_now"]);
     expect(Object.keys(create.inputSchema.properties)).not.toContain("changes");
-    expect(create.inputSchema.properties.when.enum).toEqual(["schedule", "app_event", "webhook", "limit_reset"]);
+    expect(create.inputSchema.properties.when.enum).toEqual(["schedule", "webhook", "limit_reset"]);
     expect(create.inputSchema.properties.repeat.enum).toEqual(["once", "every_reset"]);
     const schedule = create.inputSchema.properties.schedule;
     expect(JSON.stringify(create.inputSchema)).not.toMatch(/"oneOf"|"anyOf"|"allOf"|"const"/);
@@ -2096,7 +2095,7 @@ describe("standing external runtime", () => {
   it("sees the same one tool surface as every turn: the switches it sets change nothing", async () => {
     const list = await externalRpc("tools/list");
     // the main child is a Chief's turn that may pick its computer; this one is neither, so only those differ
-    const chiefOnly = ["create_bot", "list_team_setup", "list_team_library", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread"];
+    const chiefOnly = ["create_bot", "list_team_setup", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread"];
     const everyTurn = (await rpc("tools/list")).result.tools.filter((tool: any) => !chiefOnly.includes(tool.name) && tool.name !== "select_computer");
     const names = list.result.tools.map((tool: any) => tool.name);
     expect(names).toEqual(everyTurn.map((tool: any) => tool.name));

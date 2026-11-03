@@ -78,7 +78,7 @@ means what the table lists for it:
 
 | Tool | Names of what it does |
 | --- | --- |
-| `trigger_info` | `list_triggers`, `list_trigger_events` (`action: "events"`) |
+| `trigger_info` | `list_triggers` |
 | `trigger` | `create_trigger` (`action: "create"`), `manage_trigger` (every other action) |
 | `delete_trigger` | `manage_trigger` (its delete) |
 | `manage_room` | `create_room` (`action: "create"`), `manage_room` (every other action) |

@@ -18,7 +18,7 @@ export interface AgentsActionTool {
 }
 
 export const AGENTS_ACTION_TOOLS: Readonly<Record<string, AgentsActionTool>> = {
-  trigger_info: { members: ["list_triggers", "list_trigger_events"], member: (args) => args.action === "events" ? "list_trigger_events" : "list_triggers" },
+  trigger_info: { members: ["list_triggers"], member: () => "list_triggers" },
   trigger: { members: ["create_trigger", "manage_trigger"], member: (args) => args.action === "create" ? "create_trigger" : "manage_trigger" },
   delete_trigger: { members: ["manage_trigger"], member: () => "manage_trigger" },
   manage_room: { members: ["manage_room", "create_room"], member: (args) => args.action === "create" ? "create_room" : "manage_room" },
@@ -44,7 +44,6 @@ const required = (args: Args, key: string): Args => ({ ...args, [key]: args[key]
 
 export const AGENTS_TOOL_ALIASES: Readonly<Record<string, AgentsAlias>> = {
   list_triggers: { tools: ["trigger_info"], resolve: (args) => as("trigger_info", { ...args, action: "list" }) },
-  list_trigger_events: { tools: ["trigger_info"], resolve: (args) => as("trigger_info", { ...args, action: "events" }) },
   create_trigger: { tools: ["trigger"], resolve: (args) => as("trigger", { ...args, action: "create" }) },
   manage_trigger: {
     tools: ["trigger", "delete_trigger"],

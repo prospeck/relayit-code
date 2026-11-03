@@ -113,21 +113,6 @@ const TRIGGER_FIELDS_SCHEMA = {
     items: { type: "string", maxLength: 200 },
     description: "Only for when=webhook: optional event names to accept (from the caller's event-type header, e.g. push). Omit to accept every call.",
   },
-  filter: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      from: { type: "string", maxLength: 200 },
-      subject_contains: { type: "string", maxLength: 200 },
-      label: { type: "string", maxLength: 200 },
-      contains: { type: "string", maxLength: 200 },
-    },
-    description: "app_event only: plain words, all must match. Gmail filters at the source.",
-  },
-  event_config: {
-    type: "object",
-    description: "app_event only: settings from trigger_info action=events config_fields.",
-  },
   run_on: {
     type: "string",
     // "box" is Boat's historical run_on destination id (agents wire contract).
