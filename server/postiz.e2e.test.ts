@@ -113,7 +113,8 @@ it("signs in with Postiz Cloud, gives the bot the postiz tools behind a hidden t
   expect(messages).toContain("post_1");
   expect(messages).not.toContain(token);
   expect(`${mounted.prompt ?? ""}${mounted.systemPrompt ?? ""}`).not.toContain(token);
-  expect(filesHolding(token)).toEqual(["mcp-oauth.json"]);
+  // the token is kept encrypted by the credential store: no file holds it in clear
+  expect(filesHolding(token)).toEqual([]);
 
   // Postiz revokes the app: the next check says to sign in again.
   cloud.revoke(token);
@@ -162,8 +163,8 @@ it("connects a person's own Postiz with an API key, refuses a wrong key or addre
   expect(messages).toContain("post_1");
   expect(messages).not.toContain(FAKE_POSTIZ_KEY);
   expect(`${mounted.prompt ?? ""}${mounted.systemPrompt ?? ""}`).not.toContain(FAKE_POSTIZ_KEY);
-  // Off the desktop the key is the server's own config; nothing else keeps it.
-  expect(filesHolding(FAKE_POSTIZ_KEY)).toEqual(["config.json"]);
+  // The key is the server's own config, kept encrypted by the credential store: no file holds it in clear.
+  expect(filesHolding(FAKE_POSTIZ_KEY)).toEqual([]);
 
   own.revoke(FAKE_POSTIZ_KEY);
   expect((await api("POST", "/api/postiz/check")).body).toMatchObject({ state: "key-refused", how: "key" });
