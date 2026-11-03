@@ -5,19 +5,20 @@ import { serverLine } from "./server-lines.ts";
 
 describe("serverLine", () => {
   it("writes the line in the language given, with its values filled in", () => {
-    expect(serverLine("de", "server.reports.sent", { report: "r-1" })).toBe("An das RelayIt-Team gesendet (Bericht r-1). Milind und Omkar bekommen ihn per E-Mail.");
-    expect(serverLine(undefined, "server.reports.sent", { report: "r-1" })).toBe("Sent to the RelayIt team (report r-1). Milind and Omkar get it by email.");
-    expect(serverLine("en", "server.reports.when.minutes", { count: 5 })).toBe("in about 5 minutes");
+    expect(serverLine("de", "server.teammates.sent", { bot: "Ada" })).toBe("An Ada gesendet");
+    expect(serverLine(undefined, "server.teammates.sent", { bot: "Ada" })).toBe("Sent to Ada");
+    expect(serverLine("en", "server.mcp.testTools.many", { count: 5 })).toBe("Test: 5 tools");
   });
 
   it("reads a regional tag as its language, and a language it has no words for as English", () => {
-    expect(serverLine("de-AT", "server.reports.when.soon")).toBe("so bald wie möglich");
-    expect(serverLine("pt", "server.reports.when.soon")).toBe(serverLine("pt-br", "server.reports.when.soon"));
-    expect(serverLine("zh-Hant", "server.reports.when.soon")).toBe(serverLine("zh-tw", "server.reports.when.soon"));
-    expect(serverLine("nl", "server.reports.when.soon")).toBe("as soon as it can");
+    expect(serverLine("de-AT", "server.notify.done", { who: "Ada" })).toBe("Ada ist fertig");
+    expect(serverLine("pt", "server.notify.done", { who: "Ada" })).toBe(serverLine("pt-br", "server.notify.done", { who: "Ada" }));
+    expect(serverLine("pt", "server.notify.done", { who: "Ada" })).toBe("Ada terminou");
+    expect(serverLine("zh-Hant", "server.notify.done", { who: "Ada" })).toBe(serverLine("zh-tw", "server.notify.done", { who: "Ada" }));
+    expect(serverLine("nl", "server.notify.done", { who: "Ada" })).toBe("Ada finished");
   });
 
   it("leaves a {name} it was given no value for as it is", () => {
-    expect(serverLine("en", "server.reports.refused", {})).toBe("The RelayIt team's server refused this bug report, so nothing was sent: {detail}.");
+    expect(serverLine("en", "server.runs.didNotFinishWhy", {})).toBe("This run didn't finish: {detail}");
   });
 });
