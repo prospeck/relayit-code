@@ -775,7 +775,17 @@ describe("Antigravity driver over shared ACP", () => {
       { method: "session/set_config_option", params: { sessionId: "fake-acp-session", configId: "thinking_level", value: "high" } },
     ]);
     const mcp = JSON.parse(readFileSync(`${dump}.mcp.json`, "utf8"));
-    expect(mcp).toEqual([{ name: "docs", command: "docs-mcp", args: ["serve"], env: [{ name: "TOKEN", value: "scoped" }] }]);
+    if (approvalMode === "full") {
+      // Full access runs tools without asking, so sends and money are refused in a gate in front of the server (they
+      // always ask); the person's own server still runs behind it, unchanged.
+      expect(mcp).toHaveLength(1);
+      expect(mcp[0]).toMatchObject({ name: "docs", command: process.execPath, args: [expect.stringMatching(/mcp-gate\.[cm]?[jt]s$/)] });
+      const gateEnv = Object.fromEntries((mcp[0].env as { name: string; value: string }[]).map(({ name, value }) => [name, value]));
+      expect(gateEnv).toMatchObject({ OMB_GATE_NAME: "docs", OMB_GATE_REFUSE_OUTBOUND: "1" });
+      expect(JSON.parse(gateEnv.OMB_GATE_UPSTREAM)).toEqual({ command: "docs-mcp", args: ["serve"], env: { TOKEN: "scoped" } });
+    } else {
+      expect(mcp).toEqual([{ name: "docs", command: "docs-mcp", args: ["serve"], env: [{ name: "TOKEN", value: "scoped" }] }]);
+    }
     // Checked on every OS, so the macOS and Linux runs prove the dump carries TEMP.
     const expectedTemp = process.platform === "win32" ? antigravityTempDir(DATA_DIR, instanceId) : fake.directory;
     expect([dumpState.env.TEMP, dumpState.env.TMP]).toEqual([expectedTemp, expectedTemp]);
