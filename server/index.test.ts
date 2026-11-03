@@ -8540,8 +8540,9 @@ describe("harness HTTP API", () => {
       expect(JSON.stringify(filedBody)).not.toContain(secret);
       const disk = JSON.parse(readFileSync(configFile, "utf8"));
       expect(disk.mcpServers.botnotes).toEqual({
-        command: "npx", args: ["-y", "notes-mcp"], env: { NOTES_TOKEN: secret }, enabled: false,
+        command: "npx", args: ["-y", "notes-mcp"], env: { NOTES_TOKEN: expect.stringMatching(/^omb-credential:/) }, enabled: false,
       });
+      expect(JSON.stringify(disk)).not.toContain(secret);
 
       const switched = await fileServer({ name: "botother", command: "npx", enabled: true });
       expect(switched.status).toBe(201);
@@ -8568,9 +8569,10 @@ describe("harness HTTP API", () => {
       expect(remoteText).not.toContain(oauthSecret);
       const savedRemote = JSON.parse(readFileSync(configFile, "utf8")).mcpServers.botdocs;
       expect(savedRemote).toEqual({
-        type: "sse", url: "https://docs.example/mcp", headers: { Authorization: headerSecret },
-        oauth: { clientId: "corp-app", clientSecret: oauthSecret }, enabled: false,
+        type: "sse", url: "https://docs.example/mcp", headers: { Authorization: expect.stringMatching(/^omb-credential:/) },
+        oauth: { clientId: "corp-app", clientSecret: expect.stringMatching(/^omb-credential:/) }, enabled: false,
       });
+      expect(readFileSync(configFile, "utf8")).not.toMatch(new RegExp(`${headerSecret}|${oauthSecret}`));
 
       const listed = await api("GET", "/api/mcp/servers");
       expect(listed.body.servers).toEqual(expect.arrayContaining([
@@ -8613,7 +8615,8 @@ describe("harness HTTP API", () => {
       expect(updated.body.servers[0]).toMatchObject({ type: "sse", headerKeys: ["Authorization", "X-Org"], enabled: true, apps: true });
       expect(JSON.stringify(updated.body)).not.toContain(secret);
       const disk = JSON.parse(readFileSync(join(home, ".relayit", "config.json"), "utf8"));
-      expect(disk.mcpServers.docs).toEqual({ type: "sse", url: fake.url, headers: { Authorization: secret, "X-Org": "acme" }, enabled: true });
+      expect(disk.mcpServers.docs).toEqual({ type: "sse", url: fake.url, headers: { Authorization: expect.stringMatching(/^omb-credential:/), "X-Org": expect.stringMatching(/^omb-credential:/) }, enabled: true });
+      expect(JSON.stringify(disk)).not.toContain(secret);
 
       const bad = await api("POST", "/api/mcp/servers", { name: "nowhere", url: "docs.example/mcp" });
       expect(bad.status).toBe(400);
