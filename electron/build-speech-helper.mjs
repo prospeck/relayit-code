@@ -16,7 +16,9 @@ export function buildSpeechHelper() {
   mkdirSync(path.join(contents, "MacOS"), { recursive: true });
   copyFileSync(path.join(resourcesDir, "speech-helper-Info.plist"), path.join(contents, "Info.plist"));
   // Universal, since the helper rides in both arm64 and x64 apps and bare `swiftc` builds host-arch only. macos12 = LSMinimumSystemVersion.
-  const slices = ["arm64", "x86_64"].map((arch) => {
+  // A one-CPU local build can narrow this: newer command line tools can no longer link x86_64.
+  const wanted = process.env.RELAYIT_SPEECH_ARCHES?.split(",").filter(Boolean) ?? ["arm64", "x86_64"];
+  const slices = wanted.map((arch) => {
     const slice = `${speechHelperBinary}-${arch}`;
     execFileSync(
       "swiftc",
@@ -31,8 +33,8 @@ export function buildSpeechHelper() {
   });
   for (const slice of slices) rmSync(slice, { force: true });
   const archs = execFileSync("lipo", ["-archs", speechHelperBinary], { timeout: 60_000 }).toString();
-  if (!archs.includes("arm64") || !archs.includes("x86_64")) {
-    throw new Error(`speech helper is not universal: ${archs.trim()}`);
+  if (!wanted.every((arch) => archs.includes(arch))) {
+    throw new Error(`speech helper is missing a CPU: ${archs.trim()}`);
   }
   // Ad-hoc signed for dev with the release's audio entitlement; electron-builder replaces it when signing.
   execFileSync(

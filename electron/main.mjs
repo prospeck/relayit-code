@@ -44,7 +44,7 @@ import {
   installDesktopCrashListeners,
   readSafeLogTail,
 } from "./diagnostics.mjs";
-import { desktopMasterKey } from "./credential-store.mjs";
+import { CredentialStorageError, desktopMasterKey } from "./credential-store.mjs";
 import { migrateWorkspaceCredentials, workspaceCredentialEnv } from "./workspace-credentials.mjs";
 
 import { activateExistingWindow } from "./single-instance.mjs";
@@ -2334,7 +2334,20 @@ app.whenReady().then(async () => {
       slog(`desktop companion relay failed: ${error?.message ?? error}`);
     }
   } else if (app.isPackaged) {
-    const booted = await startServerPackaged();
+    let booted;
+    try {
+      booted = await startServerPackaged();
+    } catch (error) {
+      if (!(error instanceof CredentialStorageError)) throw error;
+      // Never fall back to a weaker key. Say what to do rather than waiting on the splash forever.
+      slog("credential storage could not be opened at startup");
+      dialog.showErrorBox(
+        "RelayIt could not open its secure storage",
+        "RelayIt keeps your keys and logins encrypted with this computer's secure storage (the Keychain on a Mac), and could not open it. Start RelayIt again, and choose Allow if your computer asks.",
+      );
+      app.quit();
+      return;
+    }
     if (!booted && !desktopShutdownStarted && bootDataDir !== desktopDataDir()) {
       slog(`boot environment ${bootDataDir} did not start; falling back to the default data dir`);
       persistEnvironments({ ...environmentsState, activeId: LOCAL_ID });
