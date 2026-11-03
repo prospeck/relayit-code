@@ -6885,7 +6885,7 @@ function turnAnswers(threadId: string, opts?: {
 }
 
 // Provider sessions only know their own turns' messages, so a harness-appended result marks the task for one replay; the unique suffix keeps a newer marker through a racing replay.
-const EXTERNAL_CONTEXT_MARKER_PREFIX = "__openmaus_external_context__:";
+const EXTERNAL_CONTEXT_MARKER_PREFIX = "__relayit_external_context__:";
 
 function isExternalContextMarker(value: string | undefined): boolean {
   return Boolean(value?.startsWith(EXTERNAL_CONTEXT_MARKER_PREFIX));

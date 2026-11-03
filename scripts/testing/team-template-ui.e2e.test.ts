@@ -47,7 +47,7 @@ describe("additive template imports in the real renderer", () => {
     // Viewing a chat marks it read at any moment; an import must leave everything else as it was.
     const withoutReadState = (value: unknown) => JSON.parse(JSON.stringify(value, (key, field) => key === "unread" || key === "lastReadMessageId" ? undefined : field));
     const transcript = await control("messages", "--bot", info!.botId, "--limit", "10");
-    const manifest = { format: "openmaus.team", version: 2, team: { name: "Sales crew", members: [
+    const manifest = { format: "relayit.team", version: 2, team: { name: "Sales crew", members: [
       { key: "researcher", name: "Lead finder", appearance: { color: "cyan" } },
       { key: "writer", name: "Outreach writer", appearance: { color: "purple" } },
     ] } };
@@ -59,7 +59,7 @@ describe("additive template imports in the real renderer", () => {
       window.fetch = (input, init) => {
         const path = String(input);
         const reply = value => Promise.resolve(new Response(JSON.stringify(value), { headers: { 'content-type': 'application/json' } }));
-        if (path === '/api/team-library/catalog') return reply({ format: 'openmaus.catalog', version: 1, repositoryUrl: '', teams: [{ slug: 'sales', name: 'Sales crew', summary: 'Fixture template', category: 'Sales', members: 2, skills: [], requires: { apps: [] } }] });
+        if (path === '/api/team-library/catalog') return reply({ format: 'relayit.catalog', version: 1, repositoryUrl: '', teams: [{ slug: 'sales', name: 'Sales crew', summary: 'Fixture template', category: 'Sales', members: 2, skills: [], requires: { apps: [] } }] });
         if (path === '/api/team-library/teams/sales') return reply(window.templateFixture);
         return originalFetch(input, init);
       };

@@ -302,8 +302,8 @@ describe("aggregate attachment storage", () => {
 
   it("cleans only stale upload partials, never committed or active-looking files", () => {
     saveImage(Buffer.from("kept"), "image/png", UPLOAD_A);
-    const stale = `${ATTACHMENTS_DIR}/.openmaus-upload-${UPLOAD_A}-${UPLOAD_B}.partial`;
-    const fresh = `${ATTACHMENTS_DIR}/.openmaus-upload-${UPLOAD_B}-${UPLOAD_A}.partial`;
+    const stale = `${ATTACHMENTS_DIR}/.relayit-upload-${UPLOAD_A}-${UPLOAD_B}.partial`;
+    const fresh = `${ATTACHMENTS_DIR}/.relayit-upload-${UPLOAD_B}-${UPLOAD_A}.partial`;
     const unrelated = `${ATTACHMENTS_DIR}/notes.partial`;
     writeFileSync(stale, "stale");
     writeFileSync(fresh, "fresh");
@@ -323,7 +323,7 @@ describe("aggregate attachment storage", () => {
     const existing = saveImage(Buffer.from("x"), "image/png");
     truncateSync(existing.path, ATTACHMENTS_MAX_BYTES - 2);
     __resetAttachmentAccountingForTests();
-    const orphan = `${ATTACHMENTS_DIR}/.openmaus-upload-${UPLOAD_A}-${UPLOAD_B}.partial`;
+    const orphan = `${ATTACHMENTS_DIR}/.relayit-upload-${UPLOAD_A}-${UPLOAD_B}.partial`;
     writeFileSync(orphan, "xx");
 
     expect(() => saveImage(Buffer.from("y"), "image/png")).toThrow(/storage is full/);
@@ -338,7 +338,7 @@ describe("aggregate attachment storage", () => {
     const existing = saveImage(Buffer.from("x"), "image/png");
     truncateSync(existing.path, ATTACHMENTS_MAX_BYTES - 3);
     __resetAttachmentAccountingForTests();
-    const orphan = `${ATTACHMENTS_DIR}/.openmaus-upload-${UPLOAD_A}-${UPLOAD_B}.partial`;
+    const orphan = `${ATTACHMENTS_DIR}/.relayit-upload-${UPLOAD_A}-${UPLOAD_B}.partial`;
     writeFileSync(orphan, "old");
 
     const saved = await saveFile((async function* () {

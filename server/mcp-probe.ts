@@ -149,7 +149,7 @@ async function probeRemoteMcpServer(
 
 const INITIALIZE = { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "RelayIt", version: "probe" } };
 
-/** Always reaped, never inherits OpenMaus credentials. */
+/** Always reaped, never inherits RelayIt credentials. */
 function probeStdioMcpServer(
   server: StoredStdioMcpServer,
   timeoutMs: number,

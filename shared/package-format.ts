@@ -1,4 +1,4 @@
-// The RelayIt package file ("openmaus.package"), v1 or v2; every reader
+// The RelayIt package file ("relayit.package"), v1 or v2; every reader
 // returns v2. The single validation gate for the server, the renderer and the
 // Admin upload, so it imports only zod, yaml, croner and pure shared modules
 // (no Buffer, no node:*). The schema has no field for chat history, secrets,
@@ -13,7 +13,7 @@ import { normalizeCronSchedule } from "./routine-schedule.ts";
 import { MAUS_COLOR_NAMES } from "./wire.ts";
 import { isSkillName, parseSkillMd, scanSkillText, SKILL_FILE_MAX_BYTES } from "./skill-md.ts";
 
-export const PACKAGE_FORMAT = "openmaus.package";
+export const PACKAGE_FORMAT = "relayit.package";
 /** The newest version this module reads and writes. */
 export const PACKAGE_VERSION = 2;
 /** Canonical UTF-8 bytes of the whole document. */
@@ -199,7 +199,7 @@ const exampleSchema = z.object({
 });
 
 const packageDocumentV1Schema = z.object({
-  format: z.literal(PACKAGE_FORMAT, { error: "This is not an OpenMaus package" }),
+  format: z.literal(PACKAGE_FORMAT, { error: "This is not an RelayIt package" }),
   version: z.literal(PACKAGE_V1_VERSION, { error: "Package version is not supported" }),
   package: z.object({
     id: requiredText(80).regex(/^[a-z0-9][a-z0-9-]*$/, { message: "must be a lowercase slug" }),
@@ -426,7 +426,7 @@ const connectionSchema = z.object({
 });
 
 export const packageDocumentSchema = z.object({
-  format: z.literal(PACKAGE_FORMAT, { error: "This is not an OpenMaus package" }),
+  format: z.literal(PACKAGE_FORMAT, { error: "This is not an RelayIt package" }),
   version: z.literal(PACKAGE_VERSION, { error: "Package version is not supported" }),
   package: z.object({
     /** The package slug: its identity across releases. */
@@ -760,7 +760,7 @@ export function parsePackageDocument(value: unknown, options: { trust?: PackageT
     document = upgradeV1(parsePackageV1(value));
   } else {
     if (!value || typeof value !== "object" || Array.isArray(value) || (value as { format?: unknown }).format !== PACKAGE_FORMAT) {
-      throw new PackageFormatError("not_a_package", "This is not an OpenMaus package");
+      throw new PackageFormatError("not_a_package", "This is not an RelayIt package");
     }
     const version = (value as { version?: unknown }).version;
     if (typeof version === "number" && Number.isInteger(version) && version > PACKAGE_VERSION) {

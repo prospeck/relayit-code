@@ -122,12 +122,12 @@ export function managedCodexArgs(config: NonNullable<CodexConfig["managed"]>): s
   // Credential stays in the instance environment, never argv or config.toml.
   // https://learn.chatgpt.com/docs/config-file/config-reference
   return [
-    "-c", 'model_provider="openmaus_company"',
-    "-c", 'model_providers.openmaus_company.name="Company"',
-    "-c", `model_providers.openmaus_company.base_url=${JSON.stringify(config.url)}`,
-    "-c", 'model_providers.openmaus_company.env_key="RELAYIT_COMPANY_API_KEY"',
-    "-c", 'model_providers.openmaus_company.wire_api="responses"',
-    "-c", "model_providers.openmaus_company.requires_openai_auth=false",
+    "-c", 'model_provider="relayit_company"',
+    "-c", 'model_providers.relayit_company.name="Company"',
+    "-c", `model_providers.relayit_company.base_url=${JSON.stringify(config.url)}`,
+    "-c", 'model_providers.relayit_company.env_key="RELAYIT_COMPANY_API_KEY"',
+    "-c", 'model_providers.relayit_company.wire_api="responses"',
+    "-c", "model_providers.relayit_company.requires_openai_auth=false",
     "-c", 'cli_auth_credentials_store="ephemeral"',
     "-c", "shell_environment_policy.ignore_default_excludes=false",
   ];
@@ -1522,7 +1522,7 @@ export const CodexDriver: ProviderDriver<CodexConfig> = {
         // only Full may synthesize approvals.
         autoAcceptPermissions = approvalMode === "full";
         const selection = config.managed
-          ? { model: turn.model, modelProvider: "openmaus_company" }
+          ? { model: turn.model, modelProvider: "relayit_company" }
           : config.authMode === "chatgpt-plan"
             ? { model: turn.model, modelProvider: "openai_chatgpt_plan" }
             : decodeCodexSelection(turn.model);

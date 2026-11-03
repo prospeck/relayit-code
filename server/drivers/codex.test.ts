@@ -1869,8 +1869,8 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\\n');});`)
       ["gpt-6.1-sol", "gpt-6.1-sol", "openai_chatgpt_plan"],
     ] },
     { name: "Company", opts: { managed: true }, selections: [
-      ["company-codex-model", "company-codex-model", "openmaus_company"],
-      ["company-codex-model", "company-codex-model", "openmaus_company"],
+      ["company-codex-model", "company-codex-model", "relayit_company"],
+      ["company-codex-model", "company-codex-model", "relayit_company"],
     ] },
   ])("reasserts the selected model and provider after $name app-server restarts", async ({ opts, selections }) => {
     const token = vi.spyOn(ChatGptPlanAuthController.prototype, "accessToken").mockResolvedValue("synthetic-chatgpt-token");
@@ -2190,7 +2190,7 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\\n');});`)
       "initialize", "initialized", "config/read", "thread/resume", "thread/start", "turn/start",
     ]);
     expect(seen.calls.find((call: { method: string }) => call.method === "thread/start").params).toMatchObject({
-      model: "company-codex-model", modelProvider: "openmaus_company", cwd: scratch,
+      model: "company-codex-model", modelProvider: "relayit_company", cwd: scratch,
       developerInstructions: expect.stringContaining("Keep current bot rules."),
       approvalPolicy: "never", sandbox: "danger-full-access", ephemeral: false,
     });
@@ -2198,7 +2198,7 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\\n');});`)
       threadId: "codex-thread-1",
       input: [{ type: "text", text: recoveryText }, { type: "image", url: "data:image/png;base64,aQ==" }],
     });
-    expect(seen.argv).toContain('model_provider="openmaus_company"');
+    expect(seen.argv).toContain('model_provider="relayit_company"');
     expect(JSON.stringify(seen.argv)).not.toContain("synthetic-company-fixture");
     expect(recorder.events.filter((event) => event.type === "session.started")).toMatchObject([{ sessionId: "codex-thread-1", rebuilt: true }]);
   });

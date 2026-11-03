@@ -17,7 +17,7 @@ import { parsePackageDocument } from "./package-format.ts";
 const ID = "d8OshqLZvtcKDcNluPuyo";
 
 const reply = {
-  format: "openmaus.grok/1",
+  format: "relayit.grok/1",
   source: "Grok Bot",
   name: "DOGE (Department of Grok Efficiency)",
   description: "Audits your other bots and routines and flags what to cut.",
@@ -71,7 +71,7 @@ describe("parseGrokExport", () => {
   it("reads a reply wrapped in a code fence and surrounding chat", () => {
     const text = `Here is my export:\n\n\`\`\`json\n${JSON.stringify(reply, null, 2)}\n\`\`\`\n\nLet me know!`;
     const parsed = parseGrokExport(text);
-    expect(parsed.format).toBe("openmaus.grok/1");
+    expect(parsed.format).toBe("relayit.grok/1");
     expect(parsed.name).toBe(reply.name);
     expect(parsed.instructions).toBe(reply.instructions);
     expect(parsed.skills).toHaveLength(3);
@@ -122,10 +122,10 @@ describe("parseGrokExport", () => {
       expect(() => parseGrokExport(input), String(input)).toThrow(GrokImportError);
     }
     expect(() => parseGrokExport("hello")).toThrow(/Copy the whole code block/);
-    expect(() => parseGrokExport({ format: "openmaus.package", name: "x" })).toThrow("not a Grok Bot export");
-    expect(() => parseGrokExport({ format: "openmaus.grok/1" })).toThrow("no name or instructions");
+    expect(() => parseGrokExport({ format: "relayit.package", name: "x" })).toThrow("not a Grok Bot export");
+    expect(() => parseGrokExport({ format: "relayit.grok/1" })).toThrow("no name or instructions");
     expect(() => parseGrokExport("x".repeat(4 * 1024 * 1024 + 1))).toThrow("larger than 4 MB");
-    expect(isGrokExport({ format: "openmaus.team" })).toBe(false);
+    expect(isGrokExport({ format: "relayit.team" })).toBe(false);
   });
 });
 
@@ -185,7 +185,7 @@ describe("grokExportToPackage", () => {
   it("reads plain times and falls back to the person's zone", () => {
     const routine = (schedule: string, extra: Record<string, string> = {}) => {
       const { document, leftOut } = grokExportToPackage(
-        parseGrokExport({ format: "openmaus.grok/1", name: "T", instructions: "x", routines: [{ name: "r", schedule, prompt: "p", ...extra }] }),
+        parseGrokExport({ format: "relayit.grok/1", name: "T", instructions: "x", routines: [{ name: "r", schedule, prompt: "p", ...extra }] }),
         { timeZone: "Asia/Kolkata" },
       );
       return document.package.routines?.[0]?.schedule ?? leftOut[0]?.reason;
@@ -264,14 +264,14 @@ describe("grokStarterPackage", () => {
 describe("GROK_EXPORT_PROMPT", () => {
   it("asks for one JSON block with everything verbatim and nothing private", () => {
     expect(GROK_EXPORT_PROMPT).toContain("ONE JSON code block");
-    expect(GROK_EXPORT_PROMPT).toContain('"format": "openmaus.grok/1"');
+    expect(GROK_EXPORT_PROMPT).toContain('"format": "relayit.grok/1"');
     expect(GROK_EXPORT_PROMPT).toMatch(/full standing instructions, word for word/);
     expect(GROK_EXPORT_PROMPT).toMatch(/five-field cron and its IANA time zone/);
     expect(GROK_EXPORT_PROMPT).toMatch(/Never include API keys, tokens, passwords, email addresses/);
     expect(GROK_EXPORT_PROMPT).toMatch(/customer data/);
     expect(GROK_EXPORT_PROMPT).toMatch(/Include memories: no$/);
     // The prompt's own example parses as an export once the placeholders are filled.
-    expect(parseGrokExport(GROK_EXPORT_PROMPT).format).toBe("openmaus.grok/1");
+    expect(parseGrokExport(GROK_EXPORT_PROMPT).format).toBe("relayit.grok/1");
   });
 });
 

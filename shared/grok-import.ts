@@ -1,7 +1,7 @@
 // Bringing a shared Grok Bot into RelayIt. A public x.ai/bot/<id> page
 // shows only the name, creator and description, so the full setup comes from
 // the person's own Grok Bot: they paste GROK_EXPORT_PROMPT into it and paste
-// the JSON it writes back here. Both turn into an ordinary openmaus.package v2,
+// the JSON it writes back here. Both turn into an ordinary relayit.package v2,
 // so the usual preview and import rules apply (skills off, routines paused, no
 // model, no keys). Pure text: the renderer and the server both read it.
 import {
@@ -12,7 +12,7 @@ import { BOT_PROFILE_LIMITS } from "./bot-profile.ts";
 import { normalizeCronSchedule } from "./routine-schedule.ts";
 import { parseSkillMd, SKILL_FILE_MAX_BYTES, yamlFrontmatterValue } from "./skill-md.ts";
 
-export const GROK_EXPORT_FORMAT = "openmaus.grok/1";
+export const GROK_EXPORT_FORMAT = "relayit.grok/1";
 /** pi-grokbot-import's export (github.com/Shixuuu/pi-grokbot-import). */
 export const GROK_BUNDLE_FORMAT = "grokbot-bundle/v1";
 const MAX_EXPORT_CHARS = 4 * 1024 * 1024;
@@ -170,7 +170,7 @@ export function isGrokExport(value: unknown): boolean {
   return isRecord(value) && (value.format === GROK_EXPORT_FORMAT || value.format === GROK_BUNDLE_FORMAT);
 }
 
-/** Forgiving reader for openmaus.grok/1 and grokbot-bundle/v1: text (fenced or not) or an object. */
+/** Forgiving reader for relayit.grok/1 and grokbot-bundle/v1: text (fenced or not) or an object. */
 export function parseGrokExport(input: unknown): GrokExport {
   const root = typeof input === "string" ? replyObject(input.replace(/^\uFEFF/, "")) : input;
   if (!isRecord(root)) throw new GrokImportError("That is not a Grok Bot export.");
@@ -355,7 +355,7 @@ function skillEntry(skill: GrokExport["skills"][number], name: string): { name: 
   return "error" in parsed || parsed.description !== description ? null : { name, description, instructions };
 }
 
-/** A Grok Bot export as one bot in an openmaus.package v2 file, plus what could not travel. */
+/** A Grok Bot export as one bot in an relayit.package v2 file, plus what could not travel. */
 export function grokExportToPackage(
   x: GrokExport,
   options: { sourceUrl?: string; timeZone?: string } = {},
@@ -473,7 +473,7 @@ export function grokExportToPackage(
 }
 
 /** The recipe Cursor's GetGrokBotTemplateImportDetails points at, as an export. The field names follow
- * pi-grokbot-import (MIT, github.com/Shixuuu/pi-grokbot-import); a grokbot-bundle/v1 or openmaus.grok/1 is read as is. */
+ * pi-grokbot-import (MIT, github.com/Shixuuu/pi-grokbot-import); a grokbot-bundle/v1 or relayit.grok/1 is read as is. */
 export function grokExportFromRecipe(recipe: unknown, card?: GrokTemplateCard): GrokExport {
   if (!isRecord(recipe)) throw new GrokImportError("Cursor's answer is not a Grok Bot recipe.");
   const fromCard = card ? { creator: card.creator, sourceUrl: card.url, description: card.description } : {};

@@ -1,6 +1,6 @@
 # Sharing a whole department
 
-The sidebar groups bots into departments. **Share department…** saves one department as a single file (`<team>-<version>.openmaus.json`).
+The sidebar groups bots into departments. **Share department…** saves one department as a single file (`<team>-<version>.relayit.json`).
 Someone else adds it in **Templates → Import**, or an organization uploads it
 in Admin → Packages and its desktops add it from **Templates → From
 {Organization}** ([org-library.md](org-library.md)). Open it from the department's menu in the sidebar (right-click
@@ -119,7 +119,7 @@ Claude Code, Codex, Cursor, Claude Desktop and Gemini) and as an optional
    its instructions, skills and routines are visible only inside Grok Bot.
 2. Press **Copy export prompt**, paste it into your own Grok Bot (the one you
    added from the link, or made yourself), and paste its reply into the box.
-   The reply is one JSON block (`"format": "openmaus.grok/1"`).
+   The reply is one JSON block (`"format": "relayit.grok/1"`).
    [pi-grokbot-import](https://github.com/Shixuuu/pi-grokbot-import)'s
    `grokbot-bundle/v1` files work too, pasted or dropped as a `.json` file.
 3. The usual preview opens. **Add** imports it like any shared team.
@@ -165,7 +165,7 @@ Cursor session in `server/cursor-session.ts`.
 
 ## The file format
 
-`openmaus.package` version 2, defined in `shared/package-format.ts`, the one
+`relayit.package` version 2, defined in `shared/package-format.ts`, the one
 module the app, the import preview and Admin all validate with. It still
 reads version 1 files (JSON and the BotMRR Markdown playbook). Older apps
 refuse version 2 files with their existing "not supported" message; Admin can

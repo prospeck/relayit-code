@@ -62,7 +62,7 @@ const REMOVED_ENVIRONMENT_KEYS = new Set([
   "ELECTRON_RUN_AS_NODE",
 ]);
 
-const BROWSER_MARKER = "__OPENMAUS_ANTIGRAVITY_AUTH_URL__";
+const BROWSER_MARKER = "__RELAYIT_ANTIGRAVITY_AUTH_URL__";
 const browserHelperSource =
   `process.stderr.on("error",()=>process.exit(0)).write(` +
   `"${BROWSER_MARKER}"+JSON.stringify(process.argv[1])+"\\n",` +
@@ -594,7 +594,7 @@ export function isValidAntigravityInitializeResult(
 }
 
 export async function validateAntigravityRuntime(runtime: AntigravityRuntime, expectedVersion: string): Promise<void> {
-  const profileDirectory = await mkdtemp(join(tmpdir(), "openmaus-antigravity-verify-"));
+  const profileDirectory = await mkdtemp(join(tmpdir(), "relayit-antigravity-verify-"));
   let client: AntigravityAcpClient | undefined;
   let tempDirectory: string | undefined;
   let failed = false;

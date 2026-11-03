@@ -79,7 +79,7 @@ export async function ensureCaddy(options: {
   }
   const digest = createHash("sha512").update(body).digest("hex");
   if (digest !== asset.sha512) throw new Error("the Caddy download failed its SHA-512 check; nothing was installed");
-  const scratch = mkdtempSync(join(tmpdir(), "openmaus-caddy-"));
+  const scratch = mkdtempSync(join(tmpdir(), "relayit-caddy-"));
   try {
     const archive = join(scratch, asset.name);
     writeFileSync(archive, body, { mode: 0o600 });

@@ -206,7 +206,7 @@ export function createBotPackageExport(input: {
     }];
   });
 
-  const id = portableKey(input.name, "openmaus-package", new Set());
+  const id = portableKey(input.name, "relayit-package", new Set());
   const agents: BotPackageDefinition["agents"] = bots.map((bot) => {
     const appearance: BotPackageDefinition["agents"][number]["appearance"] = { color: bot.color };
     if (bot.mascotExpression) appearance.mascotExpression = bot.mascotExpression;
@@ -251,7 +251,7 @@ export function createBotPackageExport(input: {
     };
   }
   return parseBotPackage({
-    format: "openmaus.package",
+    format: "relayit.package",
     version: 1,
     package: definition,
   });
@@ -696,7 +696,7 @@ export function createTeamPackageExport(input: TeamExportInput): TeamExportResul
   const exportedRoutines = new Set(routines.map((routine) => routine.key));
   return {
     document,
-    filename: `${document.package.id}-${document.package.release}.openmaus.json`,
+    filename: `${document.package.id}-${document.package.release}.relayit.json`,
     redacted: [...new Set([...addressRedactions, ...redacted])],
     skipped,
     published: {
@@ -801,7 +801,7 @@ export function createLibraryPackageExport(input: LibraryExportInput): LibraryEx
   }
   return {
     document,
-    filename: `${document.package.id}-${document.package.release}.openmaus.json`,
+    filename: `${document.package.id}-${document.package.release}.relayit.json`,
     redacted,
     skipped,
     published: { packageId, lastRelease: release },

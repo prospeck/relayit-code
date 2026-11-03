@@ -188,7 +188,7 @@ describe("Codex generateMemoryText (fake CLI)", () => {
     await codex.generateMemoryText!("hello");
     const [call] = calls();
     expect(call!.argv[call!.argv.indexOf("--model") + 1]).toBe("gpt-6-luna");
-    expect(call!.argv).toContain('model_provider="openmaus_company"');
+    expect(call!.argv).toContain('model_provider="relayit_company"');
     expect(call!.env.RELAYIT_COMPANY_API_KEY).toBe("synthetic-company-fixture");
     await codex.dispose();
     const keyless = await create({ RELAYIT_COMPANY_API_KEY: "" }, true);
