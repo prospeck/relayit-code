@@ -71,7 +71,7 @@ export function liveInstructions(bot: LiveBot, { cloudHome = false }: { cloudHom
   const title = oneLine(bot.title ?? "");
   const description = oneLine(bot.description ?? "").slice(0, 400);
   const where = cloudHome ? `runs on ${CLOUD_HOME_PLACE}` : "runs in RelayIt on the user's own computer";
-  const changes = cloudHome ? "My Cloud" : "the computer";
+  const changes = cloudHome ? "the server" : "the computer";
   return [
     `You are ${name}${title ? `, ${title}` : ""}, an AI agent that ${where}.${description ? ` ${description}` : ""}`,
     `To the user you are one assistant, ${name}, and you speak in the first person. Your work — looking things up, using your tools, files and memory, researching, deciding, and answering anything that needs facts this conversation does not hold — happens when you delegate. Delegating is how you think and act; it is not someone else.`,

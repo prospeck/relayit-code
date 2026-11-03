@@ -13,7 +13,7 @@ import type { RoutineManager } from "./routines.ts";
 import type { WaitManager } from "./waits.ts";
 import type { WebhookManager } from "./webhooks.ts";
 
-export const MOVED_REFUSAL = "This bot lives on My Cloud now.";
+export const MOVED_REFUSAL = "This bot lives on the server now.";
 /** Why a frozen copy refuses, naming the server of the person's own its bots moved to (`place`), else My Cloud. */
 export const movedRefusal = (place: string | null): string => (place ? `This bot lives on ${place} now.` : MOVED_REFUSAL);
 /** The one page a frozen copy serves: the desktop app's screen while My Cloud can't be opened (electron/home-window.mjs). */
@@ -22,7 +22,7 @@ export const HOME_SCREEN = "/home";
 export const RAIL_PAGE = "/rail";
 /** A path whose last part has an extension is a file of the page (a script, a picture), never a page. */
 const FILE = /\.[A-Za-z0-9]+$/u;
-export const ENDED_REFUSAL = "My Cloud has ended. It is open only so you can take your things home.";
+export const ENDED_REFUSAL = "the server has ended. It is open only so you can take your things home.";
 
 /** What a frozen server still changes: the freeze itself, the move's reads and lets-go, signing in and out, the backup
  * that takes things home, the Admin's signed routes, Files and the computers lent to it. (The lent screen lease has its

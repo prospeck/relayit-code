@@ -16,7 +16,7 @@ export function createBotMoveRoutes({ moves, enabled }: { moves: BotMoves | null
   return async ({ req, res, path, method, json, readBody }) => {
     const bot = /^\/api\/bot-moves\/([\w-]{1,128})$/u.exec(path)?.[1];
     if (!bot) return PASS;
-    if (!enabled || !moves) { req.resume(); return json(res, 404, { error: "Bots move into a team from My Cloud." }); }
+    if (!enabled || !moves) { req.resume(); return json(res, 404, { error: "Bots move into a team from the server." }); }
     if (method === "DELETE") {
       const released = await moves.release(bot);
       return "refused" in released ? json(res, 409, { error: released.refused }) : json(res, 200, { v: 1, released: true });

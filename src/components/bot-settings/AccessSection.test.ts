@@ -256,9 +256,9 @@ describe("Research (treg) card", () => {
     expect(html).not.toContain("Open API keys");
   });
 
-  it("is on by default with a Cloud plan, and turns off for one bot with one patch", () => {
-    fixture.config = { xResearch: { included: true } } as Partial<ConfigStatus>;
-    expect(render(makeBot())).toContain("Included with your RelayIt Cloud plan");
+  it("turns off for one bot with the person's own treg key and one patch", () => {
+    fixture.config = { treg: { configured: true } } as Partial<ConfigStatus>;
+    expect(render(makeBot())).toContain("Calls are billed to your treg balance.");
     const { card, derived } = capture(makeBot());
     const toggle = card.find((node) => node.props["aria-label"] === "Let this bot use research")!;
     (toggle.props.onClick as () => void)();

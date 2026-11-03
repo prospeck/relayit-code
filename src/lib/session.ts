@@ -91,7 +91,7 @@ export function takeBrowserSignInFromLocation(): string | null {
   return m ? m[1] : null;
 }
 
-export const BROWSER_SIGN_IN_FAILED = "This sign-in link has expired or was already used. On My Cloud, choose “Use in your browser” again.";
+export const BROWSER_SIGN_IN_FAILED = "This sign-in link has expired or was already used. On the server, choose “Use in your browser” again.";
 
 /** Never trusted on its own; the one-time code still goes to the address itself. */
 export function takeInvitedEmailFromLocation(): string | null {

@@ -1,7 +1,19 @@
 const GATE_KEY = "omb-email-gate";
+let completed = false;
+
 export function emailGateDone(): boolean {
-  return Boolean(localStorage.getItem(GATE_KEY));
+  try {
+    return completed || Boolean(globalThis.localStorage?.getItem(GATE_KEY));
+  } catch {
+    return completed;
+  }
 }
+
 export function setEmailGateDone(status: "submitted" | "skipped") {
-  localStorage.setItem(GATE_KEY, status);
+  completed = true;
+  try {
+    globalThis.localStorage?.setItem(GATE_KEY, status);
+  } catch {
+    // Keep this session complete when browser storage is blocked.
+  }
 }

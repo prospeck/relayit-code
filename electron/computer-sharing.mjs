@@ -299,7 +299,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, cu
     const verdict = cloudLendingVerdict(grant.cloud, cloud(env), env);
     if (verdict.allow) return;
     if (verdict.stop) { endCloud(env, verdict.stop); throw new Error("Lending to this Cloud stopped."); }
-    throw new Paused("Waiting for your RelayIt Cloud sign-in.");
+    throw new Paused("Waiting for this server to reconnect.");
   };
   const store = next => {
     fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -363,7 +363,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, cu
     const { auth, info, details, link, chrome: takesChrome, timeouts, long, edits } = await describe(env);
     const own = ownHomeId(env);
     if (own !== null && (auth.own !== true || info.environmentId !== own)) throw Object.assign(new Error("This server is not your bots' home any more"), { problem: "not-cloud" });
-    if ((own === null && auth.cloudHome !== true) || !Array.isArray(auth.scopes) || !auth.scopes.includes("admin")) throw Object.assign(new Error("This server is not My Cloud"), { problem: "not-cloud" });
+    if ((own === null && auth.cloudHome !== true) || !Array.isArray(auth.scopes) || !auth.scopes.includes("admin")) throw Object.assign(new Error("This server is not the server"), { problem: "not-cloud" });
     if (details) supportsDetails.add(env.id); else supportsDetails.delete(env.id);
     if (link) supportsLink.add(env.id); else supportsLink.delete(env.id);
     if (takesChrome) supportsChrome.add(env.id); else supportsChrome.delete(env.id);
@@ -597,7 +597,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, cu
     if (closed) throw new Error("Lending is unavailable while the app is closing.");
     if (grantVersions.get(env.id) !== version) return cloudState(env);
     const current = verifiedCloud(env);
-    if (!current) throw Object.assign(new Error("Open My Cloud first."), { problem: "connect-first" });
+    if (!current) throw Object.assign(new Error("Open the server first."), { problem: "connect-first" });
     const folders = await validateSharedFolders(input?.folders, { homeEdits: true });
     if (!folders.length && input?.screen !== true && input?.internet !== true && input?.chrome !== true && input?.terminal !== true) throw new Error("Choose at least one folder, apps and screen, the internet connection, your Chrome, or the terminal.");
     let info = { sessionId: null, environmentId: null };
@@ -770,7 +770,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, cu
       const env = place ?? myCloud();
       if (paused || !env || !verifiedCloud(env)) throw new Error("Lending to your bots' home waits until it is signed in and not paused.");
       await lendAutomatically(Array.isArray(paths) ? paths.filter(where => typeof where === "string") : [], env);
-      if (records[env.id]?.enabled !== true) throw new Error("Lending to My Cloud did not start.");
+      if (records[env.id]?.enabled !== true) throw new Error("Lending to the server did not start.");
     },
     paused: () => paused,
     /** Every Cloud of the person's own stops using this computer, across restarts too, until resume(). */

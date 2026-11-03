@@ -153,10 +153,10 @@ export async function moveMemoryRoute(deps: MoveMemoryDeps, { req, res, path, me
     return true;
   }
   if (method !== "POST") { json(res, 405, { error: "method not allowed" }); return true; }
-  if (!deps.owner(auth)) { json(res, 403, { error: "Only My Cloud's owner can move memory into it." }); return true; }
+  if (!deps.owner(auth)) { json(res, 403, { error: "Only the server's owner can move memory into it." }); return true; }
   const body = mergeSchema.safeParse(await readBody(req, MEMORY_BODY_MAX));
   if (!body.success) { json(res, 400, { error: "send { v: 1, bot, files, journal } or { v: 1, about, teams }" }); return true; }
-  if (body.data.bot && !deps.bot(body.data.bot)) { json(res, 409, { error: "This bot is not on My Cloud yet." }); return true; }
+  if (body.data.bot && !deps.bot(body.data.bot)) { json(res, 409, { error: "This bot is not on the server yet." }); return true; }
   json(res, 200, { v: 1, ...(await merge(deps, body.data)) });
   return true;
 }

@@ -242,7 +242,7 @@ function botList(names, shown = 2) {
 }
 
 /** Bots, chats and skills live on each side by design; this says which side has which, from where the person is now. */
-function placesLine({ cloudName = "My Cloud", onCloud, localBots }) {
+function placesLine({ cloudName = "the server", onCloud, localBots }) {
   const names = botList(localBots);
   if (onCloud) return names ? `Your bots live on ${cloudName}. This computer has its own: ${names}.` : `Your bots live on ${cloudName}. This computer has none of its own.`;
   return names ? `These bots live on this computer: ${names}. ${cloudName} has its own.` : `This computer has no bots of its own yet. ${cloudName} has its own.`;
@@ -250,7 +250,7 @@ function placesLine({ cloudName = "My Cloud", onCloud, localBots }) {
 
 /** One line under My Cloud: what of this computer's is not on it yet, with Send (Send to My Cloud, cloud-send.mjs), or
  * the way to the side-by-side page when nothing waits. */
-function sendLine({ cloudName = "My Cloud", waiting }) {
+function sendLine({ cloudName = "the server", waiting }) {
   const total = waiting?.total ?? 0, bots = waiting?.bots ?? 0;
   if (!total) return null;
   const what = bots ? `${bots === 1 ? "1 bot" : `${bots} bots`}${total > bots ? ` and ${total - bots} more` : ""}` : total === 1 ? "1 change" : `${total} changes`;

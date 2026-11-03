@@ -133,7 +133,7 @@ export function computerPrompt(kind: ComputerPromptKind | null): string {
   return COMPUTER_PARAGRAPH[kind] + SIGN_IN_PROMPT;
 }
 
-export const CLOUD_HOME_PLACE = "the user's My Cloud, their always-on RelayIt in the cloud, not on their own computer";
+export const CLOUD_HOME_PLACE = "the user's own server, separate from their personal computer";
 
 // The Cloud prompt names the synced folders; index.ts reads the registry through here.
 export { syncedFolders } from "./cloud-sync-store.ts";
@@ -154,7 +154,7 @@ export function cloudHomePrompt(sharedComputerTools: boolean, synced: ReadonlyAr
   const { theirs, device } = theirComputer(lent);
   const unavailable = asks
     ? ` If it isn't online, or doesn't lend what you need (its apps and screen, its files, running commands), call ask_for_computer with what you want to do and why: it shows them one card with a one-tap Turn on, and you carry on once it's on. Don't explain the fix yourself, and never do it on their cloud computer or in the built-in browser instead unless they ask you to.`
-    : ` If none is online, say so in one sentence: use its say field when it has one (it names the computer and when it was last online), otherwise ask them to open RelayIt on that ${device}, signed in to RelayIt Cloud: it shares that ${device} with you by itself.`;
+    : ` If none is online, say so in one sentence: use its say field when it has one (it names the computer and when it was last online), otherwise ask them to open RelayIt on that ${device}, paired with this server: it shares that ${device} with you by itself.`;
   return ` You run on ${CLOUD_HOME_PLACE}.` + (sharedComputerTools
     ? ` If they ask for something on ${theirs}, check list_shared_computers: a computer they share with the Cloud is reachable through shared_computer, within the folders and apps it allows.${unavailable}${device === "computer" ? " Call it their computer: never assume it is a Mac." : ` It is a ${device}: call it that, never a Mac unless it is one.`}`
       + ` While that ${device} is away, each folder it lends that the Cloud keeps a copy of still works from that copy: list_shared_computers lists them under away_computers (copy null means a folder only on the ${device}), every read says how fresh the copy is, and a write to a folder lent with editing is saved here and reaches the ${device} when it's on (tell them so in a few words). A file or folder that isn't in the copy is only on the ${device}: say you'll get it when it's on.`

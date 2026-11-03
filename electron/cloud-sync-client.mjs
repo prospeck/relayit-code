@@ -8,12 +8,12 @@ import { CHUNK_BYTES, MIN_CHUNK_BYTES } from "./cloud-sync-rules.mjs";
 
 // Slowest connection a transfer is given time for, in bytes per millisecond (32 KB/s).
 const SLOWEST = 32;
-const tooSlow = () => new Error("The connection to My Cloud is too slow for this file right now; it will carry on next time.");
+const tooSlow = () => new Error("The connection to the server is too slow for this file right now; it will carry on next time.");
 
 export class SyncAuthError extends Error {}
 export class SyncHttpError extends Error {
   constructor(status, body) {
-    super(body?.error ?? `My Cloud answered ${status}`);
+    super(body?.error ?? `the server answered ${status}`);
     this.status = status;
     this.body = body;
   }
@@ -35,7 +35,7 @@ export function createSyncClient({ origin, fetch: fetchImpl, power = null, chunk
       power?.hold();
       throw new CloudAsleepError();
     }
-    if (response.status === 401 || response.status === 403) throw new SyncAuthError("Sign in to My Cloud again.");
+    if (response.status === 401 || response.status === 403) throw new SyncAuthError("Sign in to the server again.");
     return response;
   };
   const json = async (method, path, options) => {

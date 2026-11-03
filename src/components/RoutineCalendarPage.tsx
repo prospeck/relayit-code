@@ -842,7 +842,7 @@ export function EventEditor({
               <div className="min-w-0 flex-1">
                 {isRoomGoal ? (
                   <div className="rounded-xl border border-accent/35 bg-accent/[0.07] p-3">
-                    <div className="text-[13px] font-medium text-ink">{cloudHome ? "Runs on My Cloud" : "Runs on this computer"}</div>
+                    <div className="text-[13px] font-medium text-ink">{cloudHome ? "Runs on the server" : "Runs on this computer"}</div>
                     <div className="mt-1 text-[11px] leading-relaxed text-ink-secondary">{t("routines.editor.roomGoalTogether")}</div>
                   </div>
                 ) : <div className="grid grid-cols-2 gap-2">

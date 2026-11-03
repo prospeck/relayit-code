@@ -99,19 +99,19 @@ export interface EgressSetup {
 
 interface Blocked { target: string; reason: Refusal }
 
-/** What the bot reads once when a site that turns away data centres loads from My Cloud's own connection because the
+/** What the bot reads once when a site that turns away data centres loads from the server's own connection because the
  * person's computer is away. */
-export const awayNotice = (device: string) => `The person's ${device} is away, so sites that turn away data centres, such as Instagram, YouTube and Google sign-in, load from My Cloud's own connection for now and may refuse. They open through the ${device} again once it is back.`;
+export const awayNotice = (device: string) => `The person's ${device} is away, so sites that turn away data centres, such as Instagram, YouTube and Google sign-in, load from the server's own connection for now and may refuse. They open through the ${device} again once it is back.`;
 
-/** What the bot reads once when those sites load from My Cloud's own connection because no computer shares one. */
-export const UNSHARED_NOTICE = `Sites that turn away data centres, such as Instagram, YouTube and Google sign-in, load from My Cloud's own connection and may refuse it with an error page or "too many requests". If one does and the person needs it, tell them these sites open through their own computer's internet connection while RelayIt is open on it, signed in to RelayIt Cloud.`;
+/** What the bot reads once when those sites load from the server's own connection because no computer shares one. */
+export const UNSHARED_NOTICE = `Sites that turn away data centres, such as Instagram, YouTube and Google sign-in, load from the server's own connection and may refuse it with an error page or "too many requests". If one does and the person needs it, tell them these sites open through their own computer's internet connection while RelayIt is open on it, paired with this server.`;
 
 /** One gate per browser session for the life of the server, so a Chrome keeps the port it launched with. */
 export class BrowserEgress {
   private setup: Required<Omit<EgressSetup, "device">> & Pick<EgressSetup, "device"> | null = null;
   private readonly gates = new Map<string, Promise<EgressGate>>();
   private readonly blocked = new Map<string, Blocked[]>();
-  /** Sessions told those sites load from My Cloud's own connection, until the computer is back. */
+  /** Sessions told those sites load from the server's own connection, until the computer is back. */
   private readonly toldAway = new Map<string, { kind: "away" | "unshared"; text: string }>();
 
   configure(setup: EgressSetup): void {
@@ -185,7 +185,7 @@ export class BrowserEgress {
   }
 
   /** What the gate refused for `session` since the last call, and once that the sites that turn away data centres load
-   * from My Cloud's own connection while the person's computer is away, as one page-health line. */
+   * from the server's own connection while the person's computer is away, as one page-health line. */
   takeNotice(session: string): string | null {
     const list = this.blocked.get(session);
     this.blocked.delete(session);

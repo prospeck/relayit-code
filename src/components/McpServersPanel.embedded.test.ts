@@ -77,15 +77,6 @@ describe("Your MCP servers inside the Apps pop-up", () => {
   });
 
 
-  it("recognizes an existing Whop URL under any name and exposes access and disconnect", () => {
-    fixture.servers = [{ name: "business", type: "http", url: "https://mcp.whop.com/mcp", headerKeys: [], enabled: true, auth: "signed-in" }];
-    const html = render(true);
-    expect(html).toContain('data-whop-server="business"');
-    expect(html).toContain("Disconnect Whop");
-    expect(html).toContain("Bot access");
-    expect(html).not.toContain("data-whop-setup");
-  });
-
   it("does not brand an unrelated endpoint just because its name is whop", () => {
     fixture.servers = [{ name: "whop", type: "http", url: "https://unrelated.example/mcp", headerKeys: [], enabled: false }];
     const html = render(true);

@@ -390,7 +390,6 @@ const PENDING: Readonly<Record<string, ReadonlyArray<readonly [file: string, sni
     ["server/store.ts", "reached its turn limit"],
   ],
   "AI engines and limits": [
-    ["server/cloud-credit-moves.ts", "notice:  …  is connected, so this conversation uses it now instead of"],
     ["server/computer-engine-removal.ts", "The Computer choice in the model list was removed."],
     ["server/computer-engine-removal.ts", "This conversation now uses  … ."],
     ["server/computer-engine-removal.ts", "…  now uses  … ; this conversation keeps its own model."],
@@ -416,7 +415,6 @@ const PENDING: Readonly<Record<string, ReadonlyArray<readonly [file: string, sni
     ["server/drivers/codex-unsupported-calls.ts", "the tools"],
     ["server/drivers/codex-unsupported-calls.ts", "the call back without the tool's app name, so it never reached the too"],
     ["server/index.ts", "notice: This thread's model ( … ) isn't available, so it now uses  … '"],
-    ["server/index.ts", "Company connection changed — choose whether to reconnect or use a pers"],
     ["server/quota-switch.ts", "while  …  is signed out"],
     ["server/quota-switch.ts", "after hitting the usage limit"],
     ["server/quota-switch.ts", "switched to  … . Your request waits on a card above and continues on"],

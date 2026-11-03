@@ -37,7 +37,7 @@ const VAULT_ID = /^[\w-]{1,128}$/u;
 const CHAT_REASONS = new Set(["button", "my-cloud", "menu", "move"]);
 /** Bring newer chats' copy of the whole workspace, for a Cloud too old to take chats by row: never a move, which such a
  * Cloud refuses. */
-const OUTDATED_FOR_MOVE = "My Cloud is updating. Your bots move there by themselves when it's done.";
+const OUTDATED_FOR_MOVE = "the server is updating. Your bots move there by themselves when it's done.";
 
 const record = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const sentence = (value) => (typeof value === "string" && value.trim() ? value.trim().replace(/\s+/g, " ").slice(0, 300) : null);
@@ -57,9 +57,9 @@ export function unanswered(error, depth = 0) {
 
 /** One plain sentence for a failed write, from what My Cloud answered. */
 function refusal(answer, fallback) {
-  if (answer.status === 401 || answer.status === 403) return "My Cloud did not let this app make the change. Open My Cloud in this app once, then try again.";
+  if (answer.status === 401 || answer.status === 403) return "the server did not let this app make the change. Open the server in this app once, then try again.";
   if (answer.status === 409 && /limited to \d+ bots/u.test(answer.body?.error ?? "")) return sentence(answer.body.error);
-  return sentence(answer.body?.error) ? `My Cloud said: ${sentence(answer.body.error)}` : fallback;
+  return sentence(answer.body?.error) ? `the server said: ${sentence(answer.body.error)}` : fallback;
 }
 
 /** My Cloud's own 1Password refusal speaks to someone pasting a token on My Cloud's page; here it was this computer's.
@@ -67,9 +67,9 @@ function refusal(answer, fallback) {
 function onePasswordRefusal(answer) {
   const said = sentence(answer.body?.error);
   if (answer.status === 400 && said && /did not accept the token|not a whole 1Password|service account token/iu.test(said)) {
-    return Object.assign(new CloudSendError("refused", "My Cloud's 1Password did not accept this computer's token: it may have been revoked, expired, or lost access to its vault. Connect 1Password again in this computer's Settings → Logins, and it goes to My Cloud by itself."), { final: true });
+    return Object.assign(new CloudSendError("refused", "the server's 1Password did not accept this computer's token: it may have been revoked, expired, or lost access to its vault. Connect 1Password again in this computer's Settings → Logins, and it goes to the server by itself."), { final: true });
   }
-  return new CloudSendError("refused", refusal(answer, "My Cloud could not connect 1Password."));
+  return new CloudSendError("refused", refusal(answer, "the server could not connect 1Password."));
 }
 
 const pick = (source, names) => Object.fromEntries(names.filter((name) => source[name] !== undefined && source[name] !== null).map((name) => [name, source[name]]));
@@ -318,7 +318,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
   async function send({ keys = null, force = [], reason = "button", final = false } = {}) {
     while (running) await running.promise.catch(() => {});
     const origin = cloud.origin();
-    if (!origin) throw new CloudSendError("no_cloud", "This computer has no My Cloud yet.");
+    if (!origin) throw new CloudSendError("no_cloud", "This computer has no the server yet.");
     const job = { reason, final: reason === "move" && final === true, promise: null, chats: false };
     running = job;
     progress = null;
@@ -328,7 +328,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       catch (error) {
         // Kept as this send's outcome, so the strip and Settings say why, instead of an earlier send's result.
         const kept = entry(origin);
-        kept.last = { at: now(), reason, result: emptyResult(), error: sentence(error?.message) ?? "Nothing could be sent to My Cloud. Try again." };
+        kept.last = { at: now(), reason, result: emptyResult(), error: sentence(error?.message) ?? "Nothing could be sent to the server. Try again." };
         if (!keys && CHAT_REASONS.has(reason)) kept.whole = kept.last;
         persist();
         if (unanswered(error)) view = { ...view, cloud: "unreachable" };
@@ -368,12 +368,12 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
   async function sendItems(origin, mine, result, { keys, force, job, withChats }) {
     const move = job.reason === "move";
     const summaryRoute = move ? scoped("/api/cloud-send?move=1") : "/api/cloud-send";
-    const session = await cloud.open(move ? { move: true } : undefined).catch((error) => { throw new CloudSendError("session", sentence(error?.message) ?? "This app could not sign in to My Cloud. Try again.", { cause: error }); });
+    const session = await cloud.open(move ? { move: true } : undefined).catch((error) => { throw new CloudSendError("session", sentence(error?.message) ?? "This app could not sign in to the server. Try again.", { cause: error }); });
     try {
       const before = await session.call("GET", summaryRoute);
-      if (before.status === 404) throw new CloudSendError("outdated", move ? OUTDATED_FOR_MOVE : "My Cloud needs an update before it can receive bots from this computer. It updates by itself; try again later.");
+      if (before.status === 404) throw new CloudSendError("outdated", move ? OUTDATED_FOR_MOVE : "the server needs an update before it can receive bots from this computer. It updates by itself; try again later.");
       const theirs = before.ok ? parseSendSummary(before.body) : null;
-      if (!theirs) throw new CloudSendError("unreachable", refusal(before, "My Cloud did not answer. Try again."));
+      if (!theirs) throw new CloudSendError("unreachable", refusal(before, "the server did not answer. Try again."));
       let computer = team ? { label: team.label } : null;
       if (move) {
         await assertTakesMove(session);
@@ -512,24 +512,24 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       for (let i = 0; i < names.length; i += ATTACHMENT_NAMES) {
         const asked = names.slice(i, i + ATTACHMENT_NAMES);
         const checked = await session.call("POST", "/api/cloud-send/chats/attachments", { names: asked });
-        if (!checked.ok) throw new CloudSendError("refused", refusal(checked, "My Cloud could not take the chats' attachments."));
+        if (!checked.ok) throw new CloudSendError("refused", refusal(checked, "the server could not take the chats' attachments."));
         for (const name of Array.isArray(checked.body?.missing) ? checked.body.missing.filter((name) => asked.includes(name)) : []) {
           const file = await localBytes(`/api/cloud-send/chats/attachment/${name}`);
           if (!file) continue;
           const stored = await session.upload(`/api/cloud-send/chats/attachment/${name}`, file, "application/octet-stream");
           if (stored.status === 413 || stored.status === 507) {
             result.failed.push({ key: `attachment:${name}`, kind: "chats", label: "Attachment", error: stored.status === 507
-              ? "My Cloud's room for attachments is full, so an attachment did not go. Its chat went without it."
-              : "An attachment is bigger than My Cloud takes, so it did not go. Its chat went without it.", ...(stored.status === 413 ? { final: true } : {}) });
+              ? "the server's room for attachments is full, so an attachment did not go. Its chat went without it."
+              : "An attachment is bigger than the server takes, so it did not go. Its chat went without it.", ...(stored.status === 413 ? { final: true } : {}) });
             continue;
           }
-          if (!stored.ok) throw new CloudSendError("refused", refusal(stored, "My Cloud could not take an attachment of the chats."));
+          if (!stored.ok) throw new CloudSendError("refused", refusal(stored, "the server could not take an attachment of the chats."));
         }
       }
       // Into a team: whose lines on My Cloud become the mover's there.
       const answer = await session.call("POST", "/api/cloud-send/chats", { v: 1, dataDir, ...(from ? { owner: from } : {}),
         conversations: batch.map(({ owner, threadId, task, rows, leaf, sent }) => ({ ...owner, threadId, task, rows, leaf, sent })) });
-      if (!answer.ok) throw new CloudSendError("refused", refusal(answer, "My Cloud could not add the chats."));
+      if (!answer.ok) throw new CloudSendError("refused", refusal(answer, "the server could not add the chats."));
       const accepted = new Set(Array.isArray(answer.body?.accepted) ? answer.body.accepted : []);
       const removed = new Set(Array.isArray(answer.body?.removed) ? answer.body.removed : []);
       for (const page of batch) {
@@ -584,7 +584,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
     const flush = async () => {
       if (!batch.length) return;
       const answer = await session.call("POST", "/api/cloud-send/chats/owner", { v: 1, conversations: batch });
-      if (!answer.ok) throw new CloudSendError("refused", refusal(answer, "My Cloud could not keep the chats' lines as yours."));
+      if (!answer.ok) throw new CloudSendError("refused", refusal(answer, "the server could not keep the chats' lines as yours."));
       batch = []; ids = 0;
     };
     for (const threadId of threads) {
@@ -681,7 +681,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       const body = botPatch(bot, [part], ctx.cloudBots);
       if (!Object.keys(body).length) continue;
       const one = await ctx.session.call("PATCH", `/api/bots/${bot.id}`, body);
-      if (!one.ok) refused[part] = refusal(one, "My Cloud refused this setting.");
+      if (!one.ok) refused[part] = refusal(one, "the server refused this setting.");
     }
     return refused;
   }
@@ -693,9 +693,9 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
     if (!bytes) return "The picture could not be read on this computer.";
     const uploaded = await ctx.session.upload("/api/attachments", bytes, PICTURE_TYPES[name[2]]);
     const stored = typeof uploaded.body?.path === "string" ? uploaded.body.path.replaceAll("\\", "/").split("/").pop() : null;
-    if (!uploaded.ok || !stored) return refusal(uploaded, "My Cloud could not store the picture.");
+    if (!uploaded.ok || !stored) return refusal(uploaded, "the server could not store the picture.");
     const set = await ctx.session.call("PATCH", `/api/bots/${bot.id}`, { avatarUrl: `/api/attachments/${stored}` });
-    return set.ok ? null : refusal(set, "My Cloud could not use the picture.");
+    return set.ok ? null : refusal(set, "the server could not use the picture.");
   }
 
   /** A move keeps both of two different bots of one name: the one arriving is named after this computer. */
@@ -724,7 +724,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       created = await ctx.session.call("POST", "/api/bots", base);
       modelKept = false;
     }
-    if (!created.ok) throw new CloudSendError("refused", refusal(created, "My Cloud could not add this bot."));
+    if (!created.ok) throw new CloudSendError("refused", refusal(created, "the server could not add this bot."));
     ctx.cloudBots.add(bot.id);
     markCreated(ctx, row.key);
     const parts = Object.keys(BOT_PARTS).filter((part) => part !== "name" && (part !== "model" || modelKept));
@@ -779,15 +779,15 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       const listed = await ctx.session.call("GET", `/api/bots/${botId}/skills`);
       const own = await ctx.session.call("GET", `/api/bots/${botId}/skills/${name}`);
       const entry = Array.isArray(listed.body?.skills) ? listed.body.skills.find((candidate) => candidate?.name === name) : null;
-      if (!own.ok || typeof own.body?.text !== "string" || !entry) throw new CloudSendError("refused", refusal(own, "My Cloud's copy of this skill could not be read, so it was left as it is."));
+      if (!own.ok || typeof own.body?.text !== "string" || !entry) throw new CloudSendError("refused", refusal(own, "the server's copy of this skill could not be read, so it was left as it is."));
       previous = { entry, text: own.body.text };
       const removed = await ctx.session.call("DELETE", `/api/bots/${botId}/skills/${name}`);
-      if (!removed.ok) throw new CloudSendError("refused", refusal(removed, "My Cloud could not replace this skill."));
+      if (!removed.ok) throw new CloudSendError("refused", refusal(removed, "the server could not replace this skill."));
     }
     const added = await install(skill, text.text);
     if (added.ok) return;
     if (previous) await install(previous.entry, previous.text).catch(() => null);
-    throw new CloudSendError("refused", refusal(added, "My Cloud could not add this skill."));
+    throw new CloudSendError("refused", refusal(added, "the server could not add this skill."));
   }
 
   async function sendSkill(ctx, row) {
@@ -796,9 +796,9 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
     if (there && parts.length === 1 && parts[0] === "on") {
       const skill = (await localSkills(ctx, row.bot)).get(row.id);
       const set = await ctx.session.call("PATCH", `/api/bots/${row.bot}/skills/${row.id}`, { enabled: skill?.enabled === true });
-      if (!set.ok) throw new CloudSendError("refused", refusal(set, "My Cloud could not switch this skill."));
+      if (!set.ok) throw new CloudSendError("refused", refusal(set, "the server could not switch this skill."));
     } else {
-      if (!ctx.cloudBots.has(row.bot)) throw new CloudSendError("no_bot", "Its bot is not on My Cloud.");
+      if (!ctx.cloudBots.has(row.bot)) throw new CloudSendError("no_bot", "Its bot is not on the server.");
       await putSkill(ctx, row.bot, row.id, Boolean(there));
     }
     done(ctx, row.key, there && parts.length === 1 && parts[0] === "on" ? parts : null);
@@ -813,7 +813,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       const doc = await localJson(`/api/bots/${botId}/memory/file?path=${encodeURIComponent(path)}`);
       if (!doc?.exists || typeof doc.text !== "string" || !doc.text.trim()) continue;
       const put = await ctx.session.call("PUT", `/api/bots/${botId}/memory/file`, { path, text: doc.text });
-      if (!put.ok) throw new CloudSendError("refused", refusal(put, "My Cloud could not save a memory note."));
+      if (!put.ok) throw new CloudSendError("refused", refusal(put, "the server could not save a memory note."));
     }
   }
 
@@ -830,7 +830,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
       body = { language: config.language };
     } else return;
     const saved = await ctx.session.call("PATCH", "/api/config", body);
-    if (!saved.ok) throw new CloudSendError("refused", refusal(saved, "My Cloud could not save this setting."));
+    if (!saved.ok) throw new CloudSendError("refused", refusal(saved, "the server could not save this setting."));
     done(ctx, row.key, parts);
     ctx.result.settings.push(row.label);
   }
@@ -842,7 +842,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
     const kept = botsOnCloud(login.bots, ctx.cloudBots);
     const saved = await ctx.session.call("POST", "/api/logins", { site: login.site, username: login.username, password: login.password,
       ...(login.totp ? { totp: login.totp } : {}), bots: kept, exactHost: login.exactHost === true });
-    if (!saved.ok) throw new CloudSendError("refused", refusal(saved, "My Cloud could not save the login."));
+    if (!saved.ok) throw new CloudSendError("refused", refusal(saved, "the server could not save the login."));
     if (Array.isArray(login.bots) && kept.length < login.bots.length) ctx.result.notes.push({ kind: "narrowed", login: row.label });
     done(ctx, row.key);
     ctx.result.logins++;
@@ -860,7 +860,7 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
     for (const [vault, bots] of Object.entries(onePassword.grants ?? {})) {
       if (!VAULT_ID.test(vault)) continue;
       const granted = await ctx.session.call("PATCH", `/api/logins/1password/vaults/${encodeURIComponent(vault)}`, { bots: botsOnCloud(bots, ctx.cloudBots) });
-      if (!granted.ok && granted.status !== 404) throw new CloudSendError("refused", refusal(granted, "My Cloud connected 1Password but could not keep its vaults to the same bots."));
+      if (!granted.ok && granted.status !== 404) throw new CloudSendError("refused", refusal(granted, "the server connected 1Password but could not keep its vaults to the same bots."));
     }
     done(ctx, row.key);
     ctx.result.onePassword = true;
@@ -875,20 +875,20 @@ export function createCloudSend({ local, cloud, handoff, store, onChange = () =>
    */
   async function check() {
     const origin = cloud.origin();
-    if (!origin) throw new CloudSendError("no_cloud", "This computer has no My Cloud yet.");
+    if (!origin) throw new CloudSendError("no_cloud", "This computer has no the server yet.");
     const kept = entry(origin);
-    const session = await cloud.open({ move: true }).catch((error) => { throw new CloudSendError("session", sentence(error?.message) ?? "This app could not sign in to My Cloud. Try again.", { cause: error }); });
+    const session = await cloud.open({ move: true }).catch((error) => { throw new CloudSendError("session", sentence(error?.message) ?? "This app could not sign in to the server. Try again.", { cause: error }); });
     try {
       await assertTakesMove(session);
       const here = await localJson(scoped("/api/cloud-send/manifest"));
       const answer = await session.call("GET", scoped("/api/cloud-send/manifest"));
-      if (!answer.ok) throw new CloudSendError("unreachable", refusal(answer, "My Cloud did not answer. Try again."));
+      if (!answer.ok) throw new CloudSendError("unreachable", refusal(answer, "the server did not answer. Try again."));
       const removed = new Set([...Object.entries(kept.off).filter(([, why]) => why === "removed").map(([key]) => key),
         ...Object.entries(kept.chats).filter(([, cursor]) => cursor === "removed").map(([threadId]) => threadId),
         ...roomsRemovedThere(here, answer.body, kept.chats)]);
       const refused = new Set((kept.whole?.result.failed ?? []).filter((failure) => failure.final === true).map((failure) => failure.key));
       const gaps = manifestGaps(here, answer.body, { sent: kept.sent, removed, skip: refused });
-      if (!gaps) throw new CloudSendError("unreachable", "My Cloud did not say what it has. Try again.");
+      if (!gaps) throw new CloudSendError("unreachable", "the server did not say what it has. Try again.");
       const bots = new Set((here.items ?? []).filter((item) => item.kind === "bot" && !removed.has(item.key) && !refused.has(item.key)).map((item) => item.id));
       const going = roomsThatGo(here, bots);
       const threads = (here.conversations ?? []).filter((head) => !removed.has(head.threadId)

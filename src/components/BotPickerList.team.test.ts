@@ -27,5 +27,5 @@ it("names a RelayIt whose person is not in the list by their address", () => {
 
 it("leaves names alone off a team", () => {
   const html = renderToStaticMarkup(createElement(BotPickerList, { bots, picked: new Set<string>(), onToggle: () => {}, emptyHint: "" }));
-  expect(html).not.toContain("·");
+  expect(html.match(/role="checkbox" aria-label="[^"]*"/g)).toEqual(Array(3).fill('role="checkbox" aria-label="RelayIt"'));
 });

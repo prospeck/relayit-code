@@ -35,7 +35,7 @@ export function createCloudSyncRoutes(options: {
   const handler = async ({ req, res, url, path, method, auth, json, readBody }: RouteContext): Promise<typeof PASS | void> => {
     if (path !== "/api/sync" && !path.startsWith("/api/sync/")) return PASS;
     if (!options.cloudHome()) return PASS;
-    if (auth.kind !== "session" || !auth.scopes.includes("admin")) { json(res, 403, { error: "Only your own desktop can sync with My Cloud." }); return; }
+    if (auth.kind !== "session" || !auth.scopes.includes("admin")) { json(res, 403, { error: "Only your own desktop can sync with the server." }); return; }
     res.setHeader("cache-control", "no-store");
     const s = service();
     const shown = folderFilter(auth);

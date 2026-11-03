@@ -67,7 +67,7 @@ export function personalConnectionRefusal(team: Pick<CloudTeam, "name">, what = 
 
 /** A computer's one-time move goes to its owner's My Cloud only: nothing personal is carried into a team. */
 export function personalMoveRefusal(team: Pick<CloudTeam, "name">): string {
-  return `Moving a computer's bots, chats and logins goes to My Cloud only. Nothing personal comes into ${team.name}.`;
+  return `Moving a computer's bots, chats and logins goes to the server only. Nothing personal comes into ${team.name}.`;
 }
 
 /** On a team a login belongs to the whole team, so only an admin saves one. */

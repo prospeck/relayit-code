@@ -134,7 +134,7 @@ export async function checkChats({ localJson, session, threads }) {
       const asked = { threadId, ids: chunk.ids, ...(holds ? { path: { after, ids: chunk.path, last: !chunk.more } } : {}) };
       const answer = await session.call("POST", "/api/cloud-send/chats/verify", { v: 1, conversations: [asked] });
       const checked = answer.ok ? list(answer.body?.conversations).find((entry) => entry?.threadId === threadId) : null;
-      if (!checked) throw Object.assign(new Error("My Cloud did not check the chats."), { status: answer.status });
+      if (!checked) throw Object.assign(new Error("the server did not check the chats."), { status: answer.status });
       missing += list(checked.missing).length;
       unstamped += Number.isSafeInteger(checked.unstamped) ? checked.unstamped : 0;
       if (asked.path) {
@@ -161,7 +161,7 @@ export async function missingAttachments(session, names) {
   for (let i = 0; i < names.length; i += ATTACHMENT_NAMES) {
     const asked = names.slice(i, i + ATTACHMENT_NAMES);
     const answer = await session.call("POST", "/api/cloud-send/chats/attachments", { names: asked });
-    if (!answer.ok) throw Object.assign(new Error("My Cloud did not check the attachments."), { status: answer.status });
+    if (!answer.ok) throw Object.assign(new Error("the server did not check the attachments."), { status: answer.status });
     missing.push(...list(answer.body?.missing).filter((name) => asked.includes(name)));
   }
   return missing;

@@ -97,9 +97,9 @@ async function send(ctx, action, again = true) {
   if (sent.conflict) {
     if (sent.current?.sha256 === action.sha256) return "ok";
     if (again) return send(ctx, { ...action, baseSha256: sent.current?.sha256 ?? null }, false);
-    throw new Error("It kept changing on My Cloud; it will be sent again.");
+    throw new Error("It kept changing on the server; it will be sent again.");
   }
-  throw new Error("My Cloud gave an answer this app does not understand.");
+  throw new Error("the server gave an answer this app does not understand.");
 }
 
 /**
@@ -130,7 +130,7 @@ export async function fetchOutputs({ client, state, folder, local, platform = pr
 
 /** Where a wire path lives in this folder: never outside it, and never through a link or a file in the way. */
 function localFile(ctx, wire) {
-  if (!validWirePath(wire)) throw new Error("My Cloud sent a path this app will not write.");
+  if (!validWirePath(wire)) throw new Error("the server sent a path this app will not write.");
   const parts = wire.split("/");
   let current = ctx.local;
   for (const part of parts.slice(0, -1)) {
@@ -139,7 +139,7 @@ function localFile(ctx, wire) {
     if (stat && !stat.isDirectory()) throw new Error(`${wire} goes through a link or a file on this computer.`);
   }
   const file = path.join(ctx.local, ...parts);
-  if (!file.startsWith(path.join(ctx.local, path.sep))) throw new Error("My Cloud sent a path outside this folder.");
+  if (!file.startsWith(path.join(ctx.local, path.sep))) throw new Error("the server sent a path outside this folder.");
   return file;
 }
 
@@ -151,7 +151,7 @@ async function receive(ctx, { path: wire, sha256, size, replace, beside }) {
   // The person's own edit stays as it is: My Cloud's newer version lands beside it.
   if (beside && kept) {
     const taken = (candidate) => ctx.pc.has(candidate) || ctx.cloud.has(candidate) || fs.existsSync(localFile(ctx, candidate));
-    target = localFile(ctx, clashPath(wire, ctx.now(), taken, "new from My Cloud"));
+    target = localFile(ctx, clashPath(wire, ctx.now(), taken, "new from the server"));
   }
   fs.mkdirSync(path.dirname(target), { recursive: true });
   const tag = createHash("sha256").update(`${folder.id}\n${wire}`).digest("hex").slice(0, 8);

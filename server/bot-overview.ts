@@ -191,7 +191,7 @@ export function grantsSummary(connectorTools: BotRecord["connectorTools"]): BotO
 }
 
 function computerReach(computer: BotRecord["computer"], cloudHome = false): string | null {
-  const unavailable = cloudHome ? ", which isn't available on My Cloud" : "";
+  const unavailable = cloudHome ? ", which isn't available on the server" : "";
   switch (computer) {
     case "cloud":
       return "Computer preference: cloud computer.";

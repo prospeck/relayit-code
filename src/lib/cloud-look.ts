@@ -6,8 +6,8 @@ export const CLOUD_COLORS = ["blue", "teal", "purple", "orange", "red", "yellow"
 export const DEFAULT_CLOUD_COLOR: CloudColor = "blue";
 export const CLOUD_NAME_MAX = 28;
 export const CLOUD_COLOR_LABEL = {
-  blue: "cloudBuy.color.blue", teal: "cloudBuy.color.teal", purple: "cloudBuy.color.purple",
-  orange: "cloudBuy.color.orange", red: "cloudBuy.color.red", yellow: "cloudBuy.color.yellow",
+  blue: "placeLook.color.blue", teal: "placeLook.color.teal", purple: "placeLook.color.purple",
+  orange: "placeLook.color.orange", red: "placeLook.color.red", yellow: "placeLook.color.yellow",
 } as const satisfies Record<CloudColor, LocaleKey>;
 
 export function cloudColor(value: unknown): CloudColor | null {

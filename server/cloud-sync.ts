@@ -58,12 +58,12 @@ export function createCloudSync(options: { dataDir: string; root?: string; now?:
     const folder = store.folder(id);
     if (!folder) throw new SyncError(404, { error: "no such synced folder" });
     // A link in its place is as good as missing: following it would sync, or trash, whatever it points at.
-    if (!lstatSync(folder.cloudPath, { throwIfNoEntry: false })?.isDirectory()) throw new SyncError(410, { error: "this folder is missing on My Cloud" });
+    if (!lstatSync(folder.cloudPath, { throwIfNoEntry: false })?.isDirectory()) throw new SyncError(410, { error: "this folder is missing on the server" });
     return folder;
   };
   const unreadable = (error: unknown): never => {
     if (error instanceof SyncError) throw error;
-    throw new SyncError(503, { error: "Part of this folder can't be read on My Cloud right now.", code: (error as NodeJS.ErrnoException)?.code ?? null });
+    throw new SyncError(503, { error: "Part of this folder can't be read on the server right now.", code: (error as NodeJS.ErrnoException)?.code ?? null });
   };
   const fileOf = (folder: SyncFolder, path: unknown): string => {
     try { return insideFolder(folder.cloudPath, path); } catch (error) {
@@ -151,7 +151,7 @@ export function createCloudSync(options: { dataDir: string; root?: string; now?:
       // Uploads still open will land too: count what they have left to send against the reserve.
       const pending = uploads().reduce((sum, upload) => sum + Math.max(0, upload.size - upload.received), 0);
       const { totalBytes, freeBytes } = statfs(store.root), reserve = cloudReserveBytes(totalBytes);
-      if (freeBytes - pending - size < reserve) throw new SyncError(507, { error: "My Cloud is full", neededBytes: size + pending + reserve, freeBytes });
+      if (freeBytes - pending - size < reserve) throw new SyncError(507, { error: "the server is full", neededBytes: size + pending + reserve, freeBytes });
       const upload: Upload = { id: randomUUID(), folderId: folder.id, path: input.path, size, sha256: input.sha256, baseSha256: base as string | null, received: 0, updatedAt: now() };
       closeSync(openSync(uploadFile(upload.id, "part"), "w", 0o600));
       saveUpload(upload);
@@ -184,7 +184,7 @@ export function createCloudSync(options: { dataDir: string; root?: string; now?:
         const folder = folderOf(upload.folderId);
         const target = fileOf(folder, upload.path);
         const current = await store.current(folder, upload.path);
-        if ((current?.sha256 ?? null) !== upload.baseSha256) { dropUpload(uploadId); throw new SyncError(409, { error: "changed on My Cloud", current }); }
+        if ((current?.sha256 ?? null) !== upload.baseSha256) { dropUpload(uploadId); throw new SyncError(409, { error: "changed on the server", current }); }
         if (current) store.toTrash(folder, upload.path, target);
         mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
         renameSync(part, target);
@@ -240,7 +240,7 @@ export function createCloudSync(options: { dataDir: string; root?: string; now?:
         if (!known && !home) throw new SyncError(404, { error: "the folder this file came from is gone" });
         if (!known) mkdirSync(home!, { recursive: true, mode: 0o700 });
         const folder = known ?? { id: found.entry.folderId, kind: found.entry.folderId.startsWith("bot-") ? "bot" as const : "pc" as const, cloudPath: home! };
-        if (!lstatSync(folder.cloudPath, { throwIfNoEntry: false })?.isDirectory()) throw new SyncError(410, { error: "this folder is missing on My Cloud" });
+        if (!lstatSync(folder.cloudPath, { throwIfNoEntry: false })?.isDirectory()) throw new SyncError(410, { error: "this folder is missing on the server" });
         let path = found.entry.path;
         if (existsSync(fileOf(folder, path))) path = clashPath(path, now(), (candidate) => mutations.get(folder.id)?.has(candidate) || existsSync(fileOf(folder, candidate)), "restored");
         const target = fileOf(folder, path);

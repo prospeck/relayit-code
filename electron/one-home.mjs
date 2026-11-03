@@ -237,7 +237,7 @@ export function createOneHome(deps) {
   /** The move fails here: a frozen server is lifted, and it all goes again later from the copy. A frozen pass waits an
    * hour, unless the Admin only said "too many requests" (429), which it lifts within minutes. */
   async function failed(journal, error, frozen) {
-    const said = sentence(error?.message) ?? "My Cloud did not answer.";
+    const said = sentence(error?.message) ?? "the server did not answer.";
     log(`one home: ${journal.phase} failed (${said})`);
     const tries = (journal.tries ?? 0) + 1;
     const hourly = frozen && !rateLimited(error);
@@ -257,7 +257,7 @@ export function createOneHome(deps) {
   /** My Cloud is too old to take a move: it updates by itself, and the move starts once it has, so this is not the move
    * failing and there is nothing to try again. */
   function updating(journal, error) {
-    log(`one home: the move waits for My Cloud to update (${sentence(error?.message) ?? "too old"})`);
+    log(`one home: the move waits for the server to update (${sentence(error?.message) ?? "too old"})`);
     const tries = (journal.tries ?? 0) + 1;
     write({ ...journal, phase: "copy", updating: true, tries, retryAt: now() + COPY_RETRY_MS[Math.min(tries - 1, COPY_RETRY_MS.length - 1)] });
     return null;
@@ -298,7 +298,7 @@ export function createOneHome(deps) {
     try {
       for (let report = await deps.send.check(); report?.ok !== true; report = await deps.send.check()) {
         log(`one home: the check found ${missingOf(report)} missing`);
-        if (passes >= CHECK_PASSES) throw tagged("Some of this computer's things did not reach My Cloud.", "incomplete");
+        if (passes >= CHECK_PASSES) throw tagged("Some of this computer's things did not reach the server.", "incomplete");
         await deps.send.move({ final: true });
         passes += 1;
         write({ ...journal, passes });
@@ -327,14 +327,14 @@ export function createOneHome(deps) {
         if (!change) continue;
         const answer = await session.call(change.method, change.route, change.body);
         // One deleted on My Cloud meanwhile stays deleted; any other refusal is tried again.
-        if (!answer.ok && answer.status !== 404) throw tagged(sentence(answer.body?.error) ?? "My Cloud did not switch on an automation.", "switch_refused", { status: answer.status });
+        if (!answer.ok && answer.status !== 404) throw tagged(sentence(answer.body?.error) ?? "the server did not switch on an automation.", "switch_refused", { status: answer.status });
         switched[key] = true;
         write({ ...journal, switched });
       }
       const computer = sentence((await deps.local.json("/api/cloud-connections").catch(() => null))?.computer?.label) ?? "this computer";
       const webhooks = Object.keys(switches).flatMap((key) => (key.startsWith("webhook:") ? [key.slice("webhook:".length)] : []));
       const arrived = await session.call("POST", "/api/cloud-send/arrived", { v: 1, computer, webhooks, ...(journal.cloud.name ? { place: journal.cloud.name } : {}) });
-      if (!arrived.ok) throw tagged(sentence(arrived.body?.error) ?? "My Cloud did not finish the move.", "switch_refused", { status: arrived.status });
+      if (!arrived.ok) throw tagged(sentence(arrived.body?.error) ?? "the server did not finish the move.", "switch_refused", { status: arrived.status });
     } catch (error) {
       log(`one home: switching over goes on later (${error?.message ?? error})`);
       const next = write({ ...journal, switched, error: sentence(error?.message) ?? undefined, retryAt: now() + 2 * MINUTE, failure: failureOf(error, "switch", journal.failure, now()) });
@@ -478,7 +478,7 @@ export function createOneHome(deps) {
     const retry = (ms) => { write({ ...next, retryAt: now() + ms }); later(ms); return null; };
     let brought;
     try { brought = await deps.again.bring(); }
-    catch (error) { log(`one home: bringing My Cloud's things back waits (${error?.message ?? error})`); return retry(5 * MINUTE); }
+    catch (error) { log(`one home: bringing the server's things back waits (${error?.message ?? error})`); return retry(5 * MINUTE); }
     if ("later" in brought) return retry(brought.later);
     if ("deleted" in brought) return write({ ...next, phase: "back", lost: true });
     write({ ...next, phase: "back", restoreId: brought.restored, switchBack: brought.switches, retryAt: undefined });
@@ -560,7 +560,7 @@ export function createOneHome(deps) {
         session = await deps.session();
         const answer = await session.call("POST", "/api/cloud-send/automations-off", { v: 1, keys: on });
         if (answer.status === 404) return retry(COPY_RETRY_MS.at(-1), null, { updating: true });
-        if (!answer.ok) throw Object.assign(new Error(sentence(answer.body?.error) ?? "My Cloud did not stop this computer's automations."), { status: answer.status });
+        if (!answer.ok) throw Object.assign(new Error(sentence(answer.body?.error) ?? "the server did not stop this computer's automations."), { status: answer.status });
       } catch (error) { return retry(5 * MINUTE, error); }
       finally { await session?.close().catch(() => {}); }
       next = write({ ...next, offThere: true, updating: undefined });
@@ -600,7 +600,7 @@ export function createOneHome(deps) {
     const waiting = () => journal.retryAt > now() && !(cameBack && !journal.hourly);
     if (journal && cloud && cloud.account !== journal.cloud.account) {
       // Another account's Cloud never moves this computer's copy, nor lifts its freeze once the move is done.
-      if (FROZEN.has(journal.phase)) await failed(journal, tagged("Another RelayIt Cloud account signed in.", "other_account"), true);
+      if (FROZEN.has(journal.phase)) await failed(journal, tagged("Another server account connected.", "other_account"), true);
       await deps.release?.();
       return;
     }
@@ -634,7 +634,7 @@ export function createOneHome(deps) {
         return;
       }
       if (!cloud?.ready) {
-        if (FROZEN.has(journal.phase)) await failed(journal, tagged("My Cloud is not ready.", "not_ready"), true);
+        if (FROZEN.has(journal.phase)) await failed(journal, tagged("the server is not ready.", "not_ready"), true);
         return;
       }
       if (journal.paused) journal = write({ ...journal, paused: undefined });

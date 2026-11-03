@@ -55,17 +55,6 @@ async function toolsCheck(
   }
 }
 
-export async function signedInToolsCheck(
-  name: string,
-  request: (path: string, init?: RequestInit) => Promise<ProbeResult>,
-  signal: AbortSignal,
-): Promise<ProbeResult> {
-  const tested = await toolsCheck(name, request, signal);
-  if (tested.ok) return tested;
-  const reason = (tested.error ?? "").trim();
-  return { ...tested, error: t("whop.testFailed", { reason: reason && !/[.!?]$/.test(reason) ? `${reason}.` : reason }) };
-}
-
 /** Security: names the headers, never their values. */
 function failureReason(server: McpServerListing, result: ProbeResult): string {
   if (result.reason !== "keys" || !isRemoteMcpListing(server)) return result.error ?? "";

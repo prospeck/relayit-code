@@ -45,7 +45,7 @@ describe("the sidebar tiles", () => {
   it.each([true, false])("draws the main tile and a pinned tile the same: 78 by 92, radius 10, a 56px avatar over a one-line 13px medium name (main %s)", (primary) => {
     const html = renderToStaticMarkup(createElement(SidebarBotTile, { ...props(bot({ chiefOfStaff: primary })), primary }));
     expect(html).toMatch(new RegExp(`data-sidebar-tile="${primary ? "primary" : "pinned"}"[^>]*class="[^"]*\\bh-\\[92px\\] w-\\[78px\\][^"]*\\brounded-\\[10px\\]`));
-    expect(html).toContain('width="56px" height="56px"');
+    expect(html).toContain('width="56" height="56"');
     expect(html).toMatch(/truncate text-center text-\[13px\] font-medium leading-4 text-ink"[^>]*>RelayIt</);
     expect(html).not.toContain("data-provider-mark");
   });
@@ -104,7 +104,7 @@ describe("the tile grid", () => {
     expect(tiles(html)).toEqual(["primary:relayit", ...pins(count).map((pin) => `pinned:${pin.id}${drag}`)]);
     expect(html).toMatch(/^<div data-sidebar-tiles="" class="flex max-h-\[40vh\] flex-wrap justify-center gap-1 overflow-y-auto /);
     expect(html.match(/\bh-\[92px\] w-\[78px\]/g)).toHaveLength(count + 1);
-    expect(html.match(/width="56px" height="56px"/g)).toHaveLength(count + 1);
+    expect(html.match(/width="56" height="56"/g)).toHaveLength(count + 1);
     expect(html.match(/data-testid="chief-badge"/g)).toHaveLength(1);
   });
 

@@ -8,7 +8,7 @@ export const TALK_TEXT = Object.freeze({
   serverDown: "Open RelayIt to talk",
   starting: "RelayIt is still starting. Try again in a moment.",
   noRelayit: "Set up RelayIt first, then try again.",
-  moved: "RelayIt lives on My Cloud now — talk to it there",
+  moved: "RelayIt lives on the server now — talk to it there",
   permission: "Talking needs Microphone + Speech Recognition access — System Settings → Privacy & Security.",
   dictationOff: "Turn on Dictation in System Settings → Keyboard, then try again.",
   unavailable: "Talking couldn't start. Try again.",

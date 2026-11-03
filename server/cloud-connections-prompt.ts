@@ -63,10 +63,10 @@ export function createConnectionPrompt(sources: ConnectionPromptSources, origin:
     const apps = connected(granted.filter((slug) => slug !== HIGHLEVEL_SLUG && SLUG.test(slug))).filter(([, on]) => !on).map(([slug]) => toolkitName(slug.toUpperCase()));
     const from = sources.movedFrom?.() ?? null;
     return [
-      from ? ` You moved to My Cloud from the person's computer ${from}, with everything in RelayIt. What lives outside RelayIt stayed on ${from}: its other folders and files, passkeys, the person's own browser sessions and apps, Local VM disks and model servers on its home network. When a task needs one, use ${from} if it is lent to My Cloud and online; otherwise say in plain words that it stayed there.` : "",
-      toConnect.length ? ` Not connected on My Cloud yet: ${toConnect.join("; ")}. When a task needs one, say in plain words that it needs the person once on My Cloud and give its link; do not try another way.` : "",
-      apps.length ? ` Assigned to this bot but not connected on My Cloud yet: ${apps.join(", ")}. When a task needs one, call COMPOSIO_MANAGE_CONNECTIONS for it, which shows the person a card to connect it, and end the turn.` : "",
-      ...[...elsewhere].map(([computer, names]) => ` Runs only on the person's computer ${computer}, not on My Cloud: ${names.join(", ")}. If a task needs one, say so in plain words.`),
+      from ? ` You moved to the server from the person's computer ${from}, with everything in RelayIt. What lives outside RelayIt stayed on ${from}: its other folders and files, passkeys, the person's own browser sessions and apps, Local VM disks and model servers on its home network. When a task needs one, use ${from} if it is lent to the server and online; otherwise say in plain words that it stayed there.` : "",
+      toConnect.length ? ` Not connected on the server yet: ${toConnect.join("; ")}. When a task needs one, say in plain words that it needs the person once on the server and give its link; do not try another way.` : "",
+      apps.length ? ` Assigned to this bot but not connected on the server yet: ${apps.join(", ")}. When a task needs one, call COMPOSIO_MANAGE_CONNECTIONS for it, which shows the person a card to connect it, and end the turn.` : "",
+      ...[...elsewhere].map(([computer, names]) => ` Runs only on the person's computer ${computer}, not on the server: ${names.join(", ")}. If a task needs one, say so in plain words.`),
     ].join("");
   };
 }
