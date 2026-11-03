@@ -2052,7 +2052,8 @@ ipcMain.handle("environments:forget", localWorkspaceOnly("environments:forget", 
 // Once My Cloud is home the switcher lists only whole places, and shows only when there is more than My Cloud.
 
 ipcMain.handle("workspaces:state", workspaceOnly(_event => ({ ...workspaceSummary(environmentsState) })));
-ipcMain.handle("workspaces:line", workspaceOnly(() => workspaceSummary(environmentsState)));
+// The one line a page shows was only for being dropped from a hosted team, so there is never one to show.
+ipcMain.handle("workspaces:line", workspaceOnly(() => null));
 let workspaceMenuOpen = false;
 ipcMain.handle("workspaces:menu", workspaceOnly(async (_event, _from) => {
   if (workspaceMenuOpen || false) return;
