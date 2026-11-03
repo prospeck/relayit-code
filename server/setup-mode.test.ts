@@ -187,9 +187,8 @@ describe("setupSystemPrompt connected apps", () => {
     expect(prompt({ state: "not-configured", host: "desktop" })).toContain(
       "restarting RelayIt usually brings them back, or they can add their own Composio project key in Settings → API keys, under Self-host connected apps.",
     );
-    const cloud = prompt({ state: "not-configured", host: "cloud" });
-    expect(cloud).toContain("Connected apps come with their RelayIt Cloud plan but are not answering right now");
-    expect(cloud).not.toContain("Composio");
+    // no plan brings connected apps with it: a server is told the same as any other host that has none
+    expect(prompt({ state: "not-configured", host: "cloud" })).not.toMatch(/plan/);
     expect(prompt({ state: "unsupported" })).toContain("Your current model cannot use connected apps");
   });
 

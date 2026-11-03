@@ -676,13 +676,13 @@ describe("loopback trust: owner on one person's machine, service on a shared wor
     expect(desktop.warning).toMatch(/ignored in the desktop app/);
   });
 
-  it("is always service on an OMB Cloud home, where a local request is only ever a process on the machine", () => {
+  it("is always service on a remote home, where a local request is only ever a process on the machine", () => {
     const pick = (env: NodeJS.ProcessEnv) => resolveLoopbackTrust({ env, desktopManaged: false, hostedWorkspace: false, cloudHome: true });
-    expect(pick({})).toEqual({ trust: "service", reason: "RelayIt Cloud home", localBrowsers: false });
-    expect(pick({ OMB_LOOPBACK_TRUST: "service" })).toEqual({ trust: "service", reason: "RelayIt Cloud home", localBrowsers: false });
+    expect(pick({})).toEqual({ trust: "service", reason: "remote home", localBrowsers: false });
+    expect(pick({ OMB_LOOPBACK_TRUST: "service" })).toEqual({ trust: "service", reason: "remote home", localBrowsers: false });
     const forced = pick({ OMB_LOOPBACK_TRUST: "owner" });
     expect(forced.trust).toBe("service");
-    expect(forced.warning).toMatch(/ignored on a RelayIt Cloud home/);
+    expect(forced.warning).toMatch(/ignored on a remote home/);
   });
 
   it("lets only the CLI that started the server, holding its secret, mint a pairing code under service trust", () => {

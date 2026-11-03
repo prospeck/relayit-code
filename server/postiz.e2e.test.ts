@@ -148,7 +148,7 @@ it("connects a person's own Postiz with an API key, refuses a wrong key or addre
 
   const saved = await api("PUT", "/api/config", { postiz: { url: `${own.url}/`, key: FAKE_POSTIZ_KEY } });
   expect(saved.status).toBe(200);
-  expect(saved.body.postiz).toEqual({ configured: true, last4: FAKE_POSTIZ_KEY.slice(-4), url: own.url });
+  expect(saved.body.postiz).toEqual({ configured: true, url: own.url });
   expect((await api("GET", "/api/mcp/servers")).body.servers).toEqual([expect.objectContaining({ name: "postiz", url: `${own.url}/mcp`, enabled: true, headerKeys: [] })]);
   expect((await api("GET", "/api/postiz")).body).toMatchObject({ state: "connected", how: "key", host: new URL(own.url).host, selfHosted: true, keySaved: true });
   expect((await api("POST", "/api/mcp/servers/postiz/test")).body).toMatchObject({ ok: true });
