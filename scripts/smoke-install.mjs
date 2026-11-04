@@ -36,7 +36,6 @@ try {
     const pages = await (await fetch(`http://127.0.0.1:${DEBUG}/json/list`)).json();
     return pages.find((candidate) => candidate.type === "page" && /^http:\/\/127\.0\.0\.1:/.test(candidate.url));
   }, 240_000, "the app window never loaded");
-  const origin = new URL(page.url).origin;
   console.log("window:", page.url);
 
   const send = await devtools(page.webSocketDebuggerUrl);
@@ -49,10 +48,13 @@ try {
   const shot = await send("Page.captureScreenshot", { format: "png" });
   writeFileSync(join(out, `${label}.png`), Buffer.from(shot.data, "base64"));
 
-  const post = async (path) => {
-    const response = await fetch(`${origin}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-    return { status: response.status, body: await response.json().catch(() => null) };
-  };
+  // From inside the window: the server refuses requests that don't come from the app.
+  const post = async (path) => (await send("Runtime.evaluate", {
+    expression: `fetch(${JSON.stringify(path)}, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })
+      .then(async (response) => ({ status: response.status, body: await response.json().catch(() => null) }))`,
+    awaitPromise: true,
+    returnByValue: true,
+  })).result.value;
   const added = await post("/api/mcp/builtins/food");
   if (added.status >= 300) throw new Error(`could not add the food connector: ${added.status}`);
   const tested = await post("/api/mcp/servers/india-food/test");
