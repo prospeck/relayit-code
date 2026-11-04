@@ -1,29 +1,30 @@
 #!/usr/bin/env node
-// Runs on a GitHub Windows machine after `pnpm package:win`: installs the real installer silently, opens the installed
-// app with a throwaway data folder, and fails unless the window loads and the demo food connector starts.
+// Runs on a GitHub machine after packaging: installs a real installer the way a person would, opens the installed app
+// with throwaway data, and fails unless the window loads and the demo food connector starts.
 //
-//   node scripts/smoke-windows-install.mjs <folder-for-the-screenshot>
+//   node scripts/smoke-install.mjs <folder-for-the-screenshot> <installer>
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
-const out = process.argv[2] ?? "smoke-output";
+const [out = "smoke-output", installer] = process.argv.slice(2);
+if (!installer || !existsSync(installer)) throw new Error(`no installer at ${installer}`);
 mkdirSync(out, { recursive: true });
-const installer = readdirSync("release").find((name) => name.endsWith("-setup.exe"));
-if (!installer) throw new Error("no installer in release/");
-
-execFileSync(join("release", installer), ["/S"], { stdio: "inherit", timeout: 300_000 });
-const installed = join(process.env.LOCALAPPDATA, "Programs", "RelayIt", "RelayIt.exe");
+const label = basename(installer).replace(/\.[a-z]+$/, "");
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-for (let i = 0; i < 60 && !existsSync(installed); i++) await sleep(1000);
-if (!existsSync(installed)) throw new Error(`the installer did not create ${installed}`);
+const scratch = mkdtempSync(join(tmpdir(), "relayit-smoke-"));
+const windows = process.platform === "win32";
+mkdirSync(join(scratch, "home"));
+
+const installed = windows ? await installOnWindows() : installOnMac();
 console.log("installed:", installed);
 
 const DEBUG = 9340;
-const app = spawn(installed, [`--remote-debugging-port=${DEBUG}`], {
-  env: { ...process.env, OMB_DATA_DIR: mkdtempSync(join(tmpdir(), "relayit-smoke-")) },
+const app = spawn(installed, [`--remote-debugging-port=${DEBUG}`, `--user-data-dir=${join(scratch, "user")}`, ...(windows ? [] : ["--use-mock-keychain"])], {
+  env: { ...process.env, HOME: join(scratch, "home"), OMB_DATA_DIR: join(scratch, "data"), NODE_OPTIONS: "" },
   stdio: ["ignore", "pipe", "pipe"],
+  detached: !windows,
 });
 let log = "";
 app.stdout.on("data", (chunk) => { log += chunk; });
@@ -34,20 +35,19 @@ try {
   const page = await waitFor(async () => {
     const pages = await (await fetch(`http://127.0.0.1:${DEBUG}/json/list`)).json();
     return pages.find((candidate) => candidate.type === "page" && /^http:\/\/127\.0\.0\.1:/.test(candidate.url));
-  }, 180_000, "the app window never loaded");
+  }, 240_000, "the app window never loaded");
   const origin = new URL(page.url).origin;
   console.log("window:", page.url);
 
   const send = await devtools(page.webSocketDebuggerUrl);
-  const bodyText = async () => (await send("Runtime.evaluate", { expression: "document.body.innerText" })).result.value ?? "";
   const text = await waitFor(async () => {
-    const shown = await bodyText();
+    const shown = (await send("Runtime.evaluate", { expression: "document.body.innerText" })).result.value ?? "";
     return shown.includes("RelayIt") ? shown : null;
   }, 60_000, "the window stayed empty");
   console.log("shows:", text.replace(/\s+/g, " ").slice(0, 200));
   await sleep(8000);
   const shot = await send("Page.captureScreenshot", { format: "png" });
-  writeFileSync(join(out, "windows-first-run.png"), Buffer.from(shot.data, "base64"));
+  writeFileSync(join(out, `${label}.png`), Buffer.from(shot.data, "base64"));
 
   const post = async (path) => {
     const response = await fetch(`${origin}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
@@ -64,8 +64,37 @@ try {
   console.error(String(error));
   console.error(log.slice(-3000));
 }
-try { execFileSync("taskkill", ["/PID", String(app.pid), "/T", "/F"], { stdio: "ignore" }); } catch { /* already gone */ }
+stopApp();
+await sleep(3000);
 process.exit(failure ? 1 : 0);
+
+async function installOnWindows() {
+  execFileSync(installer, ["/S"], { stdio: "inherit", timeout: 300_000 });
+  const path = join(process.env.LOCALAPPDATA, "Programs", "RelayIt", "RelayIt.exe");
+  for (let i = 0; i < 60 && !existsSync(path); i++) await sleep(1000);
+  if (!existsSync(path)) throw new Error(`the installer did not create ${path}`);
+  return path;
+}
+
+function installOnMac() {
+  const volume = join(scratch, "volume");
+  execFileSync("hdiutil", ["attach", installer, "-nobrowse", "-readonly", "-mountpoint", volume], { stdio: "inherit" });
+  const target = join(scratch, "RelayIt.app");
+  try {
+    execFileSync("ditto", [join(volume, "RelayIt.app"), target], { stdio: "inherit" });
+  } finally {
+    execFileSync("hdiutil", ["detach", volume, "-force"], { stdio: "inherit" });
+  }
+  execFileSync("codesign", ["--verify", "--deep", "--strict", target], { stdio: "inherit" });
+  return join(target, "Contents", "MacOS", "RelayIt");
+}
+
+function stopApp() {
+  try {
+    if (windows) execFileSync("taskkill", ["/PID", String(app.pid), "/T", "/F"], { stdio: "ignore" });
+    else process.kill(-app.pid, "SIGKILL");
+  } catch { /* already gone */ }
+}
 
 async function waitFor(check, limitMs, message) {
   const by = Date.now() + limitMs;

@@ -1,10 +1,22 @@
-**Early test version.** Ordering and payments here use demo data, so nothing real is ordered or paid.
+**Early version.** Food ordering and payments use demo data for now, so nothing real is ordered or paid.
 
 ## Download
 
-- **Windows:** download the `-setup.exe` file below and run it. Windows may warn that the app is from an unknown publisher, because it isn't signed yet. Choose **More info**, then **Run anyway**.
-- **Mac (Apple Silicon):** if a `.dmg` file is listed below, open it and drag RelayIt to Applications. The first time, right-click the app and choose **Open**.
+Open **Assets** below and pick the file for your computer:
+
+| Your computer | File |
+| --- | --- |
+| Windows | `RelayIt-…-setup.exe` |
+| Mac with Apple Silicon (M1 or newer) | `RelayIt-…-arm64.dmg` |
+| Mac with Intel | `RelayIt-…-x64.dmg` |
+
+## First launch
+
+The app isn't signed by Microsoft or Apple yet, so your computer will warn you the first time.
+
+- **Windows:** run the file. If Windows says it protected your PC, choose **More info**, then **Run anyway**.
+- **Mac:** open the `.dmg` and drag RelayIt to Applications, then open it. If your Mac refuses, go to **System Settings → Privacy & Security**, scroll down and choose **Open Anyway**.
 
 ## You'll need
 
-An AI to think with: sign in with Claude or ChatGPT, use your own API key, or run a local model with Ollama.
+An AI for RelayIt to think with: sign in with Claude or ChatGPT, use your own API key, or run a local model with Ollama.

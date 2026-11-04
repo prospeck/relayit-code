@@ -1,0 +1,103 @@
+# A version tag builds the Mac and Windows installers on real machines and tries each one. The release is only
+# published once every installer has been installed and opened.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  mac:
+    name: Mac installers
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Package Apple Silicon and Intel
+        # These runners have 7 GB, and Node's default heap stops near 2 GB. There's no Developer ID yet, so sign ad hoc.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          pnpm package:prepare
+          pnpm build:speech
+          pnpm build:cua
+          pnpm exec electron-builder --mac dmg --arm64 --x64 --publish never -c.mac.identity=-
+      - name: Install Apple Silicon and open it
+        run: node scripts/smoke-install.mjs smoke-output release/RelayIt-*-arm64.dmg
+      - name: Install Intel and open it
+        run: |
+          sudo softwareupdate --install-rosetta --agree-to-license
+          node scripts/smoke-install.mjs smoke-output release/RelayIt-*-x64.dmg
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: mac-check
+          path: smoke-output
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mac-installers
+          path: release/*.dmg
+          if-no-files-found: error
+
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm package:win
+      - name: Install it and open it
+        shell: bash
+        run: node scripts/smoke-install.mjs smoke-output release/RelayIt-*-setup.exe
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: windows-check
+          path: smoke-output
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-installer
+          path: release/*-setup.exe
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    needs: [mac, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: installers
+          pattern: "*-install*"
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd installers
+          sha256sum * > SHA256SUMS.txt
+          cd ..
+          gh release create "$GITHUB_REF_NAME" installers/* \
+            --title "RelayIt $GITHUB_REF_NAME" \
+            --notes-file .github/release-notes.md \
+            --latest
