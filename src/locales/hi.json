@@ -2398,5 +2398,21 @@
   "relay.leg.find": "खोज",
   "relay.leg.prepare": "तैयारी",
   "relay.leg.ok": "आपकी मंज़ूरी",
-  "relay.leg.done": "हो गया"
+  "relay.leg.done": "हो गया",
+  "relay.usual.save": "रोज़ के काम में जोड़ें",
+  "relay.usual.saved": "आपके रोज़ के कामों में",
+  "relay.habits.title": "RelayIt को अपनी दिनचर्या का हिस्सा बनाइए",
+  "relay.habits.subtitle": "यह आपके ईमेल और कैलेंडर पढ़कर ज़रूरी बातें बताता है। आपके बिना कभी कुछ नहीं भेजता, भुगतान या बुकिंग नहीं करता।",
+  "relay.habits.brief": "सुबह की ख़बर",
+  "relay.habits.briefDetail": "रोज़ सुबह 8 बजे: किसमें आपकी ज़रूरत है, आपका कैलेंडर, और आने वाले बिल।",
+  "relay.habits.recap": "रविवार का सार",
+  "relay.habits.recapDetail": "हर रविवार शाम 6 बजे: क्या हुआ, कितना ख़र्च हुआ, अगले हफ़्ते क्या है।",
+  "relay.habits.turnOn": "चालू करें",
+  "relay.habits.on": "चालू",
+  "relay.habits.notNow": "अभी नहीं",
+  "relay.payment.demo": "डेमो",
+  "relay.payment.scan": "फ़ोन के किसी भी UPI ऐप से स्कैन करें, नाम और रकम जाँचें, और अपने PIN से भुगतान करें।",
+  "relay.payment.scanDemo": "टेस्ट चेकआउट खोलने के लिए स्कैन करें। कोई असली पैसा नहीं जाता।",
+  "relay.money.approved": "आपने {name} को {total} मंज़ूर किए",
+  "relay.money.declined": "नहीं किया: {name} को {total}"
 }

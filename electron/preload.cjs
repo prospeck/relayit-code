@@ -35,6 +35,15 @@ ipcRenderer.on("app:open-settings", (_event, section) => {
   for (const listener of appSettingsListeners) listener(fixedSection);
 });
 
+// Quick Relay: the global shortcut brings the window up on Today with the cursor in its box. A press before the page
+// listens is kept for it, once.
+let quickRelayPending = false;
+const quickRelayListeners = new Set();
+ipcRenderer.on("relayit:quick-relay", () => {
+  if (!quickRelayListeners.size) { quickRelayPending = true; return; }
+  for (const listener of quickRelayListeners) listener();
+});
+
 // The full bridge goes only to the local server's UI; a remote page gets the safe subset, and main enforces the same rule.
 const localOrigin = process.argv.find((arg) => arg.startsWith("--omb-local-origin="))?.slice("--omb-local-origin=".length) ?? null;
 const isLocalPage = !localOrigin || location.origin === localOrigin;
@@ -235,6 +244,15 @@ const bridge = {
     }),
   },
   callActive: (active) => ipcRenderer.invoke("call:active", active === true).then(() => undefined),
+  onQuickRelay: (cb) => {
+    quickRelayListeners.add(cb);
+    queueMicrotask(() => {
+      if (!quickRelayPending || !quickRelayListeners.has(cb)) return;
+      quickRelayPending = false;
+      cb();
+    });
+    return () => quickRelayListeners.delete(cb);
+  },
   onOpenAppSettings: (cb) => {
     appSettingsListeners.add(cb);
     queueMicrotask(() => {

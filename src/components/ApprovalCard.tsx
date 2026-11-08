@@ -3,6 +3,7 @@ import { Check, Clock3, ShieldCheck, Undo2, X } from "lucide-react";
 import { api, ApiError, StoreContext, type Bot, type Message, type OptionCardData } from "@/state/store";
 import { shareLearnedSkillsMode } from "@/lib/feature-flags";
 import { cn } from "@/lib/cn";
+import { moneyPreview } from "@/lib/relay";
 import { t, tFromServer } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 import { SkillRequestPreview } from "@/components/SkillRequestPreview";
@@ -468,6 +469,18 @@ export function ApprovalCard({
       <div data-computer-ask={state} className="w-full">
         <CompactApprovalRow header={turnOn.line} summary={waiting ? turnOn.reason : undefined} detail="" showDetailInline={false} outcome={turnOn.outcome}
           allowed={state === "on" || state === "turning-on"} byVoice={byVoice} waiting={waiting} answeredBelow={waiting && !card.dismissed} />
+      </div>
+    );
+  }
+  const money = moneyPreview(card);
+  if (money && (settled || expired)) {
+    const line = settled === "allow" && !expired
+      ? t("relay.money.approved", { total: money.total, name: money.to })
+      : t("relay.money.declined", { total: money.total, name: money.to });
+    return (
+      <div data-money-settled={settled === "allow" && !expired ? "allow" : "deny"} className="flex items-center gap-1.5 text-[13px] text-ink-secondary">
+        {settled === "allow" && !expired ? <Check size={14} className="text-success" aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
+        <span>{line}</span>{byVoice}
       </div>
     );
   }

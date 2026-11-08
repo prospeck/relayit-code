@@ -13,6 +13,7 @@ import { useDesktopCapabilities, WindowDragStrip } from "../DesktopCapabilities"
 import { LaneMark } from "../RelayItMark";
 import { RelayMarker } from "./RelaySidebar";
 import { onFocusRelayComposer, startRelay } from "./relay-compose";
+import { Habits } from "./Habits";
 import { useUsuals } from "./usuals";
 
 function TodayComposer({ bot }: { bot: Bot | undefined }) {
@@ -94,7 +95,7 @@ function TodayComposer({ bot }: { bot: Bot | undefined }) {
       </div>
       <div className="mt-2 flex items-center gap-3 px-5 text-[12px] text-ink-tertiary">
         <span>{t("relay.today.hint")}</span>
-        {window.ogb && <span className="ml-auto">{t("relay.today.quick", { keys: navigator.platform.includes("Mac") ? "⌥ Space" : "Alt+Space" })}</span>}
+        {window.ogb?.onQuickRelay && <span className="ml-auto">{t("relay.today.quick", { keys: navigator.platform.includes("Mac") ? "⌥ Space" : "Ctrl+Alt+Space" })}</span>}
       </div>
       {error && <p role="alert" className="mt-2 px-5 text-[13px] text-danger">{error}</p>}
     </form>
@@ -200,6 +201,7 @@ export function TodayPage({ bot }: { bot: Bot | undefined }) {
         {relays.length > 0 && yours.length === 0 && running.length === 0 && (
           <p className="mt-9 px-4 text-[14px] text-ink-tertiary">{t("relay.today.allClear")}</p>
         )}
+        <Habits bot={bot} />
       </div>
     </main>
   );

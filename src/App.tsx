@@ -60,6 +60,7 @@ import { useAiSwitchKeeper } from "@/lib/ai-switch";
 import { chiefFor, createChiefPatch, myDefaultBot, useChiefStepOpen, useViewerEmail } from "@/lib/default-bot";
 import { RelaySidebar } from "@/components/relay/RelaySidebar";
 import { TodayPage } from "@/components/relay/TodayPage";
+import { focusRelayComposer } from "@/components/relay/relay-compose";
 import { SESSION_ENDED_REASON, useSessionEnded } from "@/lib/session-ended";
 import { PairPage } from "./pair/PairPage";
 import { WebPanelPage } from "@/components/WebPanelPage";
@@ -133,6 +134,10 @@ function Shell() {
   const simpleRelay = !advanced && !remoteClient;
   const viewerEmail = useViewerEmail();
   const relayBot = myDefaultBot(state.bots, viewerEmail) ?? state.bots.find((b) => !b.hidden);
+  useEffect(() => window.ogb?.onQuickRelay?.(() => {
+    dispatch({ type: "showToday" });
+    focusRelayComposer();
+  }), [dispatch]);
   // RelayIt needs no introduction to itself: outside Advanced it is welcomed, in the sidebar's place and the Chief from
   // the start, so neither the Chief step nor its first-launch card ever shows.
   const welcomeRelayIt = simpleRelay && relayBot?.defaultBot && !relayBot.welcomed ? relayBot : undefined;

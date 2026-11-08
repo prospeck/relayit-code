@@ -4,6 +4,7 @@ import { t } from "@/lib/i18n";
 import { failedTurnCause } from "../../shared/failed-turn";
 import { isStoppedTurnName } from "../../shared/client-cancel";
 import { localDay } from "@/lib/transcript-derivations";
+import { paymentRequest } from "@/lib/payment-request";
 
 export type ActivityTranscriptItem =
   | { kind: "message"; message: Message }
@@ -29,10 +30,17 @@ export function isStatusActivity(message: Message): boolean {
   return statusActivity(message) !== null;
 }
 
+/** A payment request: the card the person pays from, shown whether or not tool steps are. */
+export function isPaymentStep(message: Message): boolean {
+  return message.kind === "activity" && message.tool?.ok === true && paymentRequest(message.tool.name, message.tool.output) !== null;
+}
+
 export function isToolStep(message: Message): message is Message & { tool: NonNullable<Message["tool"]> } {
   const tool = message.tool;
   if (message.kind !== "activity" || !tool) return false;
   if (message.comm || message.threadRef || message.relay || message.dataResult || isStatusActivity(message)) return false;
+  // A payment request is the card the person pays from: it never folds away with the steps around it.
+  if (isPaymentStep(message)) return false;
   return failedTurnCause(tool.name) === null;
 }
 

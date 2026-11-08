@@ -1,9 +1,11 @@
 // A relay's legs, as a strip under the chat's header: Find, Prepare, Your OK, Done. The runner (the coral dot from
 // the mark) sits on the leg it is on, so a glance says whether RelayIt is still working or waiting on you.
+import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { RELAY_LEGS, relayLeg } from "@/lib/relay";
 import type { Message } from "@/state/store";
+import { isUsual, removeUsual, saveUsual, useUsuals } from "./usuals";
 
 const LABEL = { find: "relay.leg.find", prepare: "relay.leg.prepare", ok: "relay.leg.ok", done: "relay.leg.done" } as const;
 
@@ -11,8 +13,10 @@ export function RelayLegs({ messages, waiting, running }: { messages: readonly M
   if (!messages.some((message) => message.role === "user")) return null;
   const leg = relayLeg(messages, { waiting, running });
   const at = RELAY_LEGS.indexOf(leg);
+  const asked = [...messages].reverse().find((message) => message.role === "user")?.text?.trim() ?? "";
   return (
-    <ol aria-label={t("relay.leg.aria")} data-relay-legs={leg} className="mx-auto mb-1 flex w-full max-w-[560px] items-center gap-1.5 px-5">
+    <div data-relay-strip="" className="relative z-10 mx-auto flex w-full items-center justify-center bg-app/90 pb-1.5 backdrop-blur-sm"><div className="flex w-full max-w-[640px] items-center gap-3 px-5">
+    <ol aria-label={t("relay.leg.aria")} data-relay-legs={leg} className="flex min-w-0 flex-1 items-center gap-1.5">
       {RELAY_LEGS.map((name, index) => {
         const current = index === at;
         const past = index < at;
@@ -34,5 +38,23 @@ export function RelayLegs({ messages, waiting, running }: { messages: readonly M
         );
       })}
     </ol>
+    {leg === "done" && asked && asked.length <= 280 && <SaveUsual text={asked} />}
+    </div></div>
+  );
+}
+
+/** A finished relay can become a usual: one tap on Today next time. */
+function SaveUsual({ text }: { text: string }) {
+  useUsuals();
+  const saved = isUsual(text);
+  const Icon = saved ? BookmarkCheck : Bookmark;
+  return (
+    <button type="button" aria-pressed={saved} data-save-usual=""
+      onClick={() => (saved ? removeUsual(text) : saveUsual(text))}
+      title={t(saved ? "relay.usual.saved" : "relay.usual.save")}
+      className={cn("flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium transition-colors",
+        saved ? "text-accent-text" : "text-ink-secondary hover:bg-ink/[0.06] hover:text-ink")}>
+      <Icon size={14} aria-hidden="true" />{t(saved ? "relay.usual.saved" : "relay.usual.save")}
+    </button>
   );
 }

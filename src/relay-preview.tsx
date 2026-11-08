@@ -45,6 +45,17 @@ const messages: Message[] = [
     requestType: "permission", tool: "mcp__india-food__place_order", verifiedPreview: true } }),
 ];
 
+const PAYMENT = JSON.stringify({ type: "payment", id: "pay_1", orderId: "ord_1", amountInr: 593, payeeName: "California Pizza Kitchen",
+  payeeVpa: "cpk.indiranagar@okaxis", status: "pending", upiUri: null, checkoutUrl: "http://127.0.0.1:8799/demo-checkout/pay_1", demo: true });
+const paid: Message[] = [
+  ...messages.slice(0, 5),
+  message("card", 1, { kind: "options", text: ORDER, card: { title: "Approval needed", subtitle: ORDER, options: ["Allow", "Deny"], requestId: "req-1",
+    requestType: "permission", tool: "mcp__india-food__place_order", verifiedPreview: true, answered: "allow" } }),
+  tool("t4", 1.2, "place_order"),
+  message("pay", 1.4, { kind: "activity", tool: { name: "mcp__india-payments__payments_create_request", ok: true, output: PAYMENT } }),
+  message("after", 1.5, { text: "Ordered. Pay ₹593 in your UPI app and I'll keep an eye on the delivery." }),
+];
+
 const relayit: Bot = {
   id: "relayit", name: "RelayIt", title: "", description: "", notifications: true, unread: false, color: "coral", defaultBot: { person: "" },
   welcomed: true, modelSelection: { instanceId: "claude", model: "claude-opus-5-5" }, threadId: "cpk", busy: true, activity: "waiting-on-you",
@@ -55,7 +66,8 @@ const relayit: Bot = {
     { threadId: "bescom", title: "Pay the BESCOM electricity bill", createdAt: NOW - 5 * 3600_000, lastThreadOrderAt: NOW - 5 * 3600_000 },
     { threadId: "amma", title: "Gift ideas for Amma's birthday", createdAt: NOW - 26 * 3600_000, lastThreadOrderAt: NOW - 26 * 3600_000 },
   ],
-  messages,
+  messages: view === "pay" ? paid : messages,
+  ...(view === "pay" ? { busy: false, activity: "idle", tasks: [{ threadId: "cpk", title: "Dinner from California Pizza Kitchen", createdAt: AT, lastThreadOrderAt: AT + 90_000 }] } : {}),
 } as unknown as Bot;
 
 function Frame({ children }: { children: ReactNode }) {
@@ -64,7 +76,8 @@ function Frame({ children }: { children: ReactNode }) {
 
 function Gallery() {
   const state: AppState = {
-    ...initialState, bots: [relayit], selectedId: "relayit", connected: true, hydrated: true, activeView: view === "chat" ? "chat" : "today",
+    ...initialState, bots: [relayit], selectedId: "relayit", connected: true, hydrated: true, activeView: view === "today" ? "today" : "chat",
+    routines: [], routinesLoadState: "ready",
     config: { ...(initialState.config ?? {}), profile: { name: "Taran" } } as AppState["config"],
   };
   const value = { state, dispatch: () => {}, flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {} };
@@ -72,7 +85,7 @@ function Gallery() {
     <StoreContext.Provider value={value}>
       <Frame>
         <RelaySidebar bot={relayit} open onClose={() => {}} />
-        {view === "chat" ? <div className="flex min-w-0 flex-1 flex-col"><ChatView bot={relayit} /></div> : <TodayPage bot={relayit} />}
+        {view !== "today" ? <div className="flex min-w-0 flex-1 flex-col"><ChatView bot={relayit} /></div> : <TodayPage bot={relayit} />}
       </Frame>
     </StoreContext.Provider>
   );

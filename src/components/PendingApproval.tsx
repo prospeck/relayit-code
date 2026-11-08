@@ -163,6 +163,7 @@ function MoneyApproval({ money, count, index, actions, detailsId }: { money: Mon
         )}
       </div>
       <p dir="auto" className="mt-3 text-[15px] font-medium leading-[22px] text-ink">{money.title}</p>
+      <p className="sr-only">{money.total}</p>
       <p className="mt-1 flex items-baseline font-display font-semibold tabular-nums leading-none tracking-[-0.03em] text-ink" aria-hidden="true">
         {symbol && <span className="mr-1 text-[26px]">{symbol}</span>}
         <span className="text-[46px]">{whole}</span>

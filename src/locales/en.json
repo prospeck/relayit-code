@@ -6637,5 +6637,21 @@
   "relay.leg.find": "Find",
   "relay.leg.prepare": "Prepare",
   "relay.leg.ok": "Your OK",
-  "relay.leg.done": "Done"
+  "relay.leg.done": "Done",
+  "relay.usual.save": "Save as a usual",
+  "relay.usual.saved": "One of your usuals",
+  "relay.habits.title": "Make RelayIt part of your day",
+  "relay.habits.subtitle": "It reads your email and calendar for you and tells you what matters. It never sends, pays or books without you.",
+  "relay.habits.brief": "Morning brief",
+  "relay.habits.briefDetail": "Every day at 8:00: what needs you, your calendar, and bills coming due.",
+  "relay.habits.recap": "Sunday recap",
+  "relay.habits.recapDetail": "Sundays at 6 pm: what got done, what you spent, what's next week.",
+  "relay.habits.turnOn": "Turn on",
+  "relay.habits.on": "On",
+  "relay.habits.notNow": "Not now",
+  "relay.payment.demo": "Demo",
+  "relay.payment.scan": "Scan with any UPI app on your phone, check the name and amount, and pay with your PIN.",
+  "relay.payment.scanDemo": "Scan to open the test checkout. No real money moves.",
+  "relay.money.approved": "You approved {total} to {name}",
+  "relay.money.declined": "Not placed: {total} to {name}"
 }

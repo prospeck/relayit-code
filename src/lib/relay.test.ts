@@ -15,7 +15,7 @@ describe("a relay's status", () => {
     expect(relayStatus(task({ activity: "idle" }))).toBe("done");
   });
 
-  it("lists relays newest first, leaving out archived, snoozed, routine and untouched threads", () => {
+  it("lists relays newest first, a routine's run among them, leaving out archived, snoozed and untouched threads", () => {
     const now = 10_000;
     const list = relaysOf([
       task({ threadId: "old", lastThreadOrderAt: 100 }),
@@ -24,9 +24,9 @@ describe("a relay's status", () => {
       task({ threadId: "starting", busy: true, createdAt: 950 }),
       task({ threadId: "archived", lastThreadOrderAt: 999, archivedAt: 1 }),
       task({ threadId: "snoozed", lastThreadOrderAt: 999, snoozedUntil: now + 1 }),
-      task({ threadId: "routine", lastThreadOrderAt: 999, routineRunId: "r" }),
+      task({ threadId: "brief", lastThreadOrderAt: 990, routineRunId: "r" }),
     ], now);
-    expect(list.map((item) => item.threadId)).toEqual(["starting", "new", "old"]);
+    expect(list.map((item) => item.threadId)).toEqual(["brief", "starting", "new", "old"]);
   });
 });
 
@@ -82,5 +82,18 @@ describe("words around a relay", () => {
   it("writes English dates the Indian way", () => {
     expect(dateLocale("en")).toBe("en-IN");
     expect(dateLocale("hi")).toBe("hi");
+  });
+});
+
+describe("a payment in a simple chat", async () => {
+  const { isPaymentStep } = await import("./activity-runs");
+  const { quietRow } = await import("@/components/chat-bubble");
+  const output = JSON.stringify({ type: "payment", id: "p", orderId: "o", amountInr: 593, payeeName: "CPK", payeeVpa: "cpk@okaxis",
+    status: "pending", upiUri: null, checkoutUrl: "http://127.0.0.1:8799/demo-checkout/p", demo: true });
+  const pay = msg({ kind: "activity", tool: { name: "mcp__india-payments__payments_create_request", ok: true, output } });
+  it("stays on screen with tool steps hidden, and never folds away", () => {
+    expect(isPaymentStep(pay)).toBe(true);
+    expect(quietRow(pay, false)).toBe(false);
+    expect(quietRow(msg({ kind: "activity", tool: { name: "get_menu", ok: true } }), false)).toBe(true);
   });
 });

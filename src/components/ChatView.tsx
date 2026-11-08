@@ -71,6 +71,7 @@ import { useShowRunCard } from "@/lib/run-card-preferences";
 import { useColorUserBubbles } from "@/lib/user-bubble-preference";
 import { userBubbleStyle } from "@/lib/user-bubble-tone";
 import { ToolActivity } from "./ToolActivity";
+import { PaymentRequestCard } from "./PaymentRequestCard";
 import { DataResultChip } from "./DataResultChip";
 import { ThreadRefText } from "./ThreadRefs";
 import { optionsCardRow } from "./OptionsCardRow";
@@ -106,7 +107,7 @@ import { effectivePlace, toolPlace, type EffectivePlace } from "@/lib/place";
 import { cn } from "@/lib/cn";
 import { activeLocale, t } from "@/lib/i18n";
 import { COMPACT_BUBBLE } from "@/lib/compact-chip";
-import { groupTranscript, isStatusActivity, turnDurations, workedLabel } from "@/lib/activity-runs";
+import { groupTranscript, isPaymentStep, isStatusActivity, turnDurations, workedLabel } from "@/lib/activity-runs";
 import { StatusActivityRow } from "@/components/StatusActivityRow";
 import { CancelledTurnRow } from "./CancelledTurnRow";
 import { ActivityRun } from "./ActivityRun";
@@ -761,7 +762,9 @@ const MessagesList = memo(function MessagesList({
                   />
                 );
               }
-              if (!showToolCalls && !m.comm && !m.threadRef && !m.relay && !m.dataResult) return null;
+              if (!showToolCalls && !m.comm && !m.threadRef && !m.relay && !m.dataResult) {
+                return isPaymentStep(m) && m.tool ? <PaymentRequestCard name={m.tool.name} output={m.tool.output} ok={m.tool.ok} /> : null;
+              }
               return <ActivityChip message={m} place={place} />;
             }
             case "digest":

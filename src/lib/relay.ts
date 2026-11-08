@@ -12,11 +12,11 @@ export function relayStatus(task: Pick<Task, "activity" | "busy" | "openAsks">):
 }
 
 /** Newest first by the last thing that happened in it; archived and snoozed relays stay out, and so does a thread
- * nothing has happened in yet (RelayIt's own empty main thread). */
+ * nothing has happened in yet (RelayIt's own empty main thread). A routine's run is a relay too: the brief arrives here. */
 export function relaysOf(tasks: readonly Task[] | undefined, now = Date.now()): Task[] {
   return (tasks ?? [])
     .filter((task) => task.lastThreadOrderAt !== undefined || task.busy || task.activity === "working" || task.activity === "waiting-on-you")
-    .filter((task) => !task.archivedAt && !(task.snoozedUntil && task.snoozedUntil > now) && !task.routineRunId)
+    .filter((task) => !task.archivedAt && !(task.snoozedUntil && task.snoozedUntil > now))
     .sort((a, b) => (b.lastThreadOrderAt ?? b.updatedAt ?? b.createdAt) - (a.lastThreadOrderAt ?? a.updatedAt ?? a.createdAt));
 }
 

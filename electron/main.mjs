@@ -131,6 +131,25 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEV_URL = process.env.ELECTRON_START_URL ?? "http://127.0.0.1:5199";
 let SERVER_PORT = 8799;
 const APP_ICON = path.join(__dirname, "resources/app-icon.png");
+// Quick Relay: from anywhere, bring RelayIt up on Today, ready to be told something. Option+Space on a Mac; Windows and
+// Linux keep Alt+Space for the window menu, so there it is Ctrl+Alt+Space. If another app holds the key, nothing happens.
+const QUICK_RELAY_KEY = process.platform === "darwin" ? "Alt+Space" : "Control+Alt+Space";
+let quickRelayKey = null;
+function registerQuickRelay() {
+  try {
+    if (globalShortcut.register(QUICK_RELAY_KEY, () => {
+      const win = mainWindow;
+      if (!win || win.isDestroyed()) return;
+      if (win.isMinimized()) win.restore();
+      win.setSkipTaskbar(false);
+      win.show();
+      win.focus();
+      win.webContents.send("relayit:quick-relay");
+    })) quickRelayKey = QUICK_RELAY_KEY;
+  } catch (error) {
+    console.error("[quick-relay] could not register the shortcut:", error);
+  }
+}
 const TRAY_ICON = process.platform === "darwin" ? path.join(__dirname, "resources/trayTemplate.png") : APP_ICON;
 let desktopViewerWindow = null;
 let desktopViewerOwner = null;
@@ -2311,6 +2330,7 @@ app.whenReady().then(async () => {
       chromeRail.send("desktop-language:changed", language);
     },
     page: event => senderIsLocal(event) ? "local" : (workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin()) ? "server" : null) });
+  registerQuickRelay();
   talk.start({ globalShortcut, screen, prefs: desktopPrefs, remote: () => Boolean(desktopRemoteAccess), away: () => false, starting: () => !serverReady, localRequest: localServerRequest, dataDir: () => runningDataDir });
   // Before the window, so the harness has the CUA descriptor on first render.
   cuaReady =
@@ -2513,4 +2533,5 @@ function releaseDesktopDataDirLease() {
 // before-quit is too early (this app defers it); will-quit is Electron's last boundary, and the process hook covers app.exit().
 app.on("will-quit", releaseDesktopDataDirLease);
 app.on("will-quit", () => desktopTray?.destroy());
+app.on("will-quit", () => { if (quickRelayKey) globalShortcut.unregister(quickRelayKey); });
 process.once("exit", releaseDesktopDataDirLease);
