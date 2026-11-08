@@ -19,6 +19,8 @@ vi.mock("react", async (original) => ({
     fixture.effects.push(effect);
   },
 }));
+const mode = vi.hoisted(() => ({ advanced: false }));
+vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => mode.advanced }));
 const store = vi.hoisted(() => ({ state: {} as Record<string, unknown>, dispatch: vi.fn(), api: vi.fn() }));
 vi.mock("@/state/store", () => ({ api: store.api, useStore: () => ({ state: store.state, dispatch: store.dispatch }) }));
 
@@ -91,8 +93,17 @@ describe("who gets the welcome flow", () => {
     expect(store.dispatch).toHaveBeenCalledWith({ type: "toggleWelcome", open: false });
   });
 
-  it("with no choice made, lands with the Chief of Staff wherever it sits in the list, else the first bot", () => {
+  it("with no choice made, lands on Today", () => {
     vi.stubGlobal("window", LOCAL_PAGE);
+    store.state = { ...store.state, bots: [{ id: "chief", chiefOfStaff: true }] };
+    gate(LOCAL_VIEWER).tree!.props.onDone!(null);
+    expect(store.dispatch).toHaveBeenCalledWith({ type: "showToday" });
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: "select" }));
+  });
+
+  it("in Advanced, with no choice made, lands with the Chief of Staff wherever it sits in the list, else the first bot", () => {
+    vi.stubGlobal("window", LOCAL_PAGE);
+    mode.advanced = true;
     const finish = () => gate(LOCAL_VIEWER).tree!.props.onDone!(null);
     store.state = { ...store.state, bots: [{ id: "old", hidden: true, chiefOfStaff: true }, { id: "helper" }, { id: "chief", chiefOfStaff: true }] };
     finish();
@@ -107,6 +118,7 @@ describe("who gets the welcome flow", () => {
     store.state = { ...store.state, bots: [] };
     finish();
     expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: "select" }));
+    mode.advanced = false;
   });
 
   it("never starts the app tour when the welcome is finished or skipped, nor after a reload", () => {

@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { introStaged, stageIntro, useChiefStepOpen } from "@/lib/default-bot";
 import { setLocale } from "@/lib/i18n";
+import { setAdvancedMode } from "@/lib/interface-mode";
 
 import { EMPTY_ONBOARDING, MET_CHIEF_HINT, WELCOME_VERSION } from "@/lib/onboarding";
 import { saveWelcomeDraft } from "@/lib/welcome-draft";
@@ -70,6 +71,8 @@ const memoryStorage = () => {
 };
 
 beforeEach(() => {
+  // These cover Advanced's first run, which ends with the Chief of Staff; RelayIt's own is "the RelayIt first run".
+  setAdvancedMode(true);
   vi.useFakeTimers();
   HTMLElement.prototype.animate = vi.fn(() => ({ onfinish: null, oncancel: null, cancel() {} }) as unknown as Animation);
   setLocale("en");
@@ -101,7 +104,7 @@ describe("a new install's first run", () => {
   it("is two screens with an AI already working: Next, then Create, and it lands in the Chief's chat", async () => {
     await show();
     expect(host.querySelector("h1")?.textContent).toBe("Meet RelayIt");
-    expect(host.querySelector("[data-demo-composer]")?.textContent, "reduced motion shows the whole sentence").toContain("Hand off any task to your team of bots");
+    expect(host.querySelector("[data-demo-composer]")?.textContent, "reduced motion shows the whole sentence").toContain("Order something from California Pizza Kitchen");
     for (const gone of ["Step 1", "Back", "Skip", "Your name", "Connect an AI", "Set up later"]) expect(text()).not.toContain(gone);
     expect(button("Next")!.disabled).toBe(false);
 

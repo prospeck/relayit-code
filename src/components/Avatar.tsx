@@ -1,6 +1,7 @@
 import { forwardRef, memo, useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { MAUS_COLORS, type MausColor, type MausMotion, type MausState } from "@/lib/mascot";
+import { LaneMark } from "./RelayItMark";
 import { avatarCropRadius, botAvatarProfile, clampAvatarFocus, clampAvatarZoom, type BotAvatarCrop, type MascotFaceColor } from "../../shared/bot-avatar";
 import type { BotBodyId } from "../../shared/bot-body";
 import { useHalloweenDressed, wornBody } from "@/lib/halloween-dress";
@@ -57,6 +58,8 @@ export type BotAvatarProps = Omit<MausAvatarProps, "color" | "gradient"> & {
     avatarFocusY?: number;
     mascotBody?: BotBodyId | null;
     mascotFaceColor?: MascotFaceColor | null;
+    /** RelayIt itself wears the Lane mark until someone gives it a picture of its own. */
+    defaultBot?: unknown;
   };
 };
 
@@ -88,6 +91,7 @@ export function BotAvatar({ bot, size = 44, label, readable = false, ...mascotPr
     imageFailed,
   });
 
+  if (bot.defaultBot && !profile.avatarUrl) return <LaneMark tile size={size} className="rounded-[23%]" />;
   if (outcome !== "flatImage") {
     return (
       <MausAvatar

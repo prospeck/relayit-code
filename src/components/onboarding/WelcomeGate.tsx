@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { clearWelcomeDraft } from "@/lib/welcome-draft";
 import { hostedMember, LOCAL_VIEWER, welcomeDue, welcomeViewer, type WelcomeViewer } from "@/lib/onboarding";
+import { useAdvancedMode } from "@/lib/interface-mode";
 import { api, useStore } from "@/state/store";
 import { SharedWorkspaceHint } from "./SharedWorkspaceHint";
 import { WelcomeFlow } from "./WelcomeFlow";
@@ -38,6 +39,7 @@ export function useWelcomeViewer(): WelcomeViewer | null {
 export function WelcomeGate({ viewer }: { viewer: WelcomeViewer | null }) {
   const { state, dispatch } = useStore();
   const [dismissed, setDismissed] = useState(false);
+  const advanced = useAdvancedMode();
   const remoteClient = window.ogb?.remoteClient?.active === true;
   // A welcome finished elsewhere (another window, an older version's record) leaves no draft behind to resume later.
   const finished = Boolean(viewer && state.config) && !welcomeDue(state.config, {
@@ -78,9 +80,11 @@ export function WelcomeGate({ viewer }: { viewer: WelcomeViewer | null }) {
       onDone={(botId) => {
         setDismissed(true);
         dispatch({ type: "toggleWelcome", open: false });
-        // A first run ends in the chat with the bot it chose, else its Chief; the app tour starts only from Settings.
-        const target = botId ?? (replay ? null : fallback?.id);
+        // A first run ends on Today; in Advanced, in the chat with the bot it chose, else its Chief. The app tour starts
+        // only from Settings.
+        const target = botId ?? (replay || !advanced ? null : fallback?.id);
         if (target) dispatch({ type: "select", id: target });
+        else if (!replay) dispatch({ type: "showToday" });
       }}
     />
   );

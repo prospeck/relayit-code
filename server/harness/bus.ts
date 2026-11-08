@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { EVENTS_DIR } from "../config.ts";
 import { flushNativeLog } from "../drivers/native.ts";
 import { redactSecrets } from "../redact.ts";
+import { settleVerifiedPreview } from "../tool-approval-preview.ts";
 import { batchSaves } from "../save-batch.ts";
 import { capThreadLog, currentThreadLogCap } from "../thread-log-rotation.ts";
 import { newId, type ProviderAdapter, type ProviderInstance, type RuntimeEvent, type RuntimeEventListener } from "../contracts.ts";
@@ -96,7 +97,8 @@ export class EventBus {
     }
   }
 
-  publish(raw: RuntimeEvent) {
+  publish(input: RuntimeEvent) {
+    const raw = settleVerifiedPreview(input);
     if (raw.type === "turn.progress") {
       this.progress.offer(this.steps.progress(raw));
       return;

@@ -87,15 +87,17 @@ export function hintSeenPatch(
 }
 
 
-export type BeatId = "meet" | "chief";
+export type BeatId = "meet" | "about" | "chief";
 
 /** Every screen the first run can show, in the order it shows them. */
-export const BEAT_ORDER: readonly BeatId[] = ["meet", "chief"];
+export const BEAT_ORDER: readonly BeatId[] = ["meet", "about", "chief"];
 
-/** Two screens, then the chat: meeting the app (and connecting an AI when none works), then the Chief of Staff. A hosted
- * place's admin only meets the app: their team's bots and Chief are already set up. */
-export function beatsFor(options: { hosted?: boolean }): BeatId[] {
-  return options.hosted ? ["meet"] : ["meet", "chief"];
+/** Two screens, then Today: meeting RelayIt (and connecting an AI when none works), then who and where it works for. In
+ * Advanced the second is the Chief of Staff instead. A hosted place's admin only meets the app: their team's bots and
+ * Chief are already set up. */
+export function beatsFor(options: { hosted?: boolean; advanced?: boolean }): BeatId[] {
+  if (options.hosted) return ["meet"];
+  return options.advanced ? ["meet", "chief"] : ["meet", "about"];
 }
 
 /** Where a reloaded first run opens: the saved screen while it is offered, else the first. */

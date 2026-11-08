@@ -129,6 +129,9 @@ export type RuntimeEvent = RuntimeEventBase &
         requestType: "permission" | "question";
         tool: string;
         summary: string;
+        /** The summary is a shipped connector's own preview (title, summary, To:, Total: …), set only by the event bus
+         * (settleVerifiedPreview); a driver's claim is dropped. */
+        verifiedPreview?: true;
         /** Complete native shell input and its effective working directory.
          * Used for exact-command grants; never reconstructed from a display
          * summary, tool title, or argv. Absent when either value is unknown. */

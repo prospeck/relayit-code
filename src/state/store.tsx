@@ -1,4 +1,5 @@
 import { cloudAsleep, onCloudPower } from "../lib/cloud-power";
+import { readAdvancedMode } from "@/lib/interface-mode";
 import { api, ApiError } from "./api";
 import {
   createContext,
@@ -76,7 +77,7 @@ import { reconcileSnapshotQueues, rememberConsumedQueueId, replaceBotQueues } fr
 export type { MausColor } from "@/lib/mascot";
 export type { RoutineRunCardData } from "../../shared/routine-run";
 
-export interface OptionCardData extends Pick<WireOptionCard, "fixedOptions" | "webhookRequest" | "appTriggerRequest" | "yourComputer" | "computerAsk" | "waitRequest" | "stopped" | "accessRequest" | "mcpRequest"> {
+export interface OptionCardData extends Pick<WireOptionCard, "verifiedPreview" | "fixedOptions" | "webhookRequest" | "appTriggerRequest" | "yourComputer" | "computerAsk" | "waitRequest" | "stopped" | "accessRequest" | "mcpRequest"> {
   title: string;
   subtitle: string;
   options: string[];
@@ -564,7 +565,8 @@ export interface AppState {
   liveCallVersion: number;
   liveCallLookupSeq: number;
   selectedId: string;
-  activeView: "chat" | "team-map" | "routines" | "files" | "web-panel";
+  /** "today" is RelayIt's home: what needs you, what is running, and the one box to say it in. */
+  activeView: "today" | "chat" | "team-map" | "routines" | "files" | "web-panel";
   /** Folders a finished move left on this computer, for Files to offer sharing. */
   filesSuggest: string[] | null; webPanelId?: string;
   routines: Routine[];
@@ -649,6 +651,7 @@ export type Action =
   | { type: "showTeamMap" } | { type: "showWebPanel"; id: string }
   | { type: "showFiles"; suggest?: string[] }
   | { type: "showChat" }
+  | { type: "showToday" }
   | { type: "routinesHydrated"; routines: Routine[]; runs: RoutineRun[]; since?: number }
   | { type: "routinesLoadFailed" } | { type: "routineRunsLoaded"; runs: RoutineRun[]; from?: number; to?: number }
   | { type: "routinePatched"; routine: Routine }
@@ -989,6 +992,11 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     case "showChat":
       return state.activeView === "chat" ? state : { ...state, activeView: "chat" };
+    case "showToday":
+      return state.activeView === "today" ? state : {
+        ...state, activeView: "today",
+        settingsOpen: false, computerOpen: false, inspectorOpen: false, activityOpen: false, appSettingsOpen: false, pluginsOpen: false,
+      };
     case "showTeamMap":
     case "showFiles": case "showWebPanel":
       return {
@@ -1863,7 +1871,7 @@ export const initialState: AppState = {
   liveCallVersion: 0,
   liveCallLookupSeq: 0,
   selectedId: "",
-  activeView: "chat",
+  activeView: "today",
   routines: [],
   routineRuns: [], routineRunsSince: null,
   routinesLoadState: "loading",
@@ -2936,8 +2944,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state.hydrated || launched.current) return;
     launched.current = true;
+    // RelayIt opens on Today; Advanced, with its list of bots, opens on the bot it was left on.
+    const view = state.activeView === "today" && readAdvancedMode() ? "chat" : state.activeView;
+    if (view !== state.activeView) dispatch({ type: "showChat" });
     const bot = state.bots.find((candidate) => candidate.id === state.selectedId);
-    if (bot && state.activeView === "chat" && botOpensTo(bot, showThreads) !== bot.threadId) openBot(dispatch, bot, showThreads);
+    if (bot && view === "chat" && botOpensTo(bot, showThreads) !== bot.threadId) openBot(dispatch, bot, showThreads);
   }, [state.hydrated, state.bots, state.selectedId, state.activeView, showThreads, dispatch]);
 
   useEffect(() => {

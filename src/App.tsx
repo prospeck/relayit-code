@@ -57,7 +57,9 @@ import { usePresence } from "@/hooks/use-presence";
 import { ChatNotice } from "@/components/ChatErrorBanner";
 import { loadingLine } from "@/lib/app-loading";
 import { useAiSwitchKeeper } from "@/lib/ai-switch";
-import { useChiefStepOpen } from "@/lib/default-bot";
+import { chiefFor, createChiefPatch, myDefaultBot, useChiefStepOpen, useViewerEmail } from "@/lib/default-bot";
+import { RelaySidebar } from "@/components/relay/RelaySidebar";
+import { TodayPage } from "@/components/relay/TodayPage";
 import { SESSION_ENDED_REASON, useSessionEnded } from "@/lib/session-ended";
 import { PairPage } from "./pair/PairPage";
 import { WebPanelPage } from "@/components/WebPanelPage";
@@ -127,6 +129,18 @@ function Shell() {
   const bot = group || chiefStep ? undefined : (state.bots.find((b) => b.id === state.selectedId) ?? state.bots[0]);
   const notificationFeed = useNotificationFeed() && !remoteClient;
   const advanced = useAdvancedMode();
+  // One RelayIt: outside Advanced there is no list of bots, only RelayIt and its relays.
+  const simpleRelay = !advanced && !remoteClient;
+  const viewerEmail = useViewerEmail();
+  const relayBot = myDefaultBot(state.bots, viewerEmail) ?? state.bots.find((b) => !b.hidden);
+  // RelayIt needs no introduction to itself: outside Advanced it is welcomed, in the sidebar's place and the Chief from
+  // the start, so neither the Chief step nor its first-launch card ever shows.
+  const welcomeRelayIt = simpleRelay && relayBot?.defaultBot && !relayBot.welcomed ? relayBot : undefined;
+  useEffect(() => {
+    if (!welcomeRelayIt) return;
+    dispatch({ type: "updateBot", botId: welcomeRelayIt.id, patch: createChiefPatch(welcomeRelayIt, chiefFor(state.bots, welcomeRelayIt)) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeRelayIt?.id]);
   const roomPanelOpen = useRoomPanelShown({ group, state, simple: !advanced && !remoteClient });
   const sidePanelOpen = (Boolean(bot) && (state.settingsOpen || state.computerOpen || state.inspectorOpen || state.activityOpen)) || roomPanelOpen || (notificationFeed && state.notificationsOpen) || inboxShown;
   const collapseSidebar = sidePanelOpen && !sidebarAndPanelFit;
@@ -299,22 +313,31 @@ function Shell() {
           className="absolute inset-0 z-30 bg-black/50 md:hidden"
         />
       )}
-      {!calendarFocus && <PlacesRail />}
+      {!calendarFocus && !simpleRelay && <PlacesRail />}
       {/* A framed window shows the app, its sidebar and the chat or page, as one square pane under the top bar and beside
           the window's rail, running to the window's right and bottom edges. */}
       <div data-window-card={framed ? "" : undefined}
         className={framed ? "relative flex min-w-0 flex-1 flex-col overflow-hidden bg-app" : "contents"}>
       {framed && strips}
       <div className={framed ? "relative flex min-h-0 flex-1" : "contents"}>
-      {!calendarFocus && <Sidebar
+      {!calendarFocus && (simpleRelay ? <RelaySidebar
+        bot={relayBot}
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          menuButtonRef.current?.focus();
+        }}
+      /> : <Sidebar
         collapseToIcons={collapseSidebar}
         open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           menuButtonRef.current?.focus();
         }}
-      />}
-      {state.activeView === "team-map" ? (
+      />)}
+      {state.activeView === "today" && !chiefStep ? (
+        <TodayPage bot={relayBot} />
+      ) : state.activeView === "team-map" ? (
         <TeamMapPage />
       ) : state.activeView === "files" ? (
         null

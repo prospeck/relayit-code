@@ -6458,6 +6458,7 @@ bus.subscribe((event: RuntimeEvent) => {
           held: approvalHeldReason(heldContext) ?? (permission && guestDriven && routineRun ? confinedWhy(event.threadId) : undefined),
           heldCode: approvalHeldNote(heldContext),
           approvalScope: event.approvalScope,
+          ...(permission && event.verifiedPreview ? { verifiedPreview: true as const } : {}),
         },
       });
       if (event.requestId) { askMessageByRequest.set(`${event.threadId}:${event.requestId}`, message.id); if (!permission && asker) askCards.askedAgain(event.threadId, event.requestId, asker.id); }

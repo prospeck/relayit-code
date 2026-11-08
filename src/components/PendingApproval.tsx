@@ -13,6 +13,8 @@ import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { useInboxOrigin } from "./InboxLine";
 import { yourComputerAsk } from "@/lib/your-computer";
 import { computerAskWords } from "@/lib/computer-ask";
+import { amountParts, moneyPreview, type MoneyPreview } from "@/lib/relay";
+import { HoldButton } from "./relay/HoldButton";
 
 
 interface ApprovalLabels {
@@ -141,6 +143,57 @@ function CopyHeader({ message, asker, line }: { message: Message; asker: Asker; 
   return <AskHeader asker={asker} line={line} origin={useInboxOrigin(message)} />;
 }
 
+/** A purchase RelayIt's own connector priced: what it is, the amount in large type, who it goes to, and the details
+ * folded away. The person pays in their own app; nothing here moves money. */
+function MoneyApproval({ money, count, index, actions, detailsId }: { money: MoneyPreview; count: number; index: number; actions?: ReactNode; detailsId: string }) {
+  const [open, setOpen] = useState(false);
+  const { symbol, whole, fraction } = amountParts(money.total);
+  const shown = money.details.filter((detail) => detail.label !== "Breakdown");
+  const breakdown = money.details.find((detail) => detail.label === "Breakdown");
+  return (
+    <div role="region" aria-label={t("relay.money.aria", { title: money.title, total: money.total })} data-ask-card="approval" data-money-card="" className="px-5 pb-4 pt-4">
+      <div className="flex items-center gap-2">
+        <span className="flex items-center gap-1.5 rounded-full bg-accent/15 px-2.5 py-0.5 text-[12px] font-semibold leading-5 text-accent-text">
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />{t("relay.money.yourOk")}
+        </span>
+        {count > 1 && (
+          <span className="ml-auto rounded-full bg-ink/[0.06] px-2 text-[12px] leading-5 tabular-nums text-ink-secondary">
+            {t("approval.position", { index: index + 1, count })}
+          </span>
+        )}
+      </div>
+      <p dir="auto" className="mt-3 text-[15px] font-medium leading-[22px] text-ink">{money.title}</p>
+      <p className="mt-1 flex items-baseline font-display font-semibold tabular-nums leading-none tracking-[-0.03em] text-ink" aria-hidden="true">
+        {symbol && <span className="mr-1 text-[26px]">{symbol}</span>}
+        <span className="text-[46px]">{whole}</span>
+        {fraction && <span className="text-[24px] text-ink-secondary">{fraction}</span>}
+      </p>
+      <p dir="auto" className="mt-1.5 text-[13px] leading-[18px] text-ink-secondary">{t("relay.money.to", { name: money.to })}</p>
+      {shown.length > 0 && (
+        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-t border-hairline/50 pt-3 text-[13px] leading-[19px]">
+          {shown.map((detail) => (
+            <div key={detail.label} className="contents">
+              <dt className="text-ink-tertiary">{detail.label}</dt>
+              <dd dir="auto" className="min-w-0 break-words text-ink">{detail.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {breakdown && (
+        <>
+          <button type="button" aria-expanded={open} aria-controls={detailsId} onClick={() => setOpen((value) => !value)}
+            className="mt-2 inline-flex items-center gap-1 rounded text-[12px] text-ink-secondary hover:text-ink">
+            {t("relay.money.breakdown")}<ChevronDown size={13} aria-hidden="true" className={cn("motion-safe:transition-transform", open && "rotate-180")} />
+          </button>
+          <p id={detailsId} hidden={!open} className="mt-1 text-[12px] leading-[18px] text-ink-secondary">{breakdown.value}</p>
+        </>
+      )}
+      <p className="mt-3 text-[12px] leading-[17px] text-ink-tertiary">{t("relay.money.never")}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">{actions}</div>
+    </div>
+  );
+}
+
 export const PendingApprovalPanel = memo(function PendingApprovalPanel({
   pending,
   count,
@@ -161,6 +214,7 @@ export const PendingApprovalPanel = memo(function PendingApprovalPanel({
   locale?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const money = moneyPreview(pending.message.card);
   const outbound = pending.message.card ? outboundSummary(pending.message.card) : undefined;
   const heldNote = outbound?.opaque && pending.heldCode === "approval.held.outbound"
     ? t("approval.opaqueCode")
@@ -169,6 +223,7 @@ export const PendingApprovalPanel = memo(function PendingApprovalPanel({
   const detailsId = `approval-details-${pending.requestId}`;
   const hidden = detail && detail !== inline ? detail : "";
   const skill = pending.message.card?.skillRequest;
+  if (money) return <MoneyApproval money={money} count={count} index={index} actions={actions} detailsId={detailsId} />;
   return (
     <div
       role="region"
@@ -298,6 +353,21 @@ export function PendingApprovalActions({
         {turnOn.turnOn && (
           <button key="allow" {...marked("allow")} type="button" onClick={() => decide("allow")} className={allow.className} style={allow.style}>{turnOn.turnOn}</button>
         )}
+      </>
+    );
+  }
+  // Money always asks: no Always, and Allow is a hold.
+  if (moneyPreview(pending.message.card)) {
+    if (!showPrimary) return null;
+    return (
+      <>
+        <button key="deny" {...marked("deny")} type="button" onClick={() => decide("deny")} className={ASK_SECONDARY_BUTTON}>
+          {t("relay.money.notNow")}
+        </button>
+        <HoldButton key="allow" {...marked("allow")} onConfirm={() => decide("allow")}
+          holdingLabel={t("relay.money.holding")} hint={t("relay.money.holdHint")}>
+          {t("relay.money.hold")}
+        </HoldButton>
       </>
     );
   }

@@ -131,7 +131,7 @@ describe("ThreadLink", () => {
 });
 
 describe("openChatLink", () => {
-  const state = async () => ({ ...(await import("@/state/store")).initialState, bots: [scout, ada], groups: [room, dm], selectedId: "ada" });
+  const state = async () => ({ ...(await import("@/state/store")).initialState, bots: [scout, ada], groups: [room, dm], selectedId: "ada", activeView: "chat" as const });
   const actions = (dispatch: ReturnType<typeof vi.fn>) => dispatch.mock.calls.map(([action]) => action);
 
   it("opens the chat a copied link names, and nothing else", async () => {

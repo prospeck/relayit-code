@@ -649,6 +649,9 @@ export function nextOpenThread<T extends OpenThreadCandidate>(tasks: readonly T[
 }
 
 export interface OptionCardData extends WaitCardField, ComputerAskField, AccessRequestCardField {
+  /** The subtitle is a shipped connector's preview of a purchase (title, summary, "To:", "Total: ₹…", details), so a
+   * client may show its amount as fact. Set by the server only. */
+  verifiedPreview?: true;
   /** calls: one per outbound call the card covers, in subtitle order. */
   outboundRequest?: { tool: string; app: string | null; calls?: Array<{ app: string | null; label: string }> };
   /** `revision`: the entry as it applied without a person, so Undo can tell it changed since. */
