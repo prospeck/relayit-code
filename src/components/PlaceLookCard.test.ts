@@ -6,6 +6,8 @@ import type { PlaceLook } from "../../electron/place-look.mjs";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let host: HTMLDivElement, root: Root | null = null;
+// The sidebar's colour and picture are Advanced's: RelayIt's own sidebar wears Lane.
+vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => true }));
 beforeEach(() => { host = document.createElement("div"); document.body.append(host); });
 afterEach(async () => { await act(async () => root?.unmount()); root = null; host.remove(); vi.resetModules(); });
 

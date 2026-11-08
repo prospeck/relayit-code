@@ -193,7 +193,7 @@
   --font-sans: "Onest Variable", "Anek Devanagari Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
   /* The display face: the wordmark, a greeting, an amount in rupees. Never body copy. */
-  --font-display: "Unbounded Variable", "Onest Variable", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Unbounded Variable", "Anek Devanagari Variable", "Onest Variable", -apple-system, BlinkMacSystemFont, sans-serif;
   /* Some engines map `ui-monospace` to a proportional face, so concrete names come first. */
   --font-mono: "Geist Mono Variable", "SF Mono", SFMono-Regular, ui-monospace, Menlo,
     Consolas, "Liberation Mono", monospace;

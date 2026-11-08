@@ -4,6 +4,7 @@ import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
 import { t } from "@/lib/i18n";
 import { choosePlaceColor, usePlaceLook } from "@/lib/place-look";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
+import { useAdvancedMode } from "@/lib/interface-mode";
 import { useStore } from "@/state/store";
 import { PlacePicture } from "./PlacePicture";
 import { SettingRow, SettingsRows, SIMPLE_BUTTONS } from "./SettingsPrimitives";
@@ -20,6 +21,7 @@ export function PlaceLookRows() {
   const computer = window.ogb?.app?.ownPage === true;
   const [pending, setPending] = useState<CloudSwatch | null>(null);
   const [outcome, setOutcome] = useState<PlaceColorOutcome | null>(null);
+  const advanced = useAdvancedMode();
   const locked = look?.change === null;
   const choose = (swatch: CloudSwatch) => {
     if (!look || locked || pending || swatch === look.swatch) return;
@@ -28,6 +30,8 @@ export function PlaceLookRows() {
   };
   const note = look?.reason === "member" || outcome === "refused" ? t("placeLook.member") : look?.reason === "signed-out" ? t("placeLook.signedOut")
     : outcome === "unsupported" ? t("placeLook.unsupported") : null;
+  // RelayIt's own sidebar wears Lane, not a place's colour or picture; they stay for Advanced's list of bots.
+  if (!advanced && window.ogb?.remoteClient?.active !== true) return null;
   return <>
     {look && <div data-place-look={look.change ?? "locked"}>
       <SettingRow title={t("placeLook.sidebarColor")} subtitle={computer ? t("placeLook.sidebarColorSub") : t("placeLook.sub", { name: look.name })}

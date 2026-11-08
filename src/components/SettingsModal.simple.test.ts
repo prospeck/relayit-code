@@ -162,11 +162,12 @@ describe("Settings in Simple mode", () => {
     expect(html).toMatch(/aria-expanded="false" aria-controls="[^"]+"[^>]*>Add<\/button>/);
   });
 
-  it("puts the sidebar's colour and picture right under Theme in General, the switch for the window's rail beside them, and only the skins behind More looks", () => {
+  it("puts the switch for the window's rail under Theme in General, no sidebar colour or picture (RelayIt's sidebar wears Lane), and only the skins behind More looks", () => {
     fixture.rail = { available: true, hidden: false };
     const html = render();
     const appearance = html.slice(html.indexOf('data-settings-block="appearance"'), html.indexOf(">Notifications<"));
-    const order = ['role="radiogroup" aria-label="Theme"', ">Sidebar picture<", 'aria-label="Show your computers"', 'aria-label="Color my messages with the bot&#x27;s color"', ">More looks<"]
+    expect(appearance).not.toContain(">Sidebar picture<");
+    const order = ['role="radiogroup" aria-label="Theme"', 'aria-label="Show your computers"', 'aria-label="Color my messages with the bot&#x27;s color"', ">More looks<"]
       .map((needle) => appearance.indexOf(needle));
     expect(order.every((at) => at > -1), String(order)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
