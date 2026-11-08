@@ -16,6 +16,9 @@ const fixture = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/chrome-rail", () => ({ useChromeRail: () => fixture.rail, setChromeRailHidden: () => {}, sayFrameDrawn: fixture.frameDrawn }));
 
+// The place's name is Advanced's: RelayIt's own bar names nothing (see "stays quiet outside Advanced").
+const mode = vi.hoisted(() => ({ advanced: true }));
+vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => mode.advanced }));
 vi.mock("@/lib/place-look", () => ({ usePlaceLook: () => fixture.look }));
 vi.mock("@/state/store", () => ({ useStore: () => ({ state: { config: fixture.config }, dispatch: fixture.dispatch }) }));
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
@@ -57,6 +60,17 @@ const bar = () => host.querySelector<HTMLElement>("[data-window-frame-bar]");
 const middle = () => host.querySelector<HTMLElement>("[data-window-place]");
 
 describe("the window frame's top bar", () => {
+  it("stays quiet outside Advanced: RelayIt has one computer and one assistant, so it names no place", async () => {
+    mode.advanced = false;
+    try {
+      await mount(createElement(WindowFrameBar));
+      expect(middle()).toBeNull();
+      expect(bar()!.children).toHaveLength(3);
+    } finally {
+      mode.advanced = true;
+    }
+  });
+
   it("is drawn on macOS, as thin as the traffic lights allow, and drags the window; its first button starts after the lights", async () => {
     await mount(createElement(WindowFrameBar));
     const classes = bar()!.className.split(" ");

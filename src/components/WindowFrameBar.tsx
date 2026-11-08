@@ -1,4 +1,5 @@
 import { Settings } from "lucide-react";
+import { useAdvancedMode } from "@/lib/interface-mode";
 import { useEffect } from "react";
 
 import { sayFrameDrawn } from "@/lib/chrome-rail";
@@ -21,6 +22,7 @@ export const FRAME_BAR_BUTTON = "flex size-[22px] shrink-0 items-center justify-
 export function WindowFrameBar() {
   const { capabilities } = useDesktopCapabilities();
   const { dispatch } = useStore();
+  const advanced = useAdvancedMode() || window.ogb?.remoteClient?.active === true;
   const frameable = windowFrameable(capabilities), framed = windowFramed(capabilities);
   useEffect(() => { if (frameable) sayFrameDrawn(framed); }, [frameable, framed]);
   if (!framed) return null;
@@ -36,7 +38,8 @@ export function WindowFrameBar() {
       <div data-frame-bar-start className={cn("flex items-center gap-0.5", mac ? "pl-20" : "pl-[calc(var(--rail-beside,0px)+8px)]")}>
         <ChromeRailToggle bar={FRAME_BAR_BUTTON} />
       </div>
-      <WindowPlaceTitle />
+      {/* With one computer and one assistant there is no place to name: RelayIt's bar stays quiet. */}
+      {advanced ? <WindowPlaceTitle /> : <span />}
       <div data-frame-bar-end className={cn("flex items-center justify-end gap-0.5", mac ? "pr-2" : "pr-[140px]")}>
 
         <button
