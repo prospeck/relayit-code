@@ -22,21 +22,21 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Package Apple Silicon and Intel
+      - name: Package Apple Silicon
         # These runners have 7 GB, and Node's default heap stops near 2 GB. There's no Developer ID yet, so sign ad hoc.
+        # Intel waits: its build never opened its window under Rosetta, and an Intel failure must not hold back the rest.
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          RELAYIT_SPEECH_ARCHES: arm64
+          RELAYIT_CUA_ARCHES: arm64
+          RELAYIT_CUA_ARCHES_PARTIAL: "1"
         run: |
           pnpm package:prepare
           pnpm build:speech
           pnpm build:cua
-          pnpm exec electron-builder --mac dmg --arm64 --x64 --publish never -c.mac.identity=-
+          pnpm exec electron-builder --mac dmg --arm64 --publish never -c.mac.identity=-
       - name: Install Apple Silicon and open it
         run: node scripts/smoke-install.mjs smoke-output release/RelayIt-*-arm64.dmg
-      - name: Install Intel and open it
-        run: |
-          sudo softwareupdate --install-rosetta --agree-to-license
-          node scripts/smoke-install.mjs smoke-output release/RelayIt-*-x64.dmg
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
