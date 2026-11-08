@@ -1,12 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440">
-  <defs><linearGradient id="ember" x2="1" y2="1"><stop stop-color="#F07040"/><stop offset="1" stop-color="#D9481F"/></linearGradient></defs>
-  <rect width="720" height="440" fill="#FAF7F4"/>
-  <rect x="40" y="38" width="38" height="38" rx="11" fill="url(#ember)"/>
-  <path d="M21 45V19h12.5a8.5 8.5 0 0 1 0 17H27m7 0 9.5 9" transform="translate(40 38) scale(.59375)" fill="none" stroke="white" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="91" y="64" font-family="Helvetica" font-size="24" font-weight="700" fill="#27201D">RelayIt</text>
-  <rect x="112" y="138" width="136" height="136" rx="32" fill="#F0E7DF"/>
-  <rect x="472" y="138" width="136" height="136" rx="32" fill="#F0E7DF"/>
-  <path d="M292 206h128m-14-14 14 14-14 14" stroke="#D9481F" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="360" y="346" text-anchor="middle" font-family="Helvetica" font-size="21" font-weight="700" fill="#27201D">Ready for the handoff.</text>
-  <text x="360" y="376" text-anchor="middle" font-family="Helvetica" font-size="15" fill="#6E6058">Drag RelayIt into Applications to get started.</text>
+  <rect width="720" height="440" fill="#FFFFFF"/>
+  <g transform="translate(40 36) scale(.5625)">
+    <rect width="64" height="64" rx="15" fill="#FF4F2E"/>
+    <path d="M39.2 15.2H24.8a16.8 16.8 0 0 0 0 33.6h14.4a16.8 16.8 0 0 0 16.8-16.8" fill="none" stroke="#FFFFFF" stroke-width="6.72" stroke-linecap="round"/>
+    <circle cx="51.1" cy="20.1" r="6" fill="#111111"/>
+  </g
+  ><g transform="translate(86 45.5) scale(.0244)"><path fill="#111111" d="M204 330H485Q538 330 569.0 305.5Q600 281 600 237Q600 193 569.0 168.5Q538 144 485 144H177L262 51V750H73V0H510Q594 0 657.0 30.0Q720 60 755.0 113.0Q790 166 790 237Q790 307 755.0 360.0Q720 413 657.0 443.0Q594 473 510 473H204ZM325 399H538L814 750H595ZM1227 766Q1125 766 1044.5 728.0Q964 690 918.0 622.0Q872 554 872 463Q872 374 916.0 307.0Q960 240 1037.5 202.0Q1115 164 1213 164Q1313 164 1385.0 208.0Q1457 252 1496.0 332.0Q1535 412 1535 520H1021V403H1433L1366 445Q1363 398 1343.5 365.5Q1324 333 1292.0 315.5Q1260 298 1216 298Q1168 298 1133.0 317.0Q1098 336 1078.5 370.0Q1059 404 1059 449Q1059 506 1084.5 546.0Q1110 586 1158.5 607.0Q1207 628 1277 628Q1341 628 1405.0 610.5Q1469 593 1520 561V682Q1462 722 1387.5 744.0Q1313 766 1227 766ZM1628 -20H1813V750H1628ZM2451 750 2426 543 2453 465 2426 388 2451 180H2644L2609 465L2644 750ZM2497 465Q2482 556 2440.0 623.5Q2398 691 2334.0 728.5Q2270 766 2190 766Q2106 766 2042.5 728.0Q1979 690 1943.0 622.5Q1907 555 1907 465Q1907 375 1943.0 307.5Q1979 240 2042.5 202.0Q2106 164 2190 164Q2270 164 2334.0 201.5Q2398 239 2440.5 306.0Q2483 373 2497 465ZM2095 465Q2095 511 2114.0 546.5Q2133 582 2166.5 602.5Q2200 623 2244 623Q2288 623 2327.5 602.5Q2367 582 2397.0 546.5Q2427 511 2442 465Q2427 419 2397.0 383.5Q2367 348 2327.5 327.5Q2288 307 2244 307Q2200 307 2166.5 327.5Q2133 348 2114.0 383.5Q2095 419 2095 465ZM2923 931Q2863 931 2816.5 916.0Q2770 901 2726 871V740Q2771 769 2810.5 781.5Q2850 794 2897 794Q2939 794 2970.5 776.0Q3002 758 3023 710L3251 180H3448L3169 768Q3141 828 3102.0 864.0Q3063 900 3017.5 915.5Q2972 931 2923 931ZM2945 705 2698 180H2902L3124 705Z"/><path fill="#FF4F2E" d="M3523 0H3712V750H3523ZM3790 318V237L3908 194L3988 28H4094V180H4340V318H4094V506Q4094 570 4120.0 595.5Q4146 621 4213 621Q4256 621 4288.5 613.5Q4321 606 4350 593V734Q4320 746 4271.5 756.0Q4223 766 4171 766Q4080 766 4021.5 737.0Q3963 708 3935.5 655.5Q3908 603 3908 532V318Z"/></g>
+  <!-- the lane from the app to Applications: a track with its open quarter at the folder, and the runner on its way -->
+  <path d="M260 206h200" stroke="#E4E4DE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M260 206h118" stroke="#FF4F2E" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="398" cy="206" r="9" fill="#111111"/>
+  <text x="360" y="346" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial" font-size="21" font-weight="700" fill="#111111">Drag RelayIt into Applications.</text>
+  <text x="360" y="376" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial" font-size="15" fill="#5A5A56">Say it once. RelayIt handles the rest.</text>
 </svg>

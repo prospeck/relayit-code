@@ -1,18 +1,29 @@
+// Renders every RelayIt icon from the Lane mark in shared/brand-mark.ts: the macOS and Windows app icons, the web and
+// tray images, and the installer background. Run with `node scripts/make-brand-icons.mjs` after changing the mark.
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { Resvg } from "@resvg/resvg-js";
+import { LANE_COLORS as C, LANE_RUNNER as R, LANE_STROKE, LANE_TRACK } from "../shared/brand-mark.ts";
 
-const mark = 'M21 45V19h12.5a8.5 8.5 0 0 1 0 17H27m7 0 9.5 9';
-const tile = `<defs><linearGradient id="ember" x2="1" y2="1"><stop stop-color="#F07040"/><stop offset="1" stop-color="#D9481F"/></linearGradient></defs><rect width="64" height="64" rx="17" fill="url(#ember)"/><path d="${mark}" fill="none" stroke="white" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-const svg = (inner, viewBox = "0 0 64 64") => `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="${viewBox}" role="img"><title>RelayIt</title>${inner}</svg>\n`;
+const track = (stroke) => `<path d="${LANE_TRACK}" fill="none" stroke="${stroke}" stroke-width="${LANE_STROKE}" stroke-linecap="round"/>`;
+const runner = (fill) => `<circle cx="${R.cx}" cy="${R.cy}" r="${R.r}" fill="${fill}"/>`;
+// The app icon: the track in white on a coral tile, the runner in black.
+const tile = `<rect width="64" height="64" rx="15" fill="${C.coral}"/>${track(C.white)}${runner(C.black)}`;
+const svg = (inner, viewBox = "0 0 64 64", size = 1024) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${viewBox}" role="img"><title>RelayIt</title>${inner}</svg>\n`;
 const web = svg(tile);
+// macOS draws an app icon inside a 824-point tile centred on 1024, so the tile is inset by 100.
 const desktop = svg(`<g transform="translate(100 100) scale(12.875)">${tile}</g>`, "0 0 1024 1024");
+// The menu bar wants a template image: black on transparent, which macOS recolours for light and dark bars.
+const tray = svg(`${track("#000")}${runner("#000")}`, "4 4 56 56", 64);
 const png = (source, size) => new Resvg(source, { fitTo: { mode: "width", value: size } }).render().asPng();
+
 writeFileSync("build/icon.svg", desktop);
 writeFileSync("public/app-icon.svg", web);
 writeFileSync("build/icon.html", `<!doctype html><html lang="en"><meta charset="utf-8"><title>RelayIt icon</title><body style="margin:0;background:transparent">${desktop}</body></html>\n`);
 writeFileSync("build/icon-1024.png", png(desktop, 1024));
 writeFileSync("electron/resources/app-icon.png", png(web, 512));
+writeFileSync("electron/resources/trayTemplate.png", png(tray, 18));
+writeFileSync("electron/resources/trayTemplate@2x.png", png(tray, 36));
 for (const name of ["16x16", "16x16@2x", "32x32", "32x32@2x", "64x64", "64x64@2x", "128x128", "128x128@2x", "256x256", "256x256@2x", "512x512", "512x512@2x"]) {
   const size = Number(name.split("x")[0]) * (name.includes("@2x") ? 2 : 1);
   writeFileSync(`build/icon.iconset/icon_${name}.png`, png(desktop, size));
@@ -39,6 +50,6 @@ writeFileSync("build/icon.ico", Buffer.concat([header, ...images]));
 execFileSync(process.execPath, ["build/dmg/render.mjs"], { stdio: "inherit" });
 const manifest = JSON.parse(readFileSync("public/manifest.webmanifest", "utf8"));
 manifest.name = manifest.short_name = "RelayIt";
-manifest.theme_color = "#D9481F";
+manifest.theme_color = C.coral;
 writeFileSync("public/manifest.webmanifest", JSON.stringify(manifest, null, 2) + "\n");
-console.log("Rendered RelayIt desktop, web, tray source, Windows and installer icons.");
+console.log("Rendered RelayIt desktop, web, tray, Windows and installer icons.");

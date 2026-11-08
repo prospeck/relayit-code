@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { APP_NAME, appVersion, platformLabel } from "@/lib/app-links";
-import { productName } from "@/lib/brand";
 import { t } from "@/lib/i18n";
+import { LaneMark, Wordmark } from "./RelayItMark";
 import { useOtherServerName } from "@/lib/other-server";
 
 /** The app's own version first; `server` (useOtherServerName: set only when the app's window shows another server) adds a
@@ -50,14 +50,14 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
         aria-labelledby="about-dialog-title"
         className="w-full max-w-[360px] rounded-2xl border border-hairline/50 bg-panel p-6 text-center shadow-2xl"
       >
-        <img src="/app-icon.svg" alt="" width={56} height={56} className="mx-auto size-14" />
-        <h2 id="about-dialog-title" className="mt-3 text-[17px] font-semibold text-ink">
-          {productName()}
+        <LaneMark tile size={56} className="mx-auto" />
+        <h2 id="about-dialog-title" className="mt-4 flex justify-center">
+          <Wordmark height={20} />
         </h2>
         <p className="mt-1 text-[13px] text-ink-secondary">{version}</p>
         {connected && <p className="mt-0.5 text-[13px] text-ink-secondary">{connected}</p>}
         <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
-          A desktop home for your agents, built on {APP_NAME}: open source, Apache 2.0 licensed.
+          Say it once. RelayIt handles the rest. Built on {APP_NAME}: open source, Apache 2.0 licensed.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[13px]">
 

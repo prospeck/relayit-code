@@ -1,7 +1,10 @@
 // Retain the Windows notification-area identity across app restarts.
 export function createSystemTray({ Tray, Menu, nativeImage, iconPath, getWindow, onQuit }) {
-  const tray = new Tray(nativeImage.createFromPath(iconPath).resize({ width: 20, height: 20 }),
-    "889af657-21b5-4ec9-b5d0-cb798cbdfd30");
+  // A macOS template image (black, with its @2x beside it) is used as it is and recoloured for the menu bar.
+  const template = /Template\.png$/.test(iconPath);
+  const image = template ? nativeImage.createFromPath(iconPath) : nativeImage.createFromPath(iconPath).resize({ width: 20, height: 20 });
+  if (template) image.setTemplateImage?.(true);
+  const tray = new Tray(image, "889af657-21b5-4ec9-b5d0-cb798cbdfd30");
   let hidden = false;
   const show = () => {
     const win = getWindow();

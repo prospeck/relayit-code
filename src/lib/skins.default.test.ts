@@ -57,10 +57,10 @@ describe("default skin", () => {
   it("stops following the computer once someone picks a skin", async () => {
     await boot();
     const skins = await import("./skins");
-    skins.applySkin("meadow");
+    skins.applySkin("daylight");
     setOsDark(true);
-    expect(document.documentElement.dataset.skin).toBe("meadow");
-    expect(values.get("omb-skin")).toBe("meadow");
+    expect(document.documentElement.dataset.skin).toBe("daylight");
+    expect(values.get("omb-skin")).toBe("daylight");
   });
 
   it("keeps an install that ran before in Midnight when nobody picked a skin", async () => {
@@ -76,8 +76,9 @@ describe("default skin", () => {
   });
 
   it("always honours a skin someone chose", async () => {
-    values.set("omb-skin", "lagoon");
-    expect(await boot()).toMatchObject({ skin: "lagoon" });
+    values.set("omb-skin", "daylight");
+    os.dark = true;
+    expect(await boot()).toMatchObject({ skin: "daylight" });
     values.clear();
     values.set("omb-skin", "midnight");
     values.set("omb-advanced-mode", "0");
@@ -90,7 +91,7 @@ describe("default skin", () => {
     const [{ SkinPicker }, { ThemeRow }] = await Promise.all([import("@/components/SkinPicker"), import("@/components/ThemeRow")]);
     const picker = renderToStaticMarkup(createElement(SkinPicker));
     const pressed = [...picker.matchAll(/aria-pressed="true"[\s\S]*?<div class="text-\[13px\] font-medium text-ink">([^<]+)</g)].map(([, name]) => name);
-    expect(pressed).toEqual(["Midnight"]);
+    expect(pressed).toEqual(["Night"]);
     const theme = renderToStaticMarkup(createElement(ThemeRow));
     expect([...theme.matchAll(/aria-checked="true"[^>]*>([^<]+)</g)].map(([, label]) => label)).toEqual(["System"]);
   });

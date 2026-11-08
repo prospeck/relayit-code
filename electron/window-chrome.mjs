@@ -2,7 +2,7 @@
  * the WCO overlay API cannot style hover. */
 /** The canvas colour a window paints before the renderer loads: the light or dark theme's, so neither flashes the other. */
 export function windowBackground(prefersDark) {
-  return prefersDark ? "#121212" : "#fcfcfc";
+  return prefersDark ? "#0f1211" : "#ffffff";
 }
 
 /** macOS: where the traffic lights (14px) sit. In the frame's 28px top bar, 12px in, while the page beside the rail draws

@@ -156,7 +156,7 @@ describe("Settings → Appearance", () => {
   it("groups skins, thread visibility, and tool-call display with preservation copy", () => {
     const html = render();
     expect(html).toContain('<option value="appearance" selected="">Appearance</option>');
-    expect(html).toContain("Midnight");
+    expect(html).toContain("A floodlit field after dark");
     expect(html).toContain('aria-label="Show threads"');
     expect(html).toContain('aria-label="Pinned bots as circles"');
     expect(html).toContain('aria-label="Universal pins"');
@@ -345,7 +345,7 @@ describe("Settings → Appearance", () => {
     expect(html).not.toContain('aria-label="Show threads"');
     expect(html).not.toContain('aria-label="Choose tools layout"');
     expect(html).not.toContain('aria-label="Show tool calls in chat"');
-    expect(html).not.toContain("Midnight");
+    expect(html).not.toContain("A floodlit field after dark");
   });
 
   it("makes local appearance available remotely without exposing server settings", () => {
@@ -357,7 +357,7 @@ describe("Settings → Appearance", () => {
     expect(html).not.toContain('<option value="connections">');
     expect(html).not.toContain('<option value="engines">');
     expect(html).not.toContain('<option value="backups">');
-    expect(html).toContain("Midnight");
+    expect(html).toContain("A floodlit field after dark");
     expect(html).toContain('aria-label="Show threads"');
     expect(html).toContain('aria-label="Notification sounds"');
     expect(html).toContain('aria-label="Choose tools layout"');

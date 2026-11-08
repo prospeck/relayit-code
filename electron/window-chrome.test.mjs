@@ -27,7 +27,7 @@ describe("window chrome", () => {
   });
 
   it("paints the light or dark canvas before the renderer loads", () => {
-    expect(windowBackground(true)).toBe("#121212");
-    expect(windowBackground(false)).toBe("#fcfcfc");
+    expect(windowBackground(true)).toBe("#0f1211");
+    expect(windowBackground(false)).toBe("#ffffff");
   });
 });

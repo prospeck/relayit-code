@@ -4,7 +4,7 @@ export const TALK_PANEL = Object.freeze({ width: 400, margin: 24, minHeight: 56,
 const MASCOT_PX = 28;
 /** Lines of 13 px text at 1.4 that fit the tallest box with its label and padding. */
 const TEXT_LINES = 10;
-const LIGHT = "color-scheme:light;--panel:#f7f7f7f5;--border:#0000001a;--ink:#0d0d0d;--ink2:#444444;--accent:#0b62c4;--warning:#8a5a00;--danger:#c02b3a;--hover:#0000000d";
+const LIGHT = "color-scheme:light;--panel:#fffffff5;--border:#1111111a;--ink:#111111;--ink2:#4a4a46;--accent:#c8341a;--warning:#8a5a00;--danger:#b4123a;--hover:#0000000d";
 
 export const TALK_LABELS = Object.freeze({
   listening: "Listening…",
@@ -54,7 +54,7 @@ export function talkPanelHtml(iconBase64) {
   const labels = JSON.stringify(TALK_LABELS);
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>RelayIt</title><style>
 :root{color-scheme:dark light}
-body{color-scheme:dark;--panel:#111111f5;--border:#ffffff16;--ink:#fcfcfc;--ink2:#fcfcfcbf;--accent:#1084fe;--warning:#ff9800;--danger:#ff5667;--hover:#ffffff14}
+body{color-scheme:dark;--panel:#0f1211f5;--border:#f4f4f116;--ink:#f4f4f1;--ink2:#f4f4f1bf;--accent:#ff5a3a;--warning:#ffb020;--danger:#ff5c7a;--hover:#ffffff14}
 body.light{${LIGHT}}
 @media (prefers-color-scheme: light){body:not(.dark){${LIGHT}}}
 *{box-sizing:border-box}html,body{margin:0;background:transparent;overflow:hidden;font:13px/1.4 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}

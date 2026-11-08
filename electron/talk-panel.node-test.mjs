@@ -272,9 +272,9 @@ test("the box takes the app's skin, light or dark, over macOS's appearance, and 
   assert.equal(made[0].webContents.scripts.at(-1), "fadeOut()", "a closed box is not painted");
 
   const html = talkPanelHtml("AAAA");
-  assert.match(html, /body\{color-scheme:dark;--panel:#111111f5;/);
-  assert.match(html, /body\.light\{color-scheme:light;--panel:#f7f7f7f5;/);
-  assert.match(html, /@media \(prefers-color-scheme: light\)\{body:not\(\.dark\)\{color-scheme:light;--panel:#f7f7f7f5;/);
+  assert.match(html, /body\{color-scheme:dark;--panel:#0f1211f5;/);
+  assert.match(html, /body\.light\{color-scheme:light;--panel:#fffffff5;/);
+  assert.match(html, /@media \(prefers-color-scheme: light\)\{body:not\(\.dark\)\{color-scheme:light;--panel:#fffffff5;/);
   assert.match(html, /document\.body\.className=\["on",view\.state,view\.theme\]/);
 });
 

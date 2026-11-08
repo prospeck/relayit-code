@@ -84,7 +84,7 @@ export function SkinPicker() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3">
         {SKINS.map((skin) => {
           const selected = skin.id === active;
           return (
@@ -116,7 +116,6 @@ export function SkinPicker() {
           );
         })}
       </div>
-      {active === "halloween" && <DressUpRow />}
     </>
   );
 }

@@ -280,7 +280,7 @@ test("a press while this computer's server is still starting says so", async () 
 
 test("the box takes the light or dark of the skin the app painted last, before or after it opens", async () => {
   const h = harness();
-  h.talk.skin("meadow");
+  h.talk.skin("daylight");
   h.start();
   h.press();
   assert.deepEqual((await h.painted()).at(-1), { state: "listening", text: "", theme: "light" });

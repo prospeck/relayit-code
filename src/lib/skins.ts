@@ -1,18 +1,8 @@
 import { hasPriorRun } from "./prior-run";
 
-export const SKIN_IDS = [
-  "midnight",
-  "atelier",
-  "foundry",
-  "lagoon",
-  "graphite",
-  "linen",
-  "dusk",
-  "daylight",
-  "meadow",
-  "pop",
-  "halloween",
-] as const;
+// RelayIt has one look, Lane, in a day and a night version. The ids are the upstream ones so a stored choice and
+// the structural rules keyed on them keep working.
+export const SKIN_IDS = ["daylight", "midnight"] as const;
 export type SkinId = (typeof SKIN_IDS)[number];
 
 export type Skin = {
@@ -22,17 +12,8 @@ export type Skin = {
 };
 
 export const SKINS: readonly Skin[] = [
-  { id: "midnight", name: "Midnight", tagline: "The original. Cool and dark." },
-  { id: "atelier", name: "Atelier", tagline: "Daylight on paper, warm and quiet." },
-  { id: "foundry", name: "Foundry", tagline: "Night shift. Dark, warm, lit in brass." },
-  { id: "lagoon", name: "Lagoon", tagline: "Cool daylight. Porcelain and deep teal." },
-  { id: "graphite", name: "Graphite", tagline: "Quiet charcoal and softened steel blue." },
-  { id: "linen", name: "Linen", tagline: "Clean daylight with a restrained navy accent." },
-  { id: "dusk", name: "Dusk", tagline: "Muted plum after dark, calm and low-key." },
-  { id: "daylight", name: "Daylight", tagline: "Midnight in reverse. Near-white, ink-black bubbles." },
-  { id: "meadow", name: "Meadow", tagline: "Fresh white with a calm green." },
-  { id: "pop", name: "Pop", tagline: "Cream paper, thick ink outlines, hard shadows. Chunky and cheerful." },
-  { id: "halloween", name: "Halloween", tagline: "Plum after dark, lit in ember orange. Seasonal tokens optional." },
+  { id: "daylight", name: "Day", tagline: "White page, black ink, coral when something needs you." },
+  { id: "midnight", name: "Night", tagline: "A floodlit field after dark. Easy on the eyes." },
 ];
 
 /** "system" follows the OS between the light and dark skins below; anything else pins one skin. */

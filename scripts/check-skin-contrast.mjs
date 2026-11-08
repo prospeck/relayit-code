@@ -194,10 +194,7 @@ const PAIRS = [
 const skins = parseSkins(css);
 // Midnight faithfully keeps two upstream contrast gaps. They may improve, but
 // must not get worse; every other below-target pair is a regression.
-const BASELINE_FLOORS = new Map([
-  ["midnight|--color-accent-ink|--color-accent", 3.65],
-  ["midnight|--color-danger-ink|--color-danger", 3.10],
-]);
+const BASELINE_FLOORS = new Map();
 const BASELINE_DRIFT = 0.01;
 
 let failed = false;
@@ -245,10 +242,10 @@ for (const [id, tokens] of skins) {
   if (skinFailed) failed = true;
 }
 
-// The inverted bubbles (Daylight's ink-black, Pop's ink) have
+// The inverted bubbles (black by day, track white at night) have
 // their own inherited context: the editor, labels, quotes and file chips
 // explicitly use these tokens, not parent color.
-for (const skinId of ["daylight", "pop"]) {
+for (const skinId of ["daylight", "midnight"]) {
   const scope = css.match(new RegExp(`@scope \\(\\[data-skin="${skinId}"\\]\\) to \\(\\[data-skin\\]\\)\\s*\\{\\s*\\.bg-bubble-user\\s*\\{([^}]*)\\}`))?.[1];
   if (!scope) {
     failed = true;

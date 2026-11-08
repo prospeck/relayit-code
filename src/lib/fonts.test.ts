@@ -36,16 +36,17 @@ describe("fonts", () => {
     for (const id of blocks) expect(FONT_IDS).toContain(id as (typeof FONT_IDS)[number]);
   });
 
-  it("leads every skin with the bundled Geist face, except the paper skins and Pop", () => {
+  it("leads both Lane skins with the bundled Onest face, Anek Devanagari behind it for Hindi", () => {
     const skins = [...css.matchAll(/\[data-skin="([a-z-]+)"\]\s*\{[^}]*?--font-sans:\s*([^;]+);/g)];
-    expect(skins.length).toBeGreaterThan(8);
+    expect(skins.length).toBe(2);
     for (const [, skin, stack] of skins) {
-      const first = stack.split(",")[0].trim();
-      if (["atelier", "lagoon", "linen"].includes(skin)) expect(first, skin).toBe("system-ui");
-      else if (skin === "pop") expect(first, skin).toBe('"Plus Jakarta Sans"');
-      else expect(first, skin).toBe('"Geist Variable"');
+      const [first, second] = stack.split(",").map((face) => face.trim());
+      expect(first, skin).toBe('"Onest Variable"');
+      expect(second, skin).toBe('"Anek Devanagari Variable"');
     }
-    expect(css).toMatch(/@import "@fontsource-variable\/geist";/);
+    expect(css).toMatch(/@import "@fontsource-variable\/onest";/);
+    expect(css).toMatch(/@import "@fontsource-variable\/anek-devanagari";/);
+    expect(css).toMatch(/--font-display:\s*"Unbounded Variable"/);
     expect(css).toMatch(/--font-mono:\s*"Geist Mono Variable"/);
   });
 

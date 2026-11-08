@@ -54,18 +54,9 @@ describe("skin overlay chrome", () => {
     expect(skinChrome(null)).toEqual(SKIN_CHROME[DEFAULT_SKIN]);
   });
 
-  it("paints Meadow's white page behind the caption buttons", () => {
-    expect(skinChrome("meadow")).toEqual({ color: "#ffffff", symbolColor: "#4d5a52" });
-    expect(isKnownSkin("meadow")).toBe(true);
-  });
-
-  it("paints Pop's cream page behind the caption buttons", () => {
-    expect(skinChrome("pop")).toEqual({ color: "#fdf5ea", symbolColor: "#3a322d" });
-    expect(isKnownSkin("pop")).toBe(true);
-  });
-
-  it("paints Halloween's plum ground behind the caption buttons", () => {
-    expect(skinChrome("halloween")).toEqual({ color: "#110d16", symbolColor: "#c2b3cc" });
-    expect(isKnownSkin("halloween")).toBe(true);
+  it("paints Lane's white page and night ground behind the caption buttons", () => {
+    expect(skinChrome("daylight")).toEqual({ color: "#ffffff", symbolColor: "#5a5a56" });
+    expect(skinChrome("midnight")).toEqual({ color: "#0f1211", symbolColor: "#b4b9b6" });
+    expect(isKnownSkin("halloween")).toBe(false);
   });
 });
