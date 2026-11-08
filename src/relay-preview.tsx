@@ -78,7 +78,7 @@ function Gallery() {
   const state: AppState = {
     ...initialState, bots: [relayit], selectedId: "relayit", connected: true, hydrated: true, activeView: view === "today" ? "today" : "chat",
     routines: [], routinesLoadState: "ready",
-    config: { ...(initialState.config ?? {}), profile: { name: "Taran" } } as AppState["config"],
+    config: { ...(initialState.config ?? {}), profile: { name: params.get("name") ?? "Asha" } } as AppState["config"],
   };
   const value = { state, dispatch: () => {}, flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {} };
   return (
