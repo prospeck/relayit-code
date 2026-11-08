@@ -1,7 +1,7 @@
 {
   "name": "relayit",
   "private": true,
-  "version": "0.1.139",
+  "version": "0.2.0",
   "description": "A personal AI agent for your computer. Say it once. RelayIt handles the rest.",
   "author": {
     "name": "RelayIt"
